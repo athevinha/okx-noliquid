@@ -26,6 +26,7 @@ export type ICandlesEMACrossovers = Array<{
 }>
 
 export type IMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
+export type IInstType = 'MARGIN' | 'SWAP' | 'FUTURES'|'OPTION' | 'SPOT'
 
 export type IAccountBalance = {
     adjEq: string
@@ -83,3 +84,28 @@ export type IAccountBalance = {
     upl: string
   }
   
+
+  export type OKXResponse = {
+    code: string,
+    data: any[],
+    msg: string
+  }
+
+  export type IContracConvertResponse = {
+    instId: string
+    px: string,
+    sz:string,
+    type: string,
+    unit: string
+  }
+
+  export type ISymbolPriceTicker = {
+    instId:string,
+    idxPx:string,
+    high24h: string,
+    sodUtc0: string,
+    open24h: string,
+    low24h: string,
+    sodUtc8: string,
+    ts: number
+  }

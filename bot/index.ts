@@ -1,9 +1,7 @@
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 import {Telegraf} from 'telegraf';
-import {getAccountBalance, getSymbolCandles} from './helper/okx-candles';
-import { calculateEMA, findEMACrossovers, simulateTrades} from './signals/ema-cross';
-import {decodeTimestamp} from './utils';
-import {WHITE_LIST_TOKENS_TRADE} from './utils/config';
+import {getAccountConfig, getAccountOrders, getAccountOrdersHistory, getAccountPositionRisk, getAccountPositions, getAccountPositionsHistory} from './helper/okx-account';
+import {placeOrder, setLeveragePair, setPositionMode} from './helper/okx-trade';
 dotenv.config();
 
 export async function bot(apiKey?: string) {
@@ -11,8 +9,29 @@ export async function bot(apiKey?: string) {
         const bot = new Telegraf(apiKey);
 
     }
-    const [balances] = await getAccountBalance()
-    console.log(balances)
+    // const positionsHistory = await getAccountPositionsHistory('FUTURES')
+    // const positions = await getAccountPositions('FUTURES')
+    // const positionsHistoryRisk = await getAccountPositionRisk('FUTURES')
+    // const ordersHistory = await getAccountOrdersHistory('FUTURES')
+    const accountConfig = await getAccountConfig()
+    // console.log(accountConfig[0])
+    const setMode = await setPositionMode()
+    // console.log(setMode.data[0])
+    const setLeverage = await setLeveragePair('ETH-USDT-SWAP', 5, 'isolated', 'short')
+    // console.log(setLeverage.data[0])
+    const _placeOrder = await placeOrder({
+        instId : 'ETH-USDT-SWAP',
+        tdMode: 'isolated',
+        side: 'sell',
+        posSide: 'short',
+        ordType: 'market',
+        szUSD: 200, // ETH * USDT
+    })
+    console.log(_placeOrder)
+    // console.log(a)
+    // const orders = await getAccountOrders('SWAP')
+    // const accountConfigs = await getAccountConfig()
+    // console.log(ordersHistory)
     // await Promise.all(WHITE_LIST_TOKENS_TRADE.map(async SYMBOL => {
     //     const candles = await getSymbolCandles({
     //         instID: `${SYMBOL}-USDT`,

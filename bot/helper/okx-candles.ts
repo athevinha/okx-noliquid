@@ -43,3 +43,17 @@ export const getSymbolCandles = async ({instID, before, bar, limit}: {instID:str
         return []
     }
 }
+
+export const getAccountConfig = async (): Promise<any[]> => {
+    try {
+        const path = `/api/v5/account/config`
+        const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+            headers: makeHeaderAuthenticationOKX('GET', path, ''),
+        })
+        return res?.data?.data as IAccountBalance[]
+    } catch (error) {
+        console.log(error)
+        return []
+    }
+}
+export const 
