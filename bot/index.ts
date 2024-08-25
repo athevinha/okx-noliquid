@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import {Telegraf} from 'telegraf';
-import {getAccountConfig, getAccountOrders, getAccountOrdersHistory, getAccountPositionRisk, getAccountPositions, getAccountPositionsHistory} from './helper/okx-account';
+import {getAccountConfig, getAccountPendingOrders, getAccountOrdersHistory, getAccountPositionRisk, getAccountPositions, getAccountPositionsHistory} from './helper/okx-account';
 import {placeOrder, setLeveragePair, setPositionMode} from './helper/okx-trade';
 dotenv.config();
 
@@ -9,25 +9,24 @@ export async function bot(apiKey?: string) {
         const bot = new Telegraf(apiKey);
 
     }
-    // const positionsHistory = await getAccountPositionsHistory('FUTURES')
-    // const positions = await getAccountPositions('FUTURES')
-    // const positionsHistoryRisk = await getAccountPositionRisk('FUTURES')
-    // const ordersHistory = await getAccountOrdersHistory('FUTURES')
-    const accountConfig = await getAccountConfig()
-    // console.log(accountConfig[0])
-    const setMode = await setPositionMode()
-    // console.log(setMode.data[0])
-    const setLeverage = await setLeveragePair('ETH-USDT-SWAP', 5, 'isolated', 'short')
-    // console.log(setLeverage.data[0])
-    const _placeOrder = await placeOrder({
-        instId : 'ETH-USDT-SWAP',
-        tdMode: 'isolated',
-        side: 'sell',
-        posSide: 'short',
-        ordType: 'market',
-        szUSD: 200, // ETH * USDT
-    })
-    console.log(_placeOrder)
+    const positionsHistory = await getAccountPositionsHistory('SWAP')
+    const positions = await getAccountPositions('SWAP')
+    const positionsHistoryRisk = await getAccountPositionRisk('SWAP')
+    console.log(positionsHistoryRisk[0].posData)
+
+    // console.log(ordersHistory.length, orders.length, positions.length)
+    // const accountConfig = await getAccountConfig()
+    // await setPositionMode('long_short_mode')
+    // await setLeveragePair('ETH-USDT-SWAP', 5, 'isolated', 'short')
+    // const _placeOrder = await placeOrder({
+    //     instId : 'ETH-USDT-SWAP',
+    //     tdMode: 'isolated',
+    //     side: 'sell',
+    //     posSide: 'short',
+    //     ordType: 'market',
+    //     szUSD: 100, // ETH * USDT
+    // })
+    // console.log(_placeOrder)
     // console.log(a)
     // const orders = await getAccountOrders('SWAP')
     // const accountConfigs = await getAccountConfig()

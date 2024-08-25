@@ -83,8 +83,128 @@ export type IAccountBalance = {
     uTime: string
     upl: string
   }
-  
 
+export type IPositionOpen = {
+    adl: string
+    availPos: string
+    avgPx: string
+    cTime: string
+    ccy: string
+    deltaBS: string
+    deltaPA: string
+    gammaBS: string
+    gammaPA: string
+    imr: string
+    instId: string
+    instType: string
+    interest: string
+    idxPx: string
+    usdPx: string
+    bePx: string
+    last: string
+    lever: string
+    liab: string
+    liabCcy: string
+    liqPx: string
+    markPx: string
+    margin: string
+    mgnMode: string
+    mgnRatio: string
+    mmr: string
+    notionalUsd: string
+    optVal: string
+    pendingCloseOrdLiabVal: string
+    pTime: string
+    pos: string
+    baseBorrowed: string
+    baseInterest: string
+    quoteBorrowed: string
+    quoteInterest: string
+    posCcy: string
+    posId: string
+    posSide: string
+    spotInUseAmt: string
+    spotInUseCcy: string
+    clSpotInUseAmt: string
+    maxSpotInUseAmt: string
+    bizRefId: string
+    bizRefType: string
+    thetaBS: string
+    thetaPA: string
+    tradeId: string
+    uTime: string
+    upl: string
+    uplLastPx: string
+    uplRatio: string
+    uplRatioLastPx: string
+    vegaBS: string
+    vegaPA: string
+    realizedPnl: string
+    pnl: string
+    fee: string
+    fundingFee: string
+    liqPenalty: string
+    closeOrderAlgo: Array<{
+      algoId: string
+      slTriggerPx: string
+      slTriggerPxType: string
+      tpTriggerPx: string
+      tpTriggerPxType: string
+      closeFraction: string
+    }>
+  }
+  
+  export type IPositionHistory = {
+    cTime: string
+    ccy: string
+    closeAvgPx: string
+    closeTotalPos: string
+    instId: string
+    instType: string
+    lever: string
+    mgnMode: string
+    openAvgPx: string
+    openMaxPos: string
+    realizedPnl: string
+    fee: string
+    fundingFee: string
+    liqPenalty: string
+    pnl: string
+    pnlRatio: string
+    posId: string
+    posSide: string
+    direction: string
+    triggerPx: string
+    type: string
+    uTime: string
+    uly: string
+  }
+  
+  
+  export type IPositionRisk = {
+    adjEq: string
+    balData: Array<{
+      ccy: string
+      disEq: string
+      eq: string
+    }>
+    posData: Array<{
+      baseBal: string
+      ccy: string
+      instId: string
+      instType: string
+      mgnMode: string
+      notionalCcy: string
+      notionalUsd: string
+      pos: string
+      posCcy: string
+      posId: string
+      posSide: string
+      quoteBal: string
+    }>
+    ts: string
+  }
+  
   export type OKXResponse = {
     code: string,
     data: any[],
@@ -109,3 +229,4 @@ export type IAccountBalance = {
     sodUtc8: string,
     ts: number
   }
+

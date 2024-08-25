@@ -99,7 +99,6 @@ export const getSymbolPriceTicker = async ({
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
     });
-    console.log(res.data);
     return res?.data?.data as ISymbolPriceTicker[];
   } catch (error) {
     console.log(error);

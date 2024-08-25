@@ -56,4 +56,3 @@ export const getAccountConfig = async (): Promise<any[]> => {
         return []
     }
 }
-export const 
