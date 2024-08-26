@@ -10,3 +10,26 @@ export function createSignature(timestamp: string, method: string, requestPath: 
     hmac.update(prehashString);
     return hmac.digest('base64');
 }
+
+export const zerofy = (_value: number | string, minZeroDecimal: number = 4): string => {
+  const value = Number(Number(_value).toFixed(2))
+  const countZeroAfterDot = -Math.floor(Math.log10(value) + 1)
+  if (
+    Number.isFinite(countZeroAfterDot) &&
+    countZeroAfterDot >= minZeroDecimal
+  ) {
+    const ucZeros = String.fromCharCode(
+      parseInt(`+208${countZeroAfterDot}`, 16)
+    )
+    return value
+      .toLocaleString('fullwide', {
+        maximumSignificantDigits: 4,
+        maximumFractionDigits: 18
+      })
+      .replace(/[.,]{1}0+/, `.0${ucZeros}`)
+  }
+  return value.toLocaleString('fullwide', {
+    maximumSignificantDigits: 4,
+    maximumFractionDigits: 18
+  })
+}

@@ -1,55 +1,96 @@
-import dotenv from 'dotenv';
-import {Telegraf} from 'telegraf';
-import {getAccountConfig, getAccountPendingOrders, getAccountOrdersHistory, getAccountPositionRisk, getAccountPositions, getAccountPositionsHistory} from './helper/okx-account';
-import {placeOrder, setLeveragePair, setPositionMode} from './helper/okx-trade';
+import dotenv from "dotenv";
+import { Telegraf } from "telegraf";
+import {
+  getAccountConfig,
+  getAccountPendingOrders,
+  getAccountOrdersHistory,
+  getAccountPositionRisk,
+  getAccountPositions,
+  getAccountPositionsHistory,
+} from "./helper/okx-account";
+import {
+  placeOrder,
+  setLeveragePair,
+  setPositionMode,
+} from "./helper/okx-trade";
+import { WHITE_LIST_TOKENS_TRADE } from "./utils/config";
+import { getSymbolCandles } from "./helper/okx-candles";
+import { findEMACrossovers, simulateTrades } from "./signals/ema-cross";
+import {botLoginCommand} from "./command/auth";
+import {botWatchingInterval} from "./command/trade";
+import {botCatchError} from "./command/catch";
+import {decodeTimestamp} from "./utils";
+import {botReportPositions} from "./command/positions";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
-    if(apiKey) {
-        const bot = new Telegraf(apiKey);
+  if (apiKey) {
+    const bot = new Telegraf(apiKey);
+    const validUsername = "vicdvc";
+    let authenticated = false;
+    let intervalId: NodeJS.Timeout | null = null;
+    
+    botLoginCommand({bot, authenticated, validUsername})
+    botCatchError({bot})
+    botReportPositions({bot})
+    botWatchingInterval({bot, intervalId })
+    
+    bot.launch();
+    
+    process.once("SIGINT", () => bot.stop("SIGINT"));
+    process.once("SIGTERM", () => bot.stop("SIGTERM"));
+  }
+  //   const positionsHistory = await getAccountPositionsHistory("SWAP");
+    const positions = await getAccountPositions("SWAP");
+    // const positionsHistoryRisk = await getAccountPositionRisk("SWAP");
+    console.log(positions[0]);
 
-    }
-    const positionsHistory = await getAccountPositionsHistory('SWAP')
-    const positions = await getAccountPositions('SWAP')
-    const positionsHistoryRisk = await getAccountPositionRisk('SWAP')
-    console.log(positionsHistoryRisk[0].posData)
+  // console.log(ordersHistory.length, orders.length, positions.length)
+  // const accountConfig = await getAccountConfig()
+  // await setPositionMode('long_short_mode')
+  // await setLeveragePair('ETH-USDT-SWAP', 5, 'isolated', 'short')
+  // const _placeOrder = await placeOrder({
+  //     instId : 'ETH-USDT-SWAP',
+  //     tdMode: 'isolated',
+  //     side: 'sell',
+  //     posSide: 'short',
+  //     ordType: 'market',
+  //     szUSD: 100, // ETH * USDT
+  // })
+  // console.log(_placeOrder)
+  // console.log(a)
+  // const orders = await getAccountOrders('SWAP')
+  // const accountConfigs = await getAccountConfig()
+  // console.log(ordersHistory)
+  // await Promise.all(
+  //   WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
+  //     const candles = await getSymbolCandles({
+  //       instID: `${SYMBOL}`,
+  //       before: 0,
+  //       bar: "1m",
+  //       limit: 10000,
+  //     });
+  //     // console.log(SYMBOL, candles[candles.length - 1].c);
+  //     const emaCross = findEMACrossovers(candles, 9, 21);
+  //     console.log(emaCross.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-1))
+  //     console.log(candles.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-1))
 
-    // console.log(ordersHistory.length, orders.length, positions.length)
-    // const accountConfig = await getAccountConfig()
-    // await setPositionMode('long_short_mode')
-    // await setLeveragePair('ETH-USDT-SWAP', 5, 'isolated', 'short')
-    // const _placeOrder = await placeOrder({
-    //     instId : 'ETH-USDT-SWAP',
-    //     tdMode: 'isolated',
-    //     side: 'sell',
-    //     posSide: 'short',
-    //     ordType: 'market',
-    //     szUSD: 100, // ETH * USDT
-    // })
-    // console.log(_placeOrder)
-    // console.log(a)
-    // const orders = await getAccountOrders('SWAP')
-    // const accountConfigs = await getAccountConfig()
-    // console.log(ordersHistory)
-    // await Promise.all(WHITE_LIST_TOKENS_TRADE.map(async SYMBOL => {
-    //     const candles = await getSymbolCandles({
-    //         instID: `${SYMBOL}-USDT`,
-    //         before: 0,
-    //         bar: '1H',
-    //         limit: 10000
-    //     })
-    //     const emaCross = findEMACrossovers(candles, 9,21) 
-    //     const trades = simulateTrades(emaCross, 500)
-    //     // console.table(trades.closedTrades);
-    //     console.log(`-----------------------${SYMBOL}-----------------------------`)
-    //     console.log('Total PNL ($):', trades.totalPnL)
-    //     console.log('Volume ($):', trades.totalVolumeInUSD)
-    //     console.log('Total Tx:',trades.totalTransactions)
-    //     console.log('Trade time:',trades.closedTrades[0].ts,'->',trades.closedTrades[trades.closedTrades.length - 1].ts)
-    // }))
-  
+  //     // const trades = simulateTrades(emaCross, 500);
+  //     // console.log(
+  //     //   `-----------------------${SYMBOL}-----------------------------`
+  //     // );
+  //     // console.log("Total PNL ($):", trades.totalPnL);
+  //     // console.log("Volume ($):", trades.totalVolumeInUSD);
+  //     // console.log("Total Tx:", trades.totalTransactions);
+  //     // console.log(
+  //     //   "Trade time:",
+  //     //   trades.closedTrades[0].ts,
+  //     //   "->",
+  //     //   trades.closedTrades[trades.closedTrades.length - 1].ts
+  //     // );
+  //   })
+  // );
 
-
-    // console.log(emaCross926.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-2))
-    // console.log(emaCross926)
+  // console.log(emaCross926.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-2))
+  // console.log(emaCross926)
 }
