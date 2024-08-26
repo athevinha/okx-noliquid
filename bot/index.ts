@@ -41,9 +41,9 @@ export async function bot(apiKey?: string) {
     process.once("SIGTERM", () => bot.stop("SIGTERM"));
   }
   //   const positionsHistory = await getAccountPositionsHistory("SWAP");
-    const positions = await getAccountPositions("SWAP");
+    // const positions = await getAccountPositions("SWAP");
     // const positionsHistoryRisk = await getAccountPositionRisk("SWAP");
-    console.log(positions[0]);
+    // console.log(positions[0]);
 
   // console.log(ordersHistory.length, orders.length, positions.length)
   // const accountConfig = await getAccountConfig()

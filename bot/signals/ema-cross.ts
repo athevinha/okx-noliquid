@@ -39,8 +39,7 @@ export function calculateEMA(candles: ICandles, periods: number): Array<{ ts: nu
  */
 export function findEMACrossovers(candles: ICandles, shortPeriods: number, longPeriods: number): ICandlesEMACrossovers {
   const longEMA = calculateEMA(candles, longPeriods);
-  const shortEMA = calculateEMA(candles, shortPeriods).filter(ema => ema.ts > longEMA[0].ts);
-
+  const shortEMA = calculateEMA(candles, shortPeriods).filter(ema => ema.ts >= longEMA[0].ts);
   const crossovers: ICandlesEMACrossovers = [];
   // We start comparing only after both shortEMA and longEMA have valid values
   for (let i = 0; i < shortEMA.length && i < longEMA.length; i++) {
