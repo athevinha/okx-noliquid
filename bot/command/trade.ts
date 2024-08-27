@@ -17,9 +17,9 @@ export const botAutoTrading = ({
   bot,
   intervalId,
   bar,
-  leverage = 7,
+  leverage = 5,
   mgnMode = "isolated",
-  size = 100,
+  size = 500,
 }: {
   bot: Telegraf;
   intervalId: NodeJS.Timeout | null;
@@ -111,7 +111,8 @@ export const botAutoTrading = ({
                   latestCross.longEMA
                 )}</code>\n`;
                 notificationMessage += `<code>-------------------------------</code>\n`;
-                notificationMessage += `<code>${openMsg === '' ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(openPositionParams.instId)}` : '🔴 O:' + openMsg}</code> | <code>${closeMsg === '' ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(closePositionParams.instId)}` : '🔴 C: ' + closeMsg}</code>\n`;
+                notificationMessage += `<code>${openMsg === '' ? `🟢 Open: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(openPositionParams.instId)}` : '🔴 Open:' + openMsg}</code>\n`;
+                notificationMessage += `<code>${closeMsg === '' ? `🟢 Close: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(closePositionParams.instId)}` : '🔴 Close: ' + closeMsg}</code>\n`;
                 await ctx.reply(notificationMessage, { parse_mode: "HTML" });
               }
             })
