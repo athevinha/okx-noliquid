@@ -21,7 +21,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       let totalVolume = 0;
 
       // Get the last 10 positions history
-      const recentPositions = positionsHistory.sort((a,b) => Number(b.cTime) - Number(a.cTime));
+      const recentPositions = positionsHistory.sort((a,b) => Number(b.uTime) - Number(a.uTime));
       const showPositionHistory = 5
       // Generate report for the last 10 positions
       let positionReports = "";
