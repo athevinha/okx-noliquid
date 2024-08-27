@@ -230,3 +230,7 @@ export type IPositionOpen = {
     ts: number
   }
 
+
+  export type IPosSide = "long" | "short"
+  export type ISide = "buy" | 'sell'
+  export type ImgnMode = "isolated" | "cross"

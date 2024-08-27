@@ -3,6 +3,9 @@ import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 import {
   IContracConvertResponse,
+  ImgnMode,
+  IPosSide,
+  ISide,
   ISymbolPriceTicker,
   OKXResponse,
 } from "../type";
@@ -118,8 +121,8 @@ export const placeOrder = async ({
 }: {
   instId: string;
   tdMode: string;
-  side: string;
-  posSide: string;
+  side: ISide;
+  posSide: IPosSide;
   ordType: string;
   szUSD: number;
   tpTriggerPx?: string;
@@ -162,14 +165,14 @@ export const openFuturePosition = async ({
   ordType = 'market'
 }: {
   instId: string;
-  mgnMode: "isolated" | "cross";
-  posSide: "long" | "short";
+  mgnMode: ImgnMode
+  posSide: IPosSide;
   ordType?: string;
   leverage: number;
   size: number;
 }): Promise<OKXResponse> => {
   try {
-    const side = posSide  === 'long' ? 'buy' : 'sell'
+    const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
     await setPositionMode("long_short_mode");
     await setLeveragePair(instId, leverage, mgnMode, posSide);
     const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size})
@@ -190,8 +193,8 @@ export const closeFuturePosition = async ({
   posSide,
 }: {
   instId: string;
-  mgnMode: "isolated" | "cross";
-  posSide: "long" | "short";
+  mgnMode: ImgnMode
+  posSide: IPosSide;
 }): Promise<OKXResponse> => {
   try {
     await setPositionMode('long_short_mode')

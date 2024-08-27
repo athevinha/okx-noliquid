@@ -2,19 +2,31 @@ import { Telegraf } from "telegraf";
 import { WHITE_LIST_TOKENS_TRADE } from "../utils/config";
 import { getSymbolCandles } from "../helper/okx-candles";
 import { findEMACrossovers } from "../signals/ema-cross";
-import { decodeTimestamp, decodeTimestampAgo } from "../utils";
-import { ICandles } from "../type";
-import {decode} from "punycode";
-import {placeOrder, setLeveragePair, setPositionMode} from "../helper/okx-trade";
+import { decodeSymbol, decodeTimestamp, decodeTimestampAgo, zerofy } from "../utils";
+import { ICandles, ImgnMode, IPosSide } from "../type";
+import { decode } from "punycode";
+import {
+  closeFuturePosition,
+  openFuturePosition,
+  placeOrder,
+  setLeveragePair,
+  setPositionMode,
+} from "../helper/okx-trade";
 
 export const botWatchingInterval = ({
   bot,
   intervalId,
-  bar = '1H'
+  bar = "1H",
+  leverage = 7,
+  mgnMode = "isolated",
+  size = 100,
 }: {
   bot: Telegraf;
   intervalId: NodeJS.Timeout | null;
-  bar?:string;
+  bar?: string;
+  leverage?: number;
+  mgnMode?: ImgnMode;
+  size?: number;
 }) => {
   bot.command("start", async (ctx) => {
     await ctx.reply("Bot has started! Messages will be sent at intervals.");
@@ -41,12 +53,18 @@ export const botWatchingInterval = ({
                 bar: bar,
                 limit: 10000,
               });
-              const candles = _candles.filter(candle => candle.confirm === 1)
+              const candles = _candles.filter((candle) => candle.confirm === 1);
               const emaCross = findEMACrossovers(candles, 9, 21);
               const latestCross = emaCross[emaCross.length - 1];
               const currentCandle = candles[candles.length - 1];
-              if(SYMBOL === BASE_SYMBOL) {
-                console.log(SYMBOL, 'Lastest Candle:', decodeTimestamp(currentCandle.ts), '|', decodeTimestamp(latestCross.ts))
+              if (SYMBOL === BASE_SYMBOL) {
+                console.log(
+                  SYMBOL,
+                  "Lastest Candle:",
+                  decodeTimestamp(currentCandle.ts),
+                  "|",
+                  decodeTimestamp(latestCross.ts)
+                );
                 // console.log(SYMBOL, 'Lastest Cross:',
                 //    emaCross.slice(-3).map(e => {
                 //     return {...e, ts: decodeTimestamp(e.ts)}
@@ -56,6 +74,20 @@ export const botWatchingInterval = ({
                 latestCross.ts === currentCandle.ts &&
                 currentCandle.confirm === 1
               ) {
+                const openPositionParams = {
+                  instId: SYMBOL,
+                  leverage,
+                  mgnMode,
+                  posSide: latestCross.type === "bullish" ? 'long' : 'short' as IPosSide,
+                  size,
+                };
+                const closePositionParams = {
+                  instId: SYMBOL,
+                  mgnMode,
+                  posSide: latestCross.type === "bullish" ? 'short' : 'long' as IPosSide,
+                };
+                const {msg: closeMsg} = await closeFuturePosition(closePositionParams);
+                const {msg: openMsg} =  await openFuturePosition(openPositionParams);
                 let notificationMessage = "";
                 notificationMessage += `🔔 <b>EMA Crossover Alert!</b>\n`;
                 notificationMessage += `${
@@ -70,11 +102,14 @@ export const botWatchingInterval = ({
                   Math.round(latestCross.ts)
                 )}</code>\n`;
                 notificationMessage += `🔍 <b>Symbol:</b> <code>${SYMBOL}</code>\n`;
-                notificationMessage += `📊 <b>Short EMA:</b> <code>${latestCross.shortEMA}</code> | <b>Long EMA:</b> <code>${latestCross.longEMA}</code>\n`;
-                // notificationMessage += `<code>-------------------------------</code>\n`;
-                // notificationMessage += `📊 <b>Open:</b> <code>${latestCross.shortEMA}</code> | <b>Long EMA:</b> <code>${latestCross.longEMA}</code>\n`;
+                notificationMessage += `📊 <b>Short EMA:</b> <code>${zerofy(
+                  latestCross.shortEMA
+                )}</code> | <b>Long EMA:</b> <code>${zerofy(
+                  latestCross.longEMA
+                )}</code>\n`;
+                notificationMessage += `<code>-------------------------------</code>\n`;
+                notificationMessage += `<b>O/C Pos:</b> <code>${openMsg === '' ? `Open [${openPositionParams.posSide.toUpperCase()}] ${decodeSymbol(openPositionParams.instId)}` : openMsg}</code> | <code>${closeMsg === '' ? `Close [${closePositionParams.posSide.toUpperCase()}] ${decodeSymbol(closePositionParams.instId)}` : closeMsg}</code>\n`;
                 await ctx.reply(notificationMessage, { parse_mode: "HTML" });
-                
               }
             })
           );
