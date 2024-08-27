@@ -83,3 +83,11 @@ export const formatU = (u: string | number): string => {
 export const decodeSymbol = (symbol:string) => {
   return symbol.split('-').slice(0,2).join('/')
 }
+export function getRandomElementFromArray<T>(array: T[]): T {
+  if (!Array.isArray(array) || array.length === 0) {
+      throw new Error('Input should be a non-empty array.');
+  }
+
+  const randomIndex = Math.floor(Math.random() * array.length);
+  return array[randomIndex];
+}

@@ -2,6 +2,9 @@ import axios from "axios"
 import {OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
 import {IAccountBalance, ICandles} from "../type"
 import {makeHeaderAuthenticationOKX} from "./auth"
+import {getRandomElementFromArray} from "../utils"
+import proxys from "../../proxys.json"
+import {HttpsProxyAgent} from "https-proxy-agent"
 // -- DEV --
 // ts	String	Opening time of the candlestick, Unix timestamp format in milliseconds, e.g. 1597026383085
 // o	String	Open price
@@ -23,7 +26,19 @@ import {makeHeaderAuthenticationOKX} from "./auth"
 // UTC time opening price k-line: [/6Hutc/12Hutc/1Dutc/2Dutc/3Dutc/1Wutc/1Mutc/3Mutc]
 export const getSymbolCandles = async ({instID, before, bar, limit}: {instID:string, before: number, bar: string, limit: number}): Promise<ICandles> => {
     try {
-        const res = await axios.get(`${OKX_BASE_FETCH_API_URL}/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`)
+        const proxy: any = getRandomElementFromArray(proxys);
+        const proxyHost = proxy.ip;
+        const proxyPort = proxy.port;
+        const proxyUsername = proxy.username; // If the proxy requires authentication
+        const proxyPassword = proxy.password; // If the proxy requires authentication
+      
+        const proxyURL = `http://${
+          proxyUsername && proxyPassword ? `${proxyUsername}:${proxyPassword}@` : ""
+        }${proxyHost}:${proxyPort}`;
+        const httpsAgent = new HttpsProxyAgent(proxyURL);
+        const res = await axios.get(`${OKX_BASE_FETCH_API_URL}/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`,{
+            httpsAgent
+        })
         const arrayCandles: string[][] = res.data?.data
         return arrayCandles.reverse().map(candle => {
             return {

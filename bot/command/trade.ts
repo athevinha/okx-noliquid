@@ -122,9 +122,10 @@ export const botAutoTrading = ({
       } catch (err: any) {
         console.log(err);
         console.error("Interval error: ", err.message || err);
+        await ctx.replyWithHTML(`<code>${err.message || err.reason || err.code}</code>`)
         if (intervalId) clearInterval(intervalId);
       }
-    }, 1000 * 5);
+    }, 1000 * 10);
   });
 
   bot.command("stop", async (ctx) => {
