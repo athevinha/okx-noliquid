@@ -1,46 +1,49 @@
 import dotenv from "dotenv";
-import { Telegraf } from "telegraf";
-import {
-  getAccountConfig,
-  getAccountPendingOrders,
-  getAccountOrdersHistory,
-  getAccountPositionRisk,
-  getAccountPositions,
-  getAccountPositionsHistory,
-} from "./helper/okx-account";
-import {
-  placeOrder,
-  setLeveragePair,
-  setPositionMode,
-} from "./helper/okx-trade";
-import { WHITE_LIST_TOKENS_TRADE } from "./utils/config";
-import { getSymbolCandles } from "./helper/okx-candles";
-import { findEMACrossovers, simulateTrades } from "./signals/ema-cross";
+import {Telegraf} from "telegraf";
 import {botLoginCommand} from "./command/auth";
-import {botWatchingInterval} from "./command/trade";
 import {botCatchError} from "./command/catch";
-import {decodeTimestamp} from "./utils";
+import {botBarCommand} from "./command/config";
 import {botReportPositions} from "./command/positions";
+import {botWatchingInterval} from "./command/trade";
+import {closeFuturePosition, openFuturePosition} from "./helper/okx-trade";
+import {WHITE_LIST_TOKENS_TRADE} from "./utils/config";
+import {getAccountPositionsHistory} from "./helper/okx-account";
+import {botReportPositionsHistory} from "./command/history";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
   if (apiKey) {
     const bot = new Telegraf(apiKey);
     const validUsername = "vicdvc";
+    let bar = '1H'
     let authenticated = false;
     let intervalId: NodeJS.Timeout | null = null;
     
     botLoginCommand({bot, authenticated, validUsername})
+    botBarCommand({bot, bar})
     botCatchError({bot})
     botReportPositions({bot})
-    botWatchingInterval({bot, intervalId })
-    
+    botReportPositionsHistory({bot})
+    botWatchingInterval({bot, intervalId, bar})
+
     bot.launch();
     
     process.once("SIGINT", () => bot.stop("SIGINT"));
     process.once("SIGTERM", () => bot.stop("SIGTERM"));
   }
-  //   const positionsHistory = await getAccountPositionsHistory("SWAP");
+  // const {msg: openMsg} = await openFuturePosition({
+  //   instId: WHITE_LIST_TOKENS_TRADE[0],
+  //   leverage: 70, 
+  //   size: 500,
+  //   posSide: 'short',
+  //   mgnMode:'isolated'
+  // })
+  // const {msg: closeMsg} = await closeFuturePosition({
+  //   instId: WHITE_LIST_TOKENS_TRADE[0],
+  //   posSide: 'short',
+  //   mgnMode:'isolated'
+  // })
+    // const positionsHistory = await getAccountPositionsHistory("SWAP");
     // const positions = await getAccountPositions("SWAP");
     // const positionsHistoryRisk = await getAccountPositionRisk("SWAP");
     // console.log(positions[0]);

@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 import {
@@ -152,3 +152,66 @@ export const placeOrder = async ({
     };
   }
 };
+
+export const openFuturePosition = async ({
+  instId,
+  leverage,
+  mgnMode,
+  size,
+  posSide,
+  ordType = 'market'
+}: {
+  instId: string;
+  mgnMode: "isolated" | "cross";
+  posSide: "long" | "short";
+  ordType?: string;
+  leverage: number;
+  size: number;
+}): Promise<OKXResponse> => {
+  try {
+    const side = posSide  === 'long' ? 'buy' : 'sell'
+    await setPositionMode("long_short_mode");
+    await setLeveragePair(instId, leverage, mgnMode, posSide);
+    const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size})
+    return po
+  } catch (error: any) {
+    console.log(error)
+    return {
+      code: error?.code,
+      data: [],
+      msg: `${error?.reason} ${error?.message}`,
+    };
+  }
+};
+
+export const closeFuturePosition = async ({
+  instId,
+  mgnMode,
+  posSide,
+}: {
+  instId: string;
+  mgnMode: "isolated" | "cross";
+  posSide: "long" | "short";
+}): Promise<OKXResponse> => {
+  try {
+    await setPositionMode('long_short_mode')
+    const body = JSON.stringify({
+      instId,
+      mgnMode,
+      posSide,
+    });
+    const path = `/api/v5/trade/close-position`;
+    const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+      headers: makeHeaderAuthenticationOKX("POST", path, body),
+    });
+    return res.data as OKXResponse
+  } catch (error:any) {
+    console.log(error)
+    return {
+      code: error?.code,
+      data: [],
+      msg: `${error?.reason} ${error?.message}`,
+    };
+  }
+ 
+}

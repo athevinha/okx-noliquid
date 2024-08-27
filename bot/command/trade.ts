@@ -5,18 +5,20 @@ import { findEMACrossovers } from "../signals/ema-cross";
 import { decodeTimestamp, decodeTimestampAgo } from "../utils";
 import { ICandles } from "../type";
 import {decode} from "punycode";
+import {placeOrder, setLeveragePair, setPositionMode} from "../helper/okx-trade";
 
 export const botWatchingInterval = ({
   bot,
   intervalId,
+  bar = '1H'
 }: {
   bot: Telegraf;
   intervalId: NodeJS.Timeout | null;
+  bar?:string;
 }) => {
   bot.command("start", async (ctx) => {
     await ctx.reply("Bot has started! Messages will be sent at intervals.");
     let lastestCandles: { [key: string]: ICandles } = {};
-    const bar: string = "1m";
     intervalId = setInterval(async () => {
       try {
         const BASE_SYMBOL = WHITE_LIST_TOKENS_TRADE[0];
@@ -69,8 +71,10 @@ export const botWatchingInterval = ({
                 )}</code>\n`;
                 notificationMessage += `🔍 <b>Symbol:</b> <code>${SYMBOL}</code>\n`;
                 notificationMessage += `📊 <b>Short EMA:</b> <code>${latestCross.shortEMA}</code> | <b>Long EMA:</b> <code>${latestCross.longEMA}</code>\n`;
-
+                // notificationMessage += `<code>-------------------------------</code>\n`;
+                // notificationMessage += `📊 <b>Open:</b> <code>${latestCross.shortEMA}</code> | <b>Long EMA:</b> <code>${latestCross.longEMA}</code>\n`;
                 await ctx.reply(notificationMessage, { parse_mode: "HTML" });
+                
               }
             })
           );
@@ -81,7 +85,6 @@ export const botWatchingInterval = ({
         console.error("Interval error: ", err.message || err);
         if (intervalId) clearInterval(intervalId);
       }
-      //   console.log(lastPendingCandles)
     }, 1000 * 5);
   });
 

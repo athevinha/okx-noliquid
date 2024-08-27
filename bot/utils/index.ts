@@ -34,8 +34,27 @@ export function createSignature(timestamp: string, method: string, requestPath: 
     return hmac.digest('base64');
 }
 
+export function toFixed(x: any): string {
+  if (Math.abs(x) < 1.0) {
+    // eslint-disable-next-line no-var
+    var e = parseInt(x.toString().split('e-')[1]);
+    if (e) {
+      x *= Math.pow(10, e - 1);
+      x = String('0.' + (new Array(e)).join('0') + x.toString().substring(2));
+    }
+  } else {
+    // eslint-disable-next-line no-var
+    var e = parseInt(x.toString().split('+')[1]);
+    if (e > 20) {
+      e -= 20;
+      x /= Math.pow(10, e);
+      x = String(x + (new Array(e + 1)).join('0'));
+    }
+  }
+  return x;
+}
 export const zerofy = (_value: number | string, minZeroDecimal: number = 4): string => {
-  const value = Number(Number(_value).toFixed(2))
+  const value = Number(toFixed(_value))
   const countZeroAfterDot = -Math.floor(Math.log10(value) + 1)
   if (
     Number.isFinite(countZeroAfterDot) &&
@@ -56,3 +75,8 @@ export const zerofy = (_value: number | string, minZeroDecimal: number = 4): str
     maximumFractionDigits: 18
   })
 }
+
+export const formatU = (u: string | number): string => {
+  const num = typeof u === 'string' ? parseFloat(u) : u;
+  return num < 0 ? `-$${zerofy(Math.abs(num))}` : `+$${zerofy(num)}`;
+};
