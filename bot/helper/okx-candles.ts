@@ -24,40 +24,73 @@ import {HttpsProxyAgent} from "https-proxy-agent"
 // e.g. [1m/3m/5m/15m/30m/1H/2H/4H]
 // Hong Kong time opening price k-line: [6H/12H/1D/2D/3D/1W/1M/3M]
 // UTC time opening price k-line: [/6Hutc/12Hutc/1Dutc/2Dutc/3Dutc/1Wutc/1Mutc/3Mutc]
-export const getSymbolCandles = async ({instID, before, bar, limit}: {instID:string, before: number, bar: string, limit: number}): Promise<ICandles> => {
+export const getSymbolCandles = async ({
+    instID,
+    before,
+    bar,
+    limit
+  }: {
+    instID: string;
+    before: number;
+    bar: string;
+    limit: number;
+  }): Promise<ICandles> => {
+    const maxRetries = 3;
+    let attempts = 0;
+  
+    const fetchCandles = async (): Promise<string[][]> => {
+      const proxy: any = getRandomElementFromArray(proxys);
+      const proxyHost = proxy.ip;
+      const proxyPort = proxy.port;
+      const proxyUsername = proxy.username; // If the proxy requires authentication
+      const proxyPassword = proxy.password; // If the proxy requires authentication
+  
+      const proxyURL = `http://${
+        proxyUsername && proxyPassword ? `${proxyUsername}:${proxyPassword}@` : ""
+      }${proxyHost}:${proxyPort}`;
+      const httpsAgent = new HttpsProxyAgent(proxyURL);
+  
+      const res = await axios.get(
+        `${OKX_BASE_FETCH_API_URL}/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`,
+        { httpsAgent }
+      );
+  
+      return res.data?.data;
+    };
+  
     try {
-        const proxy: any = getRandomElementFromArray(proxys);
-        const proxyHost = proxy.ip;
-        const proxyPort = proxy.port;
-        const proxyUsername = proxy.username; // If the proxy requires authentication
-        const proxyPassword = proxy.password; // If the proxy requires authentication
-      
-        const proxyURL = `http://${
-          proxyUsername && proxyPassword ? `${proxyUsername}:${proxyPassword}@` : ""
-        }${proxyHost}:${proxyPort}`;
-        const httpsAgent = new HttpsProxyAgent(proxyURL);
-        const res = await axios.get(`${OKX_BASE_FETCH_API_URL}/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`,{
-            httpsAgent
-        })
-        const arrayCandles: string[][] = res.data?.data
-        return arrayCandles.reverse().map(candle => {
-            return {
-                ts: Number(candle[0]),
-                o:  Number(candle[1]),
-                h:  Number(candle[2]),
-                l:  Number(candle[3]),
-                c:  Number(candle[4]),
-                vol:  Number(candle[5]),
-                volCcy:  Number(candle[6]),
-                volCcyQuote:  Number(candle[7]),
-                confirm:  Number(candle[8]),
-              }
-        })
+      let arrayCandles: string[][] = [];
+  
+      while (attempts < maxRetries) {
+        attempts += 1;
+        
+        arrayCandles = await fetchCandles();
+  
+        if (arrayCandles?.length > 0) {
+          break;
+        }
+  
+      }
+  
+      // Return the formatted candles
+      return arrayCandles.reverse().map(candle => {
+        return {
+          ts: Number(candle[0]),
+          o: Number(candle[1]),
+          h: Number(candle[2]),
+          l: Number(candle[3]),
+          c: Number(candle[4]),
+          vol: Number(candle[5]),
+          volCcy: Number(candle[6]),
+          volCcyQuote: Number(candle[7]),
+          confirm: Number(candle[8])
+        };
+      });
     } catch (error) {
-        console.log(error)
-        return []
+      console.log(error);
+      return [];
     }
-}
+  };
 
 export const getAccountConfig = async (): Promise<any[]> => {
     try {

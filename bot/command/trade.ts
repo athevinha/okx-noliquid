@@ -31,6 +31,10 @@ export const botAutoTrading = ({
   bot.command("start", async (ctx) => {
     const messageText = ctx.message.text;
     const barOverride = messageText.split(" ").slice(1).join(" ") || bar;
+    if(intervalId) {
+      clearInterval(intervalId);
+      intervalId = null
+    }
     await ctx.reply(`Bot has started! Messages will be sent at intervals with bar ${barOverride}.`);
     let lastestCandles: { [key: string]: ICandles } = {};
     let lastestSignalTs: {[instId: string]: number} = {}
@@ -50,12 +54,14 @@ export const botAutoTrading = ({
         if (pendingCandle && lastestCandle && pendingCandle?.ts !== lastestCandle?.ts) {
           await Promise.all(
             WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
-              const _candles = await getSymbolCandles({
+              let _candles = await getSymbolCandles({
                 instID: `${SYMBOL}`,
                 before: 0,
                 bar: barOverride,
                 limit: 10000,
               });
+              // candle fetch
+              // interval
               const candles = _candles.filter((candle) => candle.confirm === 1);
               const emaCross = findEMACrossovers(candles, 9, 21);
               const latestCross = emaCross[emaCross.length - 1];
@@ -111,8 +117,8 @@ export const botAutoTrading = ({
                   latestCross.longEMA
                 )}</code>\n`;
                 notificationMessage += `<code>-------------------------------</code>\n`;
-                notificationMessage += `<code>${openMsg === '' ? `🟢 Open: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(openPositionParams.instId)}` : '🔴 Open:' + openMsg}</code>\n`;
-                notificationMessage += `<code>${closeMsg === '' ? `🟢 Close: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(closePositionParams.instId)}` : '🔴 Close: ' + closeMsg}</code>\n`;
+                notificationMessage += `<code>${openMsg === '' ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(openPositionParams.instId)}` : '🔴 O:' + openMsg}</code>\n`;
+                notificationMessage += `<code>${closeMsg === '' ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(closePositionParams.instId)}` : '🔴 C: ' + closeMsg}</code>\n`;
                 await ctx.reply(notificationMessage, { parse_mode: "HTML" });
               }
             })
@@ -125,7 +131,7 @@ export const botAutoTrading = ({
         await ctx.replyWithHTML(`<code>${err.message || err.reason || err.code}</code>`)
         if (intervalId) clearInterval(intervalId);
       }
-    }, 1000 * 10);
+    }, 1000 * 15);
   });
 
   bot.command("stop", async (ctx) => {
