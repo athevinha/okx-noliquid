@@ -47,7 +47,7 @@ export const botAutoTrading = ({
           (baseCandles) => baseCandles.confirm === 0
         );
         const lastestCandle = lastestCandles?.[BASE_SYMBOL]?.[0];
-        if (lastestCandle && pendingCandle.ts !== lastestCandle.ts) {
+        if (pendingCandle && lastestCandle && pendingCandle?.ts !== lastestCandle?.ts) {
           await Promise.all(
             WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
               const _candles = await getSymbolCandles({
