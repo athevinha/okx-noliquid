@@ -81,5 +81,5 @@ export const formatU = (u: string | number): string => {
   return num < 0 ? `-$${zerofy(Math.abs(num))}` : `+$${zerofy(num)}`;
 };
 export const decodeSymbol = (symbol:string) => {
-  return symbol.split('-').slice(0,1).join('/')
+  return symbol.split('-').slice(0,2).join('/')
 }

@@ -4,11 +4,14 @@ import {botLoginCommand} from "./command/auth";
 import {botCatchError} from "./command/catch";
 import {botBarCommand} from "./command/config";
 import {botReportPositions} from "./command/positions";
-import {botWatchingInterval} from "./command/trade";
+import {botAutoTrading} from "./command/trade";
 import {closeFuturePosition, openFuturePosition} from "./helper/okx-trade";
 import {WHITE_LIST_TOKENS_TRADE} from "./utils/config";
 import {getAccountPositionsHistory} from "./helper/okx-account";
 import {botReportPositionsHistory} from "./command/history";
+import {getSymbolCandles} from "./helper/okx-candles";
+import {findEMACrossovers} from "./signals/ema-cross";
+import {decodeTimestamp} from "./utils";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
@@ -20,11 +23,11 @@ export async function bot(apiKey?: string) {
     let intervalId: NodeJS.Timeout | null = null;
     
     botLoginCommand({bot, authenticated, validUsername})
-    botBarCommand({bot, bar})
     botCatchError({bot})
     botReportPositions({bot})
     botReportPositionsHistory({bot})
-    botWatchingInterval({bot, intervalId, bar})
+    // botBarCommand({bot, bar})
+    botAutoTrading({bot, intervalId, bar})
 
     bot.launch();
     
@@ -66,32 +69,33 @@ export async function bot(apiKey?: string) {
   // const accountConfigs = await getAccountConfig()
   // console.log(ordersHistory)
   // await Promise.all(
-  //   WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
-  //     const candles = await getSymbolCandles({
-  //       instID: `${SYMBOL}`,
-  //       before: 0,
-  //       bar: "1m",
-  //       limit: 10000,
-  //     });
-  //     // console.log(SYMBOL, candles[candles.length - 1].c);
-  //     const emaCross = findEMACrossovers(candles, 9, 21);
-  //     console.log(emaCross.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-1))
-  //     console.log(candles.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-1))
+    WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
+      if(SYMBOL !== 'NOT-USDT-SWAP') return;
+      const candles = await getSymbolCandles({
+        instID: `${SYMBOL}`,
+        before: 0,
+        bar: "1m",
+        limit: 10000,
+      });
+      // console.log(SYMBOL, candles[candles.length - 1].c);
+      const emaCross = findEMACrossovers(candles, 9, 21);
+      console.log(emaCross.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-3))
+      // console.log(candles.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-1))
 
-  //     // const trades = simulateTrades(emaCross, 500);
-  //     // console.log(
-  //     //   `-----------------------${SYMBOL}-----------------------------`
-  //     // );
-  //     // console.log("Total PNL ($):", trades.totalPnL);
-  //     // console.log("Volume ($):", trades.totalVolumeInUSD);
-  //     // console.log("Total Tx:", trades.totalTransactions);
-  //     // console.log(
-  //     //   "Trade time:",
-  //     //   trades.closedTrades[0].ts,
-  //     //   "->",
-  //     //   trades.closedTrades[trades.closedTrades.length - 1].ts
-  //     // );
-  //   })
+      // const trades = simulateTrades(emaCross, 500);
+      // console.log(
+      //   `-----------------------${SYMBOL}-----------------------------`
+      // );
+      // console.log("Total PNL ($):", trades.totalPnL);
+      // console.log("Volume ($):", trades.totalVolumeInUSD);
+      // console.log("Total Tx:", trades.totalTransactions);
+      // console.log(
+      //   "Trade time:",
+      //   trades.closedTrades[0].ts,
+      //   "->",
+      //   trades.closedTrades[trades.closedTrades.length - 1].ts
+      // );
+    })
   // );
 
   // console.log(emaCross926.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-2))

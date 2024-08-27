@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import { WHITE_LIST_TOKENS_TRADE } from "../utils/config";
+import { USDT, WHITE_LIST_TOKENS_TRADE } from "../utils/config";
 import { getSymbolCandles } from "../helper/okx-candles";
 import { findEMACrossovers } from "../signals/ema-cross";
 import { decodeSymbol, decodeTimestamp, decodeTimestampAgo, zerofy } from "../utils";
@@ -13,31 +13,34 @@ import {
   setPositionMode,
 } from "../helper/okx-trade";
 
-export const botWatchingInterval = ({
+export const botAutoTrading = ({
   bot,
   intervalId,
-  bar = "1H",
+  bar,
   leverage = 7,
   mgnMode = "isolated",
   size = 100,
 }: {
   bot: Telegraf;
   intervalId: NodeJS.Timeout | null;
-  bar?: string;
+  bar: string;
   leverage?: number;
   mgnMode?: ImgnMode;
   size?: number;
 }) => {
   bot.command("start", async (ctx) => {
-    await ctx.reply("Bot has started! Messages will be sent at intervals.");
+    const messageText = ctx.message.text;
+    const barOverride = messageText.split(" ").slice(1).join(" ") || bar;
+    await ctx.reply(`Bot has started! Messages will be sent at intervals with bar ${barOverride}.`);
     let lastestCandles: { [key: string]: ICandles } = {};
+    let lastestSignalTs: {[instId: string]: number} = {}
     intervalId = setInterval(async () => {
       try {
         const BASE_SYMBOL = WHITE_LIST_TOKENS_TRADE[0];
         const baseCandles = await getSymbolCandles({
           instID: `${BASE_SYMBOL}`,
           before: 0,
-          bar: bar,
+          bar: barOverride,
           limit: 10000,
         });
         const [pendingCandle] = baseCandles.filter(
@@ -50,7 +53,7 @@ export const botWatchingInterval = ({
               const _candles = await getSymbolCandles({
                 instID: `${SYMBOL}`,
                 before: 0,
-                bar: bar,
+                bar: barOverride,
                 limit: 10000,
               });
               const candles = _candles.filter((candle) => candle.confirm === 1);
@@ -72,8 +75,10 @@ export const botWatchingInterval = ({
               }
               if (
                 latestCross.ts === currentCandle.ts &&
+                lastestSignalTs[SYMBOL] !== latestCross.ts &&
                 currentCandle.confirm === 1
               ) {
+                lastestSignalTs[SYMBOL] = latestCross.ts
                 const openPositionParams = {
                   instId: SYMBOL,
                   leverage,
@@ -95,9 +100,7 @@ export const botWatchingInterval = ({
                 } <b>Type:</b> <code>${
                   latestCross.type === "bullish" ? "Bullish" : "Bearish"
                 }</code>\n`;
-                notificationMessage += `💰 <b>Price:</b> <code>${latestCross.c.toFixed(
-                  2
-                )}</code>\n`;
+                notificationMessage += `💰 <b>Price:</b> <code>${zerofy(latestCross.c) + USDT}</code>\n`;
                 notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
                   Math.round(latestCross.ts)
                 )}</code>\n`;
@@ -108,7 +111,7 @@ export const botWatchingInterval = ({
                   latestCross.longEMA
                 )}</code>\n`;
                 notificationMessage += `<code>-------------------------------</code>\n`;
-                notificationMessage += `<b>O/C Pos:</b> <code>${openMsg === '' ? `Open [${openPositionParams.posSide.toUpperCase()}] ${decodeSymbol(openPositionParams.instId)}` : openMsg}</code> | <code>${closeMsg === '' ? `Close [${closePositionParams.posSide.toUpperCase()}] ${decodeSymbol(closePositionParams.instId)}` : closeMsg}</code>\n`;
+                notificationMessage += `<code>${openMsg === '' ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(openPositionParams.instId)}` : '🔴 O:' + openMsg}</code> | <code>${closeMsg === '' ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(closePositionParams.instId)}` : '🔴 C: ' + closeMsg}</code>\n`;
                 await ctx.reply(notificationMessage, { parse_mode: "HTML" });
               }
             })
