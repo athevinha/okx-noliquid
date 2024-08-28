@@ -15,7 +15,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       }
 
       // Initialize counters
-      let totalPnl = 0;
+      let totalFee = 0;
       let totalRealizedPnl = 0;
       let totalPositions = 0;
       let totalVolume = 0;
@@ -39,7 +39,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
           positionReports += report;
         }
         // Accumulate totals
-        totalPnl += parseFloat(position.pnl);
+        totalFee += parseFloat(position.fee);
         totalRealizedPnl += parseFloat(position.realizedPnl);
         totalVolume += parseFloat(position.openMaxPos);
         totalPositions++;
@@ -51,9 +51,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       summaryReport += `<b>Total Volume:</b> <code>${zerofy(
         totalVolume
       )}</code>\n`;
-      summaryReport += `<b>Total PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${
-        totalPnl >= 0 ? "🟩" : "🟥"
-      }\n`;
+      summaryReport += `<b>Total Fee:</b> <code>${zerofy(totalFee)}${USDT}</code>\n`
       summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
         totalRealizedPnl
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;

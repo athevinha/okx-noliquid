@@ -1,57 +1,86 @@
-import {getAccountPositions} from "../helper/okx-account";
-import {getSymbolCandles} from "../helper/okx-candles";
-import {findEMACrossovers, simulateTrades} from "../signals/ema-cross";
-import {decodeTimestamp, decodeTimestampAgo, zerofy} from "../utils";
-import {WHITE_LIST_TOKENS_TRADE} from "../utils/config";
+import { getAccountPositions } from "../helper/okx-account";
+import { getSymbolCandles } from "../helper/okx-candles";
+import { findEMACrossovers, simulateTrades } from "../signals/ema-cross";
+import { decodeTimestamp, decodeTimestampAgo, zerofy } from "../utils";
+import { WHITE_LIST_TOKENS_TRADE } from "../utils/config";
 
+const EMA_CROSS_BACK_TEST_CONFIG = {
+  FEE_PERCENTAGE: 0.18, // Open & Close Fee
+  BAR: "15m",
+  SHORT_EMA: 9,
+  LONG_EMA: 21,
+};
 const main = async () => {
-  let estTotalPnl = 0
-  let startTime = 0
-  let totalVolume = 0
-  const FEE = 0.02 // open & close
-  await Promise.all(
-    WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
+  let totalPnL = 0;
+  let earliestTradeTimestamp = 0;
+  let totalTradeVolume = 0;
+
+  const results = await Promise.all(
+    WHITE_LIST_TOKENS_TRADE.map(async (symbol) => {
       const candles = await getSymbolCandles({
-        instID: `${SYMBOL}`,
+        instID: `${symbol}`,
         before: 0,
-        bar: "15m",
-        limit: 10000,
+        bar: EMA_CROSS_BACK_TEST_CONFIG.BAR,
+        limit: 1000,
       });
-
-      const emaCross = findEMACrossovers(candles, 9, 21);
-      console.log(emaCross.slice(-3).map(e => {
-        return {
-          ...e,
-          ts: decodeTimestamp(e.ts)
-        }
-      }))
-      const trades = simulateTrades(emaCross, 500, candles[candles.length - 1].c);
-      console.log(
-        `-----------------------${SYMBOL}-----------------------------`
+      
+      const emaCrossovers = findEMACrossovers(
+        candles,
+        EMA_CROSS_BACK_TEST_CONFIG.SHORT_EMA,
+        EMA_CROSS_BACK_TEST_CONFIG.LONG_EMA
       );
-      console.log("Total PNL ($):", trades.totalPnL);
-      estTotalPnl += trades.totalPnL
-      console.log("Volume ($):", trades.totalVolumeInUSD);
-      console.log("Total Tx:", trades.totalTransactions);
-      startTime = Number(candles[0].ts)
-      totalVolume += trades.totalVolumeInUSD
-
-      console.log(
-        "Trade time:",
-        trades.closedTrades[0].ts,
-        "->",
-        trades.closedTrades[trades.closedTrades.length - 1].ts
+      const tradeResults = simulateTrades(
+        emaCrossovers,
+        500,
+        candles[candles.length - 1].c
       );
+
+      totalPnL += tradeResults.totalPnL;
+      totalTradeVolume += tradeResults.totalVolumeInUSD;
+      earliestTradeTimestamp = Number(candles[0].ts);
+
+      return {
+        symbol,
+        totalPnL: tradeResults.totalPnL,
+        volume: tradeResults.totalVolumeInUSD,
+        totalTransactions: tradeResults.totalTransactions,
+        startTradeTime: tradeResults.closedTrades[0].ts,
+        endTradeTime:
+          tradeResults.closedTrades[tradeResults.closedTrades.length - 1].ts,
+      };
     })
   );
-  console.log(
-    `----------------------------------------------------`
-  );
-  console.log("Est. Trade time:", decodeTimestampAgo(startTime));
-  console.log("Est. Volume ($):", zerofy(totalVolume));
-  console.log("Est. Fee ($):", zerofy(totalVolume * FEE / 100));
-  console.log("Est. All total Pnl ($):", zerofy(estTotalPnl));
-  console.log("Est. All realize Pnl ($):", zerofy(estTotalPnl - (totalVolume * FEE / 100)));
 
-}
-main()
+  // Rank symbols by PnL
+  const rankedResults = results.sort((a, b) => b.totalPnL - a.totalPnL);
+
+  console.log(`----------------------------------------------------`);
+  console.table(
+    rankedResults.map((result, index) => ({
+      Rank: index + 1,
+      Symbol: result.symbol,
+      "PnL ($)": zerofy(result.totalPnL),
+      "Volume ($)": zerofy(result.volume),
+      Transactions: result.totalTransactions,
+      "Start Trade Time": result.startTradeTime,
+      "End Trade Time": result.endTradeTime,
+    }))
+  );
+
+  console.log("Est. Trade Time:", decodeTimestampAgo(earliestTradeTimestamp));
+  console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
+  console.log(
+    "Est. Total Fee ($):",
+    zerofy((totalTradeVolume * EMA_CROSS_BACK_TEST_CONFIG.FEE_PERCENTAGE) / 100)
+  );
+  console.log("Est. Total PnL ($):", zerofy(totalPnL));
+  console.log(
+    "Est. Realized PnL ($):",
+    zerofy(
+      totalPnL -
+        (totalTradeVolume * EMA_CROSS_BACK_TEST_CONFIG.FEE_PERCENTAGE) / 100
+    )
+  );
+};
+
+main();
