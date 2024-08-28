@@ -90,7 +90,7 @@ type TradeResult = {
   usdVolume: number;
 };
 
-export function simulateTrades(emaCrossovers: ICandlesEMACrossovers, usdVolume: number) {
+export function simulateTrades(emaCrossovers: ICandlesEMACrossovers, usdVolume: number, currentPrice: number) {
   let positions: Position[] = [];
   let closedTrades: TradeResult[] = [];
   let totalTransactions = 0;
@@ -150,6 +150,23 @@ export function simulateTrades(emaCrossovers: ICandlesEMACrossovers, usdVolume: 
       positions.push({ type: 'short', entryPrice: c, entryTime: ts, baseTokenAmount, usdVolume });
       // console.log(`Opening SHORT position at ${c} on ${new Date(ts * 1000)}, selling ${baseTokenAmount} tokens`);
     }
+  });
+  
+  positions.forEach((position) => {
+    const pnl = position.type === 'long' 
+      ? (currentPrice - position.entryPrice) * position.baseTokenAmount // Long PnL
+      : (position.entryPrice - currentPrice) * position.baseTokenAmount; // Short PnL
+
+    closedTrades.push({
+      ts: decodeTimestamp(emaCrossovers[emaCrossovers.length - 1].ts), // Use the last timestamp for consistency
+      positionType: position.type,
+      entryPrice: position.entryPrice,
+      exitPrice: currentPrice,
+      pnl,
+      usdVolume: position.usdVolume,
+    });
+    totalVolumeInUSD += position.usdVolume;
+    totalTransactions++;
   });
 
   // Calculate total PnL

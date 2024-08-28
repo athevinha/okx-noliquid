@@ -25,7 +25,7 @@ const main = async () => {
           ts: decodeTimestamp(e.ts)
         }
       }))
-      const trades = simulateTrades(emaCross, 500);
+      const trades = simulateTrades(emaCross, 500, candles[candles.length - 1].c);
       console.log(
         `-----------------------${SYMBOL}-----------------------------`
       );
