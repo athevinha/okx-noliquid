@@ -32,7 +32,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
             
           const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
           let report = ``;
-          report += `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId.split("-").slice(0, 2).join("/")}</a></b> | ${decodeTimestampAgo(Number(position.cTime))}\n`;
+          report += `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId.split("-").slice(0, 2).join("/")}</a></b> | ${decodeTimestampAgo(Number(position.uTime))}\n`;
           report += `• <b>O/C Avg Px:</b> <code>${zerofy(position.openAvgPx)}${USDT}</code> | <code>${zerofy(position.closeAvgPx)}${USDT}</code>\n`;
           report += `• <b>Pnl:</b> <code>${zerofy(position.realizedPnl)}${USDT}</code> ( <code>${zerofy(position.fee)}${USDT}</code> ) • ${realizedPnlIcon}\n\n`;
 
