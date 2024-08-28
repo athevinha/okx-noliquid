@@ -75,9 +75,9 @@ export const botAutoTrading = ({
                 console.log(
                   SYMBOL,
                   "Lastest Candle:",
-                  decodeTimestamp(currentCandle.ts),
+                  decodeTimestamp(currentCandle?.ts),
                   "|",
-                  decodeTimestamp(latestCross.ts)
+                  decodeTimestamp(latestCross?.ts)
                 );
                 // console.log(SYMBOL, 'Lastest Cross:',
                 //    emaCross.slice(-3).map(e => {
@@ -85,8 +85,8 @@ export const botAutoTrading = ({
                 //   }))
               }
               if (
-                latestCross.ts === currentCandle.ts &&
-                lastestSignalTs[SYMBOL] !== latestCross.ts &&
+                latestCross?.ts === currentCandle?.ts &&
+                lastestSignalTs[SYMBOL] !== latestCross?.ts &&
                 currentCandle.confirm === 1
               ) {
                 lastestSignalTs[SYMBOL] = latestCross.ts;
