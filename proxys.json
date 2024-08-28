@@ -1,21 +1,61 @@
-[
-    {"ip":"136.0.207.168","port":"6745","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"103.3.226.153","port":"6429","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"64.137.42.68","port":"5113","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"104.239.39.146","port":"6075","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"154.29.233.66","port":"5827","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"91.123.11.83","port":"6349","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"64.137.65.74","port":"6753","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"104.238.7.196","port":"6123","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"104.239.80.176","port":"5754","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"89.35.80.116","port":"6771","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"104.250.200.103","port":"6353","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"166.88.195.124","port":"5756","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"198.23.147.3","port":"5018","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"216.173.99.192","port":"6534","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"45.251.61.95","port":"6813","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"104.239.106.225","port":"5870","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"216.74.118.92","port":"6247","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"216.173.109.38","port":"6269","username":"gcoddyfo", "password": "9crsd9tmz7sl"},
-    {"ip":"45.43.71.157","port":"6755","username":"gcoddyfo", "password": "9crsd9tmz7sl"}
-    ]
+[{
+        "ip": "38.170.162.210",
+        "port": "7265",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "198.37.99.3",
+        "port": "5794",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "64.137.104.114",
+        "port": "5724",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "103.177.239.237",
+        "port": "6699",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "185.118.6.71",
+        "port": "5787",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "206.41.174.60",
+        "port": "6015",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "104.239.78.90",
+        "port": "6035",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "107.172.156.30",
+        "port": "5678",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "217.69.121.59",
+        "port": "5724",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    },
+    {
+        "ip": "103.80.10.100",
+        "port": "6378",
+        "username": "gcoddyfo",
+        "password": "9crsd9tmz7sl"
+    }
+]
