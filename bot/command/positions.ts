@@ -1,6 +1,6 @@
-import { Telegraf } from "telegraf";
-import { getAccountPositions } from "../helper/okx-account";
-import { zerofy } from "../utils";
+import {Telegraf} from "telegraf";
+import {getAccountPositions} from "../helper/okx-account";
+import {zerofy} from "../utils";
 import {USDT} from "../utils/config";
 
 export const botReportPositions = ({ bot }: { bot: Telegraf }) => {
