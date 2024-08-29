@@ -12,7 +12,7 @@ import {botReportPositionsHistory} from "./command/history";
 import {getSymbolCandles} from "./helper/okx-candles";
 import {findEMACrossovers} from "./signals/ema-cross";
 import {decodeTimestamp} from "./utils";
-import {botReportSymbolReport} from "./command/symbols_report";
+import {botReportSymbolReport} from "./command/symbols-report";
 dotenv.config();
 
 export async function bot(apiKey?: string) {

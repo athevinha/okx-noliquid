@@ -12,7 +12,8 @@ import {
   zerofy
 } from "../utils";
 import {USDT,WHITE_LIST_TOKENS_TRADE} from "../utils/config";
-
+import dotenv from "dotenv"
+dotenv.config()
 export const botAutoTrading = ({
   bot,
   intervalId,
@@ -63,8 +64,9 @@ export const botAutoTrading = ({
           lastestCandle &&
           pendingCandle?.ts !== lastestCandle?.ts
         ) {
+          const tradeAbleCrypto = Number(process.env.DEMO_TRADING || '1') === 1 ? supportFutureCryptosByInstId : WHITE_LIST_TOKENS_TRADE
           await Promise.all(
-            supportFutureCryptosByInstId.map(async (SYMBOL) => {
+            tradeAbleCrypto.map(async (SYMBOL) => {
               let _candles = await getSymbolCandles({
                 instID: `${SYMBOL}`,
                 before: 0,
