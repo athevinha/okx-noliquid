@@ -76,11 +76,9 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
         }
         symbolPnLMap[symbol] += pnl;
       });
+      // ========================================
 
-      // const sortedSymbols = Object.entries(symbolPnLMap)
-      //   .sort(([, pnlA], [, pnlB]) => pnlB - pnlA)
-
-      const fullReportPath = "full_position_report.txt";
+      const fullReportPath = "report/full_position_report.txt";
            const tableData = Object.entries(symbolPnLMap).map(([symbol, pnl]) => ({
         Symbol: symbol,
         "Realized PnL": `${zerofy(pnl)} USD`,
@@ -96,7 +94,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       await writeFileSync(fullReportPath, fullReport);
       await ctx.replyWithDocument({
         source: fullReportPath,
-        filename: "full_position_report.txt",
+        filename: "report/full_position_report.txt",
       });
     } catch (err: any) {
       console.error("Error fetching position history: ", err.message || err);
