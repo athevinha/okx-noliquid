@@ -108,3 +108,18 @@ export const generateTableReport = (data: Array<{ [key: string]: string | number
 
   return `${headerRow}\n${separator}\n${rows}`;
 };
+export const generateTelegramTableReport = (data: Array<{ [key: string]: string | number }>, headers: string[]) => {
+  const columnWidths = headers.map(header =>
+    Math.max(header.length, ...data.map(row => row[header].toString().length))
+  );
+
+  const generateRow = (row: { [key: string]: string | number }) =>
+    headers.map((header, i) => row[header].toString().padEnd(columnWidths[i])).join(" | ");
+
+  const headerRow = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ");
+  const separator = columnWidths.map(width => "-".repeat(width)).join("-|-");
+
+  const rows = data.map(generateRow).join("\n");
+
+  return `<pre>${headerRow}\n${separator}\n${rows}</pre>`;
+};

@@ -1,8 +1,15 @@
 import { Telegraf } from "telegraf";
 import { getAccountPositionsHistory } from "../helper/okx-account";
-import { decodeTimestamp, decodeTimestampAgo, formatU, generateTableReport, zerofy } from "../utils";
-import {USDT} from "../utils/config";
-import {writeFileSync} from "fs";
+import {
+  decodeTimestamp,
+  decodeTimestampAgo,
+  formatU,
+  generateTableReport,
+  generateTelegramTableReport,
+  zerofy,
+} from "../utils";
+import { USDT } from "../utils/config";
+import { writeFileSync } from "fs";
 
 export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
   bot.command("history", async (ctx) => {
@@ -22,20 +29,35 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       let totalVolume = 0;
 
       // Get the last 10 positions history
-      const recentPositions = positionsHistory.sort((a,b) => Number(b.uTime) - Number(a.uTime));
-      const showPositionHistory = 5
+      const recentPositions = positionsHistory.sort(
+        (a, b) => Number(b.uTime) - Number(a.uTime)
+      );
+      const showPositionHistory = 5;
       // Generate report for the last 10 positions
       let positionReports = "";
       recentPositions.forEach((position, index) => {
-        if(index <= showPositionHistory) {
+        if (index <= showPositionHistory) {
           const realizedPnlIcon =
             parseFloat(zerofy(position.realizedPnl)) >= 0 ? "🟩" : "🟥";
-            
+
           const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
           let report = ``;
-          report += `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId.split("-").slice(0, 2).join("/")}</a></b> | ${decodeTimestampAgo(Number(position.uTime))}\n`;
-          report += `• <b>O/C Avg Px:</b> <code>${zerofy(position.openAvgPx)}${USDT}</code> | <code>${zerofy(position.closeAvgPx)}${USDT}</code>\n`;
-          report += `• <b>Pnl:</b> <code>${zerofy(position.realizedPnl)}${USDT}</code> ( <code>${zerofy(position.fee)}${USDT}</code> ) • ${realizedPnlIcon}\n\n`;
+          report += `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId
+            .split("-")
+            .slice(0, 2)
+            .join("/")}</a></b> | ${decodeTimestampAgo(
+            Number(position.uTime)
+          )}\n`;
+          report += `• <b>O/C Avg Px:</b> <code>${zerofy(
+            position.openAvgPx
+          )}${USDT}</code> | <code>${zerofy(
+            position.closeAvgPx
+          )}${USDT}</code>\n`;
+          report += `• <b>Pnl:</b> <code>${zerofy(
+            position.realizedPnl
+          )}${USDT}</code> ( <code>${zerofy(
+            position.fee
+          )}${USDT}</code> ) • ${realizedPnlIcon}\n`;
 
           positionReports += report;
         }
@@ -47,12 +69,14 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       });
 
       // Generate the summary report
-      let summaryReport =``;
+      let summaryReport = ``;
       summaryReport += `<b>Total Positions:</b> <code>${totalPositions}</code>\n`;
       summaryReport += `<b>Total Volume:</b> <code>${zerofy(
         totalVolume
       )}</code>\n`;
-      summaryReport += `<b>Total Fee:</b> <code>${zerofy(totalFee)}${USDT}</code>\n`
+      summaryReport += `<b>Total Fee:</b> <code>${zerofy(
+        totalFee
+      )}${USDT}</code>\n`;
       summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
         totalRealizedPnl
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;
@@ -63,9 +87,19 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
         parse_mode: "HTML",
         link_preview_options: { is_disabled: true },
       });
+    } catch (err: any) {
+      console.error("Error fetching position history: ", err.message || err);
+      await ctx.reply("Error fetching position history.");
+    }
+  });
+  bot.command("symbols_report", async (ctx) => {
+    try {
+      const positionsHistory = await getAccountPositionsHistory("SWAP");
 
-
-      // Aggregate positions by symbol and calculate total realized PNL
+      if (positionsHistory.length === 0) {
+        await ctx.reply("No position history found.");
+        return;
+      }
       const symbolPnLMap: Record<string, number> = {};
 
       positionsHistory.forEach((position) => {
@@ -78,27 +112,27 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       });
       // ========================================
 
-      const fullReportPath = "report/full_position_report.txt";
-           const tableData = Object.entries(symbolPnLMap).map(([symbol, pnl]) => ({
-        Symbol: symbol,
-        "Realized PnL": `${zerofy(pnl)} USD`,
-        Icon: pnl >= 0 ? "Profit" : "Loss",
-        PnLValue: pnl,  // Adding numeric value for sorting
-      }));
+      const tableData = Object.entries(symbolPnLMap)
+        .map(([symbol, pnl]) => ({
+          Symbol: symbol,
+          "Realized PnL": `${zerofy(pnl)} USD`,
+          Icon: pnl >= 0 ? "🟩" : "🟥",
+          PnLValue: pnl,
+        }))
+        .slice(0, 30);
 
-      // Sort the tableData by PnLValue
       const sortedTableData = tableData.sort((a, b) => b.PnLValue - a.PnLValue);
-
       const tableHeaders = ["Symbol", "Realized PnL", "Icon"];
-      const fullReport = generateTableReport(sortedTableData, tableHeaders);
-      await writeFileSync(fullReportPath, fullReport);
-      await ctx.replyWithDocument({
-        source: fullReportPath,
-        filename: "report/full_position_report.txt",
+      const fullReport = generateTelegramTableReport(
+        sortedTableData,
+        tableHeaders
+      );
+      await ctx.reply(fullReport, {
+        parse_mode: "HTML",
       });
     } catch (err: any) {
-      console.error("Error fetching position history: ", err.message || err);
-      await ctx.reply("Error fetching position history.");
+      console.error("Error fetching symbol rank: ", err.message || err);
+      await ctx.reply("Error fetching symbol rank: ", err.message || err);
     }
   });
 };
