@@ -1,5 +1,5 @@
 import {Telegraf} from "telegraf";
-import {getSymbolCandles} from "../helper/okx-candles";
+import {getSupportCrypto, getSymbolCandles} from "../helper/okx-candles";
 import {
   closeFuturePosition,
   openFuturePosition
@@ -31,6 +31,8 @@ export const botAutoTrading = ({
   bot.command("start", async (ctx) => {
     const messageText = ctx.message.text;
     const barOverride = messageText.split(" ").slice(1).join(" ") || bar;
+    const supportFutureCryptos = (await getSupportCrypto({}))
+    const supportFutureCryptosByInstId = supportFutureCryptos.map(e => e.instId)
     if (intervalId) {
       clearInterval(intervalId);
       intervalId = null;
@@ -62,7 +64,7 @@ export const botAutoTrading = ({
           pendingCandle?.ts !== lastestCandle?.ts
         ) {
           await Promise.all(
-            WHITE_LIST_TOKENS_TRADE.map(async (SYMBOL) => {
+            supportFutureCryptosByInstId.map(async (SYMBOL) => {
               let _candles = await getSymbolCandles({
                 instID: `${SYMBOL}`,
                 before: 0,

@@ -12,6 +12,7 @@ import {botReportPositionsHistory} from "./command/history";
 import {getSymbolCandles} from "./helper/okx-candles";
 import {findEMACrossovers} from "./signals/ema-cross";
 import {decodeTimestamp} from "./utils";
+import {botReportSymbolReport} from "./command/symbols_report";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
@@ -26,6 +27,7 @@ export async function bot(apiKey?: string) {
     botCatchError({bot})
     botReportPositions({bot})
     botReportPositionsHistory({bot})
+    botReportSymbolReport({bot})
     botAutoTrading({bot, intervalId, bar})
 
     bot.launch();
