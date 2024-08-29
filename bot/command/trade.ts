@@ -34,12 +34,13 @@ export const botAutoTrading = ({
     const barOverride = messageText.split(" ").slice(1).join(" ") || bar;
     const supportFutureCryptos = (await getSupportCrypto({}))
     const supportFutureCryptosByInstId = supportFutureCryptos.map(e => e.instId)
+    const tradeAbleCrypto = Number(process.env.DEMO_TRADING || '1') === 1 ? supportFutureCryptosByInstId : WHITE_LIST_TOKENS_TRADE
     if (intervalId) {
       clearInterval(intervalId);
       intervalId = null;
     }
     await ctx.reply(
-      `Bot has started! Messages will be sent at intervals with bar ${barOverride}.`
+      `Bot has started! Messages will be sent at intervals with bar ${barOverride} and trade with ${tradeAbleCrypto.length} Symbols.`
     );
     let lastestCandles: { [key: string]: ICandles } = {};
     let lastestSignalTs: { [instId: string]: number } = {};
@@ -52,9 +53,7 @@ export const botAutoTrading = ({
           bar: barOverride,
           limit: 10000,
         });
-        await ctx.reply(
-          `Fetch bar: ${barOverride}.`
-        );
+ 
         const [pendingCandle] = baseCandles.filter(
           (baseCandles) => baseCandles.confirm === 0
         );
@@ -64,7 +63,6 @@ export const botAutoTrading = ({
           lastestCandle &&
           pendingCandle?.ts !== lastestCandle?.ts
         ) {
-          const tradeAbleCrypto = Number(process.env.DEMO_TRADING || '1') === 1 ? supportFutureCryptosByInstId : WHITE_LIST_TOKENS_TRADE
           await Promise.all(
             tradeAbleCrypto.map(async (SYMBOL) => {
               let _candles = await getSymbolCandles({
