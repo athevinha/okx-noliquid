@@ -50,7 +50,7 @@ export const getSymbolCandles = async ({
       }${proxyHost}:${proxyPort}`;
       const httpsAgent = new HttpsProxyAgent(proxyURL);
   
-      const path = `/api/v5/market/history-candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`
+      const path = `/api/v5/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`
       const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
           headers: makeHeaderAuthenticationOKX('GET', path, ''),
           httpsAgent
@@ -113,7 +113,7 @@ export const getSupportCrypto = async ({instType = 'SWAP'}: {instType?:string}):
         headers: makeHeaderAuthenticationOKX('GET', path, ''),
     })
     if(res.data.code !== '0') console.log(res.data.msg)
-    return res.data?.data as IInstrumentsData[];
+    return (res.data?.data as IInstrumentsData[]).filter(e => e.instId.includes('USDT') && !e.instId.includes('USDC'));
   } catch (error) {
     return []
   }

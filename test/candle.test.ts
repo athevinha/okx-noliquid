@@ -9,11 +9,11 @@ describe('OKX candles test fetch', () => {
         const candles = await Promise.all(supportFutureCryptosByInstId.map(async spCrypto => {
             return await getSymbolCandles({
                 instID: spCrypto,
-                bar: '1H',
+                bar: '15m',
                 before: 0,
                 limit: 300
             })
         }))
-        expect(supportFutureCryptos.length).eq(candles.filter(c => c.length > 0).length)
+        expect(supportFutureCryptos.length).eq(candles.filter(c => c.length >= 200 ).length)
     });
 });

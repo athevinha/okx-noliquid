@@ -82,7 +82,7 @@ type Position = {
 };
 
 type TradeResult = {
-  ts:string,
+  ts: number,
   positionType: 'long' | 'short';
   entryPrice: number;
   exitPrice: number;
@@ -105,7 +105,7 @@ export function simulateTrades(emaCrossovers: ICandlesEMACrossovers, usdVolume: 
         if (position.type === 'short') {
           const pnl = (position.entryPrice - c) * position.baseTokenAmount; // Short PnL = (entry price - exit price) * base token amount
           closedTrades.push({
-            ts: decodeTimestamp(ts),
+            ts,
             positionType: position.type,
             entryPrice: position.entryPrice,
             exitPrice: c,
@@ -130,7 +130,7 @@ export function simulateTrades(emaCrossovers: ICandlesEMACrossovers, usdVolume: 
         if (position.type === 'long') {
           const pnl = (c - position.entryPrice) * position.baseTokenAmount; // Long PnL = (exit price - entry price) * base token amount
           closedTrades.push({
-            ts: decodeTimestamp(ts),
+            ts,
             positionType: position.type,
             entryPrice: position.entryPrice,
             exitPrice: c,
@@ -151,14 +151,14 @@ export function simulateTrades(emaCrossovers: ICandlesEMACrossovers, usdVolume: 
       // console.log(`Opening SHORT position at ${c} on ${new Date(ts * 1000)}, selling ${baseTokenAmount} tokens`);
     }
   });
-  
+
   positions.forEach((position) => {
     const pnl = position.type === 'long' 
       ? (currentPrice - position.entryPrice) * position.baseTokenAmount // Long PnL
       : (position.entryPrice - currentPrice) * position.baseTokenAmount; // Short PnL
 
     closedTrades.push({
-      ts: decodeTimestamp(emaCrossovers[emaCrossovers.length - 1].ts), // Use the last timestamp for consistency
+      ts: emaCrossovers[emaCrossovers.length - 1].ts, // Use the last timestamp for consistency
       positionType: position.type,
       entryPrice: position.entryPrice,
       exitPrice: currentPrice,
