@@ -1,7 +1,8 @@
 import { Telegraf } from "telegraf";
 import { getAccountPositionsHistory } from "../helper/okx-account";
-import { decodeTimestamp, decodeTimestampAgo, formatU, zerofy } from "../utils";
+import { decodeTimestamp, decodeTimestampAgo, formatU, generateTableReport, zerofy } from "../utils";
 import {USDT} from "../utils/config";
+import {writeFileSync} from "fs";
 
 export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
   bot.command("history", async (ctx) => {
@@ -61,6 +62,41 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       await ctx.reply(summaryReport + positionReports, {
         parse_mode: "HTML",
         link_preview_options: { is_disabled: true },
+      });
+
+
+      // Aggregate positions by symbol and calculate total realized PNL
+      const symbolPnLMap: Record<string, number> = {};
+
+      positionsHistory.forEach((position) => {
+        const symbol = position.instId.split("-").slice(0, 2).join("/");
+        const pnl = parseFloat(zerofy(position.realizedPnl));
+        if (!symbolPnLMap[symbol]) {
+          symbolPnLMap[symbol] = 0;
+        }
+        symbolPnLMap[symbol] += pnl;
+      });
+
+      // const sortedSymbols = Object.entries(symbolPnLMap)
+      //   .sort(([, pnlA], [, pnlB]) => pnlB - pnlA)
+
+      const fullReportPath = "full_position_report.txt";
+           const tableData = Object.entries(symbolPnLMap).map(([symbol, pnl]) => ({
+        Symbol: symbol,
+        "Realized PnL": `${zerofy(pnl)} USD`,
+        Icon: pnl >= 0 ? "Profit" : "Loss",
+        PnLValue: pnl,  // Adding numeric value for sorting
+      }));
+
+      // Sort the tableData by PnLValue
+      const sortedTableData = tableData.sort((a, b) => b.PnLValue - a.PnLValue);
+
+      const tableHeaders = ["Symbol", "Realized PnL", "Icon"];
+      const fullReport = generateTableReport(sortedTableData, tableHeaders);
+      await writeFileSync(fullReportPath, fullReport);
+      await ctx.replyWithDocument({
+        source: fullReportPath,
+        filename: "full_position_report.txt",
       });
     } catch (err: any) {
       console.error("Error fetching position history: ", err.message || err);

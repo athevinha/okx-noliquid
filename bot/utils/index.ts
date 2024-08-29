@@ -92,3 +92,19 @@ export function getRandomElementFromArray<T>(array: T[]): T {
   const randomIndex = Math.floor(Math.random() * array.length);
   return array[randomIndex];
 }
+
+export const generateTableReport = (data: Array<{ [key: string]: string | number }>, headers: string[]) => {
+  const columnWidths = headers.map(header =>
+    Math.max(header.length, ...data.map(row => row[header].toString().length))
+  );
+
+  const generateRow = (row: { [key: string]: string | number }) =>
+    headers.map((header, i) => row[header].toString().padEnd(columnWidths[i])).join(" | ");
+
+  const headerRow = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ");
+  const separator = columnWidths.map(width => "-".repeat(width)).join("-|-");
+
+  const rows = data.map(generateRow).join("\n");
+
+  return `${headerRow}\n${separator}\n${rows}`;
+};

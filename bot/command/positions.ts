@@ -19,10 +19,13 @@ export const botReportPositions = ({ bot }: { bot: Telegraf }) => {
       let totalPnl = 0;
       let totalRealizedPnl = 0;
       // Create the report for open positions
-      positions.forEach(position => {
+      positions.forEach((position, _) => {
         const pnlIcon = parseFloat(zerofy(position.upl)) >= 0 ? "🟩" : "🟥";
         const realizedPnl = parseFloat(position.realizedPnl) + parseFloat(position.upl)
         const realizedPnlIcon = realizedPnl >= 0 ? "🟩" : "🟥";
+        totalPnl += parseFloat(position.upl);
+        totalRealizedPnl += realizedPnl;
+        if(_ > 10) return;
         const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`
         // Split the += into logical chunks for easier debugging
         let report = `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId.split('-').slice(0,2).join('/')}</a></b> (<code>${zerofy(position.notionalUsd)}${USDT}</code>)\n`;
@@ -32,8 +35,6 @@ export const botReportPositions = ({ bot }: { bot: Telegraf }) => {
         report += `• <b>PnL:</b> <code>${zerofy(Number(position.uplRatio) * 100)}</code>% (<code>${zerofy(position.upl)}${USDT}</code>) • ${pnlIcon}\n`;
         report += `• <b>Realized Pnl:</b> <code>${zerofy(realizedPnl)}${USDT}</code> • ${realizedPnlIcon}\n`;
         positionReports += report;
-        totalPnl += parseFloat(position.upl);
-        totalRealizedPnl += realizedPnl;
       });
       positionReports += `<code>-------------------------------</code>\n`;
       positionReports += `<b>Est. PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${totalPnl >= 0 ? "🟩" : "🟥"}\n`;

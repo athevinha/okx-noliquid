@@ -1,0 +1,10 @@
+Symbol    | Realized PnL | Icon  
+----------|--------------|-------
+ARB/USDT  | 21.18₮       | Loss  
+SOL/USDT  | 6.141₮       | Loss  
+BTC/USDT  | 1.719₮       | Loss  
+OP/USDT   | -2.759₮      | Profit
+ETH/USDT  | -4.995₮      | Profit
+SUI/USDT  | -5.577₮      | Profit
+PEPE/USDT | -7.011₮      | Profit
+NOT/USDT  | -8.181₮      | Profit
