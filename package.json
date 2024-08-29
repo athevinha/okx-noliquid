@@ -5,24 +5,26 @@
   "main": "index.js",
   "scripts": {
     "bot": "npx ts-node index.ts",
-    "backtest": "npx ts-node bot/backtest/index.ts"
+    "backtest": "npx ts-node bot/backtest/index.ts",
+    "test": "mocha --timeout 10000 -r ts-node/register 'test/**/*.test.ts'"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.8.0",
-    "@types/chai": "^4.3.3",
+    "@types/chai": "^4.3.19",
     "@types/mocha": "^9.1.1",
     "@types/node": "^18.11.6",
     "@types/node-telegram-bot-api": "^0.61.6",
-    "chai": "^4.3.6",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
+    "chai": "^4.5.0",
     "ethers": "^5.7.2",
-    "ts-node": "^10.9.1",
+    "mocha": "^10.7.3",
+    "ts-node": "^10.9.2",
     "typechain": "^8.1.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "axios": "^1.4.0",

@@ -1,6 +1,6 @@
 import axios from "axios"
 import {OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
-import {IAccountBalance, ICandles} from "../type"
+import {IAccountBalance, ICandles, IInstrumentsData} from "../type"
 import {makeHeaderAuthenticationOKX} from "./auth"
 import {getRandomElementFromArray} from "../utils"
 import proxys from "../../proxys.json"
@@ -50,11 +50,12 @@ export const getSymbolCandles = async ({
       }${proxyHost}:${proxyPort}`;
       const httpsAgent = new HttpsProxyAgent(proxyURL);
   
-      const res = await axios.get(
-        `${OKX_BASE_FETCH_API_URL}/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`,
-        { httpsAgent }
-      );
-  
+      const path = `/api/v5/market/history-candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+          headers: makeHeaderAuthenticationOKX('GET', path, ''),
+          httpsAgent
+      })
+      if(res.data.code !== '0') console.log(instID, res.data.msg)
       return res.data?.data;
     };
   
@@ -103,4 +104,17 @@ export const getAccountConfig = async (): Promise<any[]> => {
         console.log(error)
         return []
     }
+}
+
+export const getSupportCrypto = async ({instType = 'SWAP'}: {instType?:string}): Promise<IInstrumentsData[]> => {
+  try {
+    const path = `/api/v5/public/instruments?instType=${instType}`
+    const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX('GET', path, ''),
+    })
+    if(res.data.code !== '0') console.log(res.data.msg)
+    return res.data?.data as IInstrumentsData[];
+  } catch (error) {
+    return []
+  }
 }

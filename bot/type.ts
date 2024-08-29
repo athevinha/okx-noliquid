@@ -230,6 +230,39 @@ export type IPositionOpen = {
     ts: number
   }
 
+export type IInstrumentsData = {
+  alias: string
+  baseCcy: string
+  category: string
+  ctMult: string
+  ctType: string
+  ctVal: string
+  ctValCcy: string
+  expTime: string
+  instFamily: string
+  instId: string
+  instType: string
+  lever: string
+  listTime: string
+  lotSz: string
+  maxIcebergSz: string
+  maxLmtAmt: string
+  maxLmtSz: string
+  maxMktAmt: string
+  maxMktSz: string
+  maxStopSz: string
+  maxTriggerSz: string
+  maxTwapSz: string
+  minSz: string
+  optType: string
+  quoteCcy: string
+  settleCcy: string
+  state: string
+  ruleType: string
+  stk: string
+  tickSz: string
+  uly: string
+}
 
   export type IPosSide = "long" | "short"
   export type ISide = "buy" | 'sell'

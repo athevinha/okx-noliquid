@@ -49,6 +49,9 @@ export const botAutoTrading = ({
           bar: barOverride,
           limit: 10000,
         });
+        await ctx.reply(
+          `Fetch bar: ${barOverride}.`
+        );
         const [pendingCandle] = baseCandles.filter(
           (baseCandles) => baseCandles.confirm === 0
         );

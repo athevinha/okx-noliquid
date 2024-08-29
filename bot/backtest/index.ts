@@ -14,9 +14,8 @@ const main = async () => {
   let totalPnL = 0;
   let earliestTradeTimestamp = 0;
   let totalTradeVolume = 0;
-
   const results = await Promise.all(
-    WHITE_LIST_TOKENS_TRADE.map(async (symbol) => {
+    [WHITE_LIST_TOKENS_TRADE].map(async (symbol) => {
       const candles = await getSymbolCandles({
         instID: `${symbol}`,
         before: 0,

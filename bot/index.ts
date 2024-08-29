@@ -26,7 +26,6 @@ export async function bot(apiKey?: string) {
     botCatchError({bot})
     botReportPositions({bot})
     botReportPositionsHistory({bot})
-    // botBarCommand({bot, bar})
     botAutoTrading({bot, intervalId, bar})
 
     bot.launch();
