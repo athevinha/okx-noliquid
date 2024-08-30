@@ -6,6 +6,7 @@ describe('OKX candles test fetch', () => {
     it('Can fetch multi contract (Future) candles', async () => {
         const supportFutureCryptos = (await getSupportCrypto({}))
         const supportFutureCryptosByInstId = supportFutureCryptos.map(e => e.instId)
+        console.log('Crypto support trade count:', supportFutureCryptosByInstId.length)
         const candles = await Promise.all(supportFutureCryptosByInstId.map(async spCrypto => {
             return await getSymbolCandles({
                 instID: spCrypto,

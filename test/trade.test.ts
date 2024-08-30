@@ -9,10 +9,10 @@ const EMA_CROSS_BACK_TEST_CONFIG = {
     SHORT_EMA: 9,
     LONG_EMA: 21,
     LEVERAGE: 5,
-    SZ_USD: 10,
+    SZ_USD: 500,
   };
 describe('OKX EMA Cross backtest', () => {
-    it('Can fetch multi contract (Future) candles', async () => {
+    it('Trade multi contract (Future)', async () => {
         let totalPnL = 0;
         let earliestTradeTimestamp = 0;
         let totalTradeVolume = 0;
@@ -63,7 +63,7 @@ describe('OKX EMA Cross backtest', () => {
     
         console.table(
           rankedResults.map((result, index) => ({
-            Symbol: decodeSymbol(result.symbol),
+            Symbol: result.symbol.split('-')[0],
             "PnL ($)": zerofy(result.totalPnL),
             "Volume ($)": zerofy(result.volume),
             Transactions: result.totalTransactions,

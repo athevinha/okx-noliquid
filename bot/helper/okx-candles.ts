@@ -1,10 +1,11 @@
 import axios from "axios"
-import {OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
+import {MC_ALLOW_TO_TRADING, OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
 import {IAccountBalance, ICandles, IInstrumentsData} from "../type"
 import {makeHeaderAuthenticationOKX} from "./auth"
 import {getRandomElementFromArray} from "../utils"
 import proxys from "../../proxys.json"
 import {HttpsProxyAgent} from "https-proxy-agent"
+import {getCurrencyInfo} from "./okx-ccy"
 // -- DEV --
 // ts	String	Opening time of the candlestick, Unix timestamp format in milliseconds, e.g. 1597026383085
 // o	String	Open price
@@ -113,7 +114,14 @@ export const getSupportCrypto = async ({instType = 'SWAP'}: {instType?:string}):
         headers: makeHeaderAuthenticationOKX('GET', path, ''),
     })
     if(res.data.code !== '0') console.log(res.data.msg)
-    return (res.data?.data as IInstrumentsData[]).filter(e => e.instId.includes('USDT') && !e.instId.includes('USDC'));
+    const instInfo =  (res.data?.data as IInstrumentsData[]).filter(e => e.instId.includes('USDT') && !e.instId.includes('USDC'));
+
+    const instData: IInstrumentsData[] = []
+    await Promise.all(instInfo.map(async inst => {
+      const info = await getCurrencyInfo(inst.instId.split('-')[0]) 
+      if ((info?.marketCap || 0) >= MC_ALLOW_TO_TRADING) instData.push(inst)
+    }))
+    return instData
   } catch (error) {
     return []
   }

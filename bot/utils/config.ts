@@ -11,6 +11,7 @@ export const WHITE_LIST_TOKENS_TRADE = [
   // "MEME-USDT-SWAP",
 
 ];
+export const MC_ALLOW_TO_TRADING = 300_000_000
 // 'MEW-USDT-SWAP',
 export const OKX_BASE_FETCH_API_URL = "https://www.okx.com/priapi/v5";
 export const OKX_BASE_API_URL = "https://www.okx.com";

@@ -34,7 +34,7 @@ export const botReportSymbolReport= ({ bot }: { bot: Telegraf }) => {
           Icon: pnl >= 0 ? "🟩" : "🟥",
           PnLValue: pnl,
         }))
-        .slice(0, 30);
+        .slice(0, 50);
 
       const sortedTableData = tableData.sort((a, b) => b.PnLValue - a.PnLValue);
       const tableHeaders = ["Symbol", "Realized PnL", "Icon"];

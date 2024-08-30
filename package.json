@@ -6,7 +6,7 @@
   "scripts": {
     "bot": "npx ts-node index.ts",
     "backtest": "npx ts-node bot/backtest/index.ts",
-    "test": "mocha --timeout 10000 -r ts-node/register 'test/**/*.test.ts'"
+    "test": "mocha --timeout 20000 -r ts-node/register 'test/**/*.test.ts'"
   },
   "author": "",
   "license": "MIT",

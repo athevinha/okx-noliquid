@@ -263,7 +263,29 @@ export type IInstrumentsData = {
   tickSz: string
   uly: string
 }
-
+export type ICcyInfo = {
+  dayChangePercentage: string
+  dayHigh: number
+  dayLow: number
+  exchangeVol: number
+  flowTotal: string
+  fullyDilutedMC: string
+  fullyDilutedValuation: string
+  highPriceDate: number
+  high_price: number
+  historyLowPrice: number
+  historyLowPriceTime: number
+  holdTime: number
+  issuePrice: number
+  issueTime: number
+  last: number
+  marketCap: number
+  marketCapRank: string
+  maxFlowTotal: string
+  name: string
+  sevenDayChangePercentage: string
+  vol: number
+}
   export type IPosSide = "long" | "short"
   export type ISide = "buy" | 'sell'
   export type ImgnMode = "isolated" | "cross"
