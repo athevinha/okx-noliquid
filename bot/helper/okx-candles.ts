@@ -28,6 +28,7 @@ import {getCurrencyInfo} from "./okx-ccy"
 export const getSymbolCandles = async ({
     instID,
     before,
+    after,
     bar,
     limit
   }: {
@@ -35,6 +36,7 @@ export const getSymbolCandles = async ({
     before: number;
     bar: string;
     limit: number;
+    after?: number;
   }): Promise<ICandles> => {
     const maxRetries = 3;
     let attempts = 0;
@@ -51,7 +53,7 @@ export const getSymbolCandles = async ({
       }${proxyHost}:${proxyPort}`;
       const httpsAgent = new HttpsProxyAgent(proxyURL);
   
-      const path = `/api/v5/market/candles?instId=${instID}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`
+      const path = `/api/v5/market/candles?instId=${instID}&after=${after || ''}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`
       const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
           headers: makeHeaderAuthenticationOKX('GET', path, ''),
           httpsAgent
@@ -93,7 +95,35 @@ export const getSymbolCandles = async ({
       return [];
     }
   };
+export async function getCandlesWithLimit({
+  instID,
+  bar,
+  limit
+}: {
+  instID: string;
+  bar: string;
+  limit: number;
+}): Promise<ICandles> {
+    let candles: ICandles = [];
+    let before = 0;
+    let after = undefined;
+    while (candles.length < limit) {
+        const batchLimit = Math.min(300, limit - candles.length);
+        const newCandles: ICandles = await getSymbolCandles({
+            before,
+            after,
+            instID,
+            bar,
+            limit: batchLimit
+        });
 
+        if (newCandles.length === 0) break; // Stop if no more candles are returned
+        after = Number(newCandles[0]?.ts)
+        candles = candles.concat(newCandles);
+    }
+    candles.sort((a,b) => Number(a.ts) - Number(b.ts))
+    return candles.slice(0, limit); // Ensure only the requested limit is returned
+}
 export const getAccountConfig = async (): Promise<any[]> => {
     try {
         const path = `/api/v5/account/config`
