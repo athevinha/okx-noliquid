@@ -13,19 +13,23 @@ import {
   zerofy
 } from "../bot/utils";
 import {WHITE_LIST_TOKENS_TRADE} from "../bot/utils/config";
-// 1D 9 21
-// 4H 9 21
+// 1D 9 21 undefined undefined
+// 4H 9 21 undefined undefined
+// 15m 9 21 undefined 0.5
+// 30m 9 21 undefined auto
 const TEST_CONFIG = {
   FEE_PERCENTAGE: 0.18, // Open & Close Fee
-  BAR: "4H",
+  BAR: "15m",
   SHORT_EMA: 9,
   LONG_EMA: 21,
   LEVERAGE: 5,
   SZ_USD: 1000,
   WHITE_LIST_TRADING: true,
   SLOPE_THRESHOLD_UP: undefined,
-  SLOPE_THRESHOLD_UNDER: 1.5,
-  LOG_HISTORY_TRADE: true,
+  SLOPE_THRESHOLD_UNDER: 0.5,
+  SLOPE_AVERAGE_MODE: false,
+  // LOG
+  LOG_HISTORY_TRADE: false,
   LOG_PNL_DETAILS: true,
 };
 describe("OKX EMA Cross backtest", () => {
@@ -47,19 +51,32 @@ describe("OKX EMA Cross backtest", () => {
           const candles = await getCandlesWithLimit({
             instID: `${symbol}`,
             bar: TEST_CONFIG.BAR,
-            limit: 300,
+            limit: 10000,
           });
           const emaCrossovers = findEMACrossovers(
             candles,
             TEST_CONFIG.SHORT_EMA,
             TEST_CONFIG.LONG_EMA
           );
+          let slopeThresholdUnder = undefined;
+          let slopeThresholdUp = undefined
+          if(TEST_CONFIG.SLOPE_AVERAGE_MODE) { 
+            const {avgNegativeSlope, avgPositiveSlope} = simulateTradesEmaCross(
+              emaCrossovers,
+              TEST_CONFIG.SZ_USD,
+              candles[candles.length - 1].c,
+              undefined,
+              undefined,
+            );
+            slopeThresholdUnder = avgNegativeSlope > avgPositiveSlope ? avgNegativeSlope : undefined
+            slopeThresholdUp = avgNegativeSlope < avgPositiveSlope ?  avgPositiveSlope  : undefined
+          }
           const tradeResults = simulateTradesEmaCross(
             emaCrossovers,
             TEST_CONFIG.SZ_USD,
             candles[candles.length - 1].c,
-            TEST_CONFIG.SLOPE_THRESHOLD_UNDER,
-            TEST_CONFIG.SLOPE_THRESHOLD_UP
+            TEST_CONFIG.SLOPE_AVERAGE_MODE ? slopeThresholdUnder : TEST_CONFIG.SLOPE_THRESHOLD_UNDER ,
+            TEST_CONFIG.SLOPE_AVERAGE_MODE ? slopeThresholdUp : TEST_CONFIG.SLOPE_THRESHOLD_UP 
           );
           if (TEST_CONFIG.LOG_HISTORY_TRADE)
             console.table(
@@ -73,6 +90,8 @@ describe("OKX EMA Cross backtest", () => {
                 Action: result.action,
               }))
             );
+          console.log(symbol, 'Avaerage Slope', slopeThresholdUnder || slopeThresholdUp )
+
           totalPnL += tradeResults.totalPnL;
           if (tradeResults.totalPnL <= 0) lostCount++;
           else winCount++;

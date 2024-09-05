@@ -1,8 +1,7 @@
 export const WHITE_LIST_TOKENS_TRADE = [
   "BTC-USDT-SWAP",
-  // "ETH-USDT-SWAP",
+  "ETH-USDT-SWAP",
   // "SOL-USDT-SWAP",
-
   // "BNB-USDT-SWAP",
   // "NOT-USDT-SWAP",
   "PEPE-USDT-SWAP",

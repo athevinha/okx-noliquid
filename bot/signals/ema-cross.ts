@@ -187,6 +187,8 @@ export function simulateTradesEmaCross(
   let historyTrades: HistoryTrade[] = [];
   let totalTransactions = 0;
   let totalVolumeInUSD = 0;
+  let avgPositiveSlope = 0;
+  let avgNegativeSlope = 0
 
   emaCrossovers.map((crossover) => {
     const { ts, c, type, calculatedSlope, slopeThreshold } = crossover;
@@ -194,6 +196,9 @@ export function simulateTradesEmaCross(
       positions = positions.filter((position) => {
         if (position.type === "short") {
           const pnl = (position.entryPrice - c) * position.baseTokenAmount; // Short PnL = (entry price - exit price) * base token amount
+          const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
+          if (pnl > 0) avgPositiveSlope += openPositionSlope
+          else avgNegativeSlope += openPositionSlope
           historyTrades.push({
             ts,
             positionType: `${position.type}`,
@@ -240,6 +245,9 @@ export function simulateTradesEmaCross(
       positions = positions.filter((position) => {
         if (position.type === "long") {
           const pnl = (c - position.entryPrice) * position.baseTokenAmount; // Long PnL = (exit price - entry price) * base token amount
+          const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
+          if (pnl > 0) avgPositiveSlope += openPositionSlope
+          else avgNegativeSlope += openPositionSlope
           historyTrades.push({
             ts,
             positionType: `${position.type}`,
@@ -291,6 +299,10 @@ export function simulateTradesEmaCross(
         ? (currentPrice - position.entryPrice) * position.baseTokenAmount // Long PnL
         : (position.entryPrice - currentPrice) * position.baseTokenAmount; // Short PnL
 
+    const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
+    if (pnl > 0) avgPositiveSlope += openPositionSlope
+    else avgNegativeSlope += openPositionSlope
+
     historyTrades.push({
       ts: Date.now(), // Use the last timestamp for consistency
       positionType: position.type,
@@ -307,12 +319,18 @@ export function simulateTradesEmaCross(
 
   // Calculate total PnL
   const totalPnL = historyTrades.reduce((acc, trade) => acc + trade.pnl, 0);
+  const positivePnLTrades = historyTrades.filter(trade => trade.pnl > 0 && trade.slopeThreshold !== undefined);
+  const negativePnLTrades = historyTrades.filter(trade => trade.pnl < 0 && trade.slopeThreshold !== undefined);
 
+ avgPositiveSlope = positivePnLTrades.length > 0 ? avgPositiveSlope / positivePnLTrades.length : 0;
+ avgNegativeSlope = negativePnLTrades.length > 0 ? avgNegativeSlope / negativePnLTrades.length : 0;
   return {
     totalPnL: totalPnL,
     totalTransactions,
     historyTrades,
     totalVolumeInUSD,
+    avgPositiveSlope,
+    avgNegativeSlope,
     activePositions: positions,
   };
 }
