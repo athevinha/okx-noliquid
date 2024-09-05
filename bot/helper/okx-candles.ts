@@ -90,8 +90,8 @@ export const getSymbolCandles = async ({
           confirm: Number(candle[8])
         };
       });
-    } catch (error) {
-      console.log(error);
+    } catch (error:any) {
+      console.log(error?.reason ,error?.message ,error?.code);
       return [];
     }
   };
@@ -131,8 +131,8 @@ export const getAccountConfig = async (): Promise<any[]> => {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IAccountBalance[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -152,7 +152,7 @@ export const getSupportCrypto = async ({instType = 'SWAP'}: {instType?:string}):
       if ((info?.marketCap || 0) >= MC_ALLOW_TO_TRADING) instData.push(inst)
     }))
     return instData
-  } catch (error) {
+  } catch (error:any) {
     return []
   }
 }

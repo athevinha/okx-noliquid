@@ -3,7 +3,7 @@ import {Context,NarrowedContext,Telegraf} from "telegraf";
 import {Message,Update} from "telegraf/typings/core/types/typegram";
 import {getSupportCrypto,getSymbolCandles} from "../helper/okx-candles";
 import {closeFuturePosition,openFuturePosition} from "../helper/okx-trade";
-import {findEMACrossovers} from "../signals/ema-cross";
+import {findEMACrossovers, simulateTradesEmaCross} from "../signals/ema-cross";
 import {ICandles,IntervalConfig,IPosSide} from "../type";
 import {decodeSymbol,decodeTimestamp,zerofy} from "../utils";
 import {parseConfigInterval, USDT,WHITE_LIST_TOKENS_TRADE} from "../utils/config";
@@ -21,8 +21,10 @@ export const fowardTrading = async (
     }
   >,
   config: IntervalConfig,
+  tradeAbleCrypto: string[],
   lastestCandles: { [key: string]: ICandles },
   lastestSignalTs: { [instId: string]: number },
+  intervalId?:string,
 ) => {
   const {
     bar,
@@ -34,26 +36,6 @@ export const fowardTrading = async (
     slopeThresholdUp,
     slopeThresholdUnder,
   } = config;
-
-  let tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
-  if (tokenTradingMode === "whitelist")
-    tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
-  else if (tokenTradingMode === "all") {
-    const supportFutureCryptos = await getSupportCrypto({});
-    const supportFutureCryptosByInstId = supportFutureCryptos.map(
-      (e) => e.instId
-    );
-    tradeAbleCrypto = supportFutureCryptosByInstId;
-  } else {
-    tradeAbleCrypto = tokenTradingMode?.split("/") || [];
-  }
-  console.log(
-    `Interval ${bar} | trade with ${tradeAbleCrypto.length} Ccy.`,
-  );
-  if (tradeAbleCrypto.length === 0) {
-    ctx.replyWithHTML("🛑 No currency to trade.");
-    return;
-  }
 
   try {
     const BASE_SYMBOL = WHITE_LIST_TOKENS_TRADE[0];
@@ -84,6 +66,19 @@ export const fowardTrading = async (
 
           const candles = _candles.filter((candle) => candle.confirm === 1);
           const emaCross = findEMACrossovers(candles, 9, 21);
+          // let slopeThresholdUnder = undefined;
+          // let slopeThresholdUp = undefined
+          // if(slopeThreshAverageMode) { 
+          //   const {avgNegativeSlope, avgPositiveSlope} = simulateTradesEmaCross(
+          //     emaCross,
+          //     sz,
+          //     candles[candles.length - 1].c,
+          //     undefined,
+          //     undefined,
+          //   );
+          //   slopeThresholdUnder = avgNegativeSlope > avgPositiveSlope ? avgNegativeSlope : undefined
+          //   slopeThresholdUp = avgNegativeSlope < avgPositiveSlope ?  avgPositiveSlope  : undefined
+          // }
           const latestCross = emaCross[emaCross.length - 1];
           const currentCandle = candles[candles.length - 1];
           if (SYMBOL === BASE_SYMBOL) {
@@ -101,14 +96,7 @@ export const fowardTrading = async (
             currentCandle.confirm === 1
           ) {
             lastestSignalTs[SYMBOL] = latestCross.ts;
-            const openPositionParams = {
-              instId: SYMBOL,
-              leverage: leve,
-              mgnMode,
-              posSide:
-                latestCross.type === "bullish" ? "long" : ("short" as IPosSide),
-              size: sz,
-            };
+
             const closePositionParams = {
               instId: SYMBOL,
               mgnMode,
@@ -118,11 +106,27 @@ export const fowardTrading = async (
             const { msg: closeMsg } = await closeFuturePosition(
               closePositionParams
             );
-            const { msg: openMsg } = await openFuturePosition(
-              openPositionParams
-            );
+            let openMsg = ""
+            const openPositionParams = {
+              instId: SYMBOL,
+              leverage: leve,
+              mgnMode,
+              posSide:
+                latestCross.type === "bullish" ? "long" : ("short" as IPosSide),
+              size: sz,
+            };
+            if((!slopeThresholdUnder || latestCross.slopeThreshold <= slopeThresholdUnder) &&
+            (!slopeThresholdUp || latestCross.slopeThreshold >= slopeThresholdUp)) {
+              const openPosition = await openFuturePosition(
+                openPositionParams
+              );
+              openMsg = openPosition.msg
+            } else {
+              openMsg = 'Slope out of range'
+            }
+          
             let notificationMessage = "";
-            notificationMessage += `🔔 <b>EMA Crossover Alert!</b>\n`;
+            notificationMessage += `🔔 <b>[${decodeSymbol(SYMBOL)}]</b> | <code>${intervalId}</code> crossover Alert \n`;
             notificationMessage += `${
               latestCross.type === "bullish" ? "📈" : "📉"
             } <b>Type:</b> <code>${
@@ -134,19 +138,20 @@ export const fowardTrading = async (
             notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
               Math.round(latestCross.ts)
             )}</code>\n`;
-            notificationMessage += `🔍 <b>Symbol:</b> <code>${SYMBOL}</code>\n`;
-            notificationMessage += `📊 <b>Short EMA:</b> <code>${zerofy(
+            notificationMessage += `⛓️ <b>Slope:</b> <code>${zerofy(latestCross.slopeThreshold)}</code>\n`;
+            notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
               latestCross.shortEMA
-            )}</code> | <b>Long EMA:</b> <code>${zerofy(
+            )}</code> | <code>${zerofy(
               latestCross.longEMA
             )}</code>\n`;
+            if(openMsg === "") notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(openPositionParams.size)}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
             notificationMessage += `<code>-------------------------------</code>\n`;
             notificationMessage += `<code>${
               openMsg === ""
                 ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(
                     openPositionParams.instId
                   )}`
-                : "🔴 O:" + openMsg
+                : "🔴 O: " + openMsg
             }</code>\n`;
             notificationMessage += `<code>${
               closeMsg === ""
@@ -173,7 +178,7 @@ export const fowardTrading = async (
 export const botAutoTrading = ({ bot }: { bot: Telegraf }) => {
   const intervals = new Map<string, IntervalConfig>();
 
-  bot.command("start", (ctx) => {
+  bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
 
@@ -185,8 +190,29 @@ export const botAutoTrading = ({ bot }: { bot: Telegraf }) => {
     }
     let lastestCandles: { [key: string]: ICandles } = {};
     let lastestSignalTs: { [instId: string]: number } = {};
+
+
+    let tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
+    if (config.tokenTradingMode === "whitelist")
+      tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
+    else if (config.tokenTradingMode === "all") {
+      const supportFutureCryptos = await getSupportCrypto({});
+      const supportFutureCryptosByInstId = supportFutureCryptos.map(
+        (e) => e.instId
+      );
+      tradeAbleCrypto = supportFutureCryptosByInstId;
+    } else {
+      tradeAbleCrypto = config.tokenTradingMode?.split("/") || [];
+    }
+    await ctx.reply(
+      `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`,
+    );
+    if (tradeAbleCrypto.length === 0) {
+      ctx.replyWithHTML("🛑 No currency to trade.");
+      return;
+    }
     const interval = setInterval(async() => {
-      await fowardTrading(ctx, { ...config, interval }, lastestCandles, lastestSignalTs);
+      await fowardTrading(ctx, { ...config, interval },tradeAbleCrypto, lastestCandles, lastestSignalTs, id);
     }, config.intervalDelay);
 
     intervals.set(id, { ...config, interval });

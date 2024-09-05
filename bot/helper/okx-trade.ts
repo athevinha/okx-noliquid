@@ -85,8 +85,8 @@ export const convertUSDToContractOrderSize = async ({
     });
     const [response] = res?.data?.data as IContracConvertResponse[];
     return response.sz;
-  } catch (error) {
-    console.log(error);
+  } catch (error:any) {
+    console.log(error?.reason ,error?.message ,error?.code);
     return "0";
   }
 };
@@ -103,8 +103,8 @@ export const getSymbolPriceTicker = async ({
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
     });
     return res?.data?.data as ISymbolPriceTicker[];
-  } catch (error) {
-    console.log(error);
+  } catch (error:any) {
+    console.log(error?.reason ,error?.message ,error?.code);
     return [];
   }
 };
@@ -147,7 +147,7 @@ export const placeOrder = async ({
     });
     return res?.data;
   } catch (error: any) {
-    console.error(error);
+    console.error(error?.reason ,error?.message ,error?.code);
     return {
       code: error?.code,
       data: [],
@@ -178,7 +178,7 @@ export const openFuturePosition = async ({
     const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size})
     return po
   } catch (error: any) {
-    console.log(error)
+    console.log(error?.reason || "", error?.message || "", error.code || "")
     return {
       code: error?.code,
       data: [],
@@ -209,7 +209,7 @@ export const closeFuturePosition = async ({
     });
     return res.data as OKXResponse
   } catch (error:any) {
-    console.log(error)
+    console.log(error?.reason || "", error?.message || "", error.code || "")
     return {
       code: error?.code,
       data: [],

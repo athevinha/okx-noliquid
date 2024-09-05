@@ -10,8 +10,8 @@ export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
             headers: makeHeaderAuthenticationOKX('GET', path, '')
         })
         return res?.data?.data as IAccountBalance[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -24,8 +24,8 @@ export const getAccountPositions = async (instType: IInstType): Promise<IPositio
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IPositionOpen[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -37,8 +37,8 @@ export const getAccountPositionsHistory = async (instType: IInstType): Promise<I
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IPositionHistory[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -50,8 +50,8 @@ export const getAccountPositionRisk = async (instType: IInstType): Promise<IPosi
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IPositionRisk[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -63,8 +63,8 @@ export const getAccountOrdersHistory = async (instType: IInstType): Promise<any[
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IAccountBalance[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -75,8 +75,8 @@ export const getAccountPendingOrders = async (instType: IInstType): Promise<any[
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IAccountBalance[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -88,8 +88,8 @@ export const getAccountConfig = async (): Promise<any[]> => {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
         return res?.data?.data as IAccountBalance[]
-    } catch (error) {
-        console.log(error)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
