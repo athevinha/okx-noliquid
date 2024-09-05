@@ -1,21 +1,18 @@
-import { expect } from "chai";
+import {expect} from "chai";
 import {
   getCandlesWithLimit,
-  getSupportCrypto,
-  getSymbolCandles,
+  getSupportCrypto
 } from "../bot/helper/okx-candles";
 import {
-  calculateGoodSlopeThreshold,
   findEMACrossovers,
-  simulateTradesEmaCross,
+  simulateTradesEmaCross
 } from "../bot/signals/ema-cross";
 import {
-  decodeSymbol,
   decodeTimestamp,
   decodeTimestampAgo,
-  zerofy,
+  zerofy
 } from "../bot/utils";
-import { WHITE_LIST_TOKENS_TRADE } from "../bot/utils/config";
+import {WHITE_LIST_TOKENS_TRADE} from "../bot/utils/config";
 // 1D 9 21
 // 4H 9 21
 const TEST_CONFIG = {
