@@ -49,8 +49,6 @@ export const fowardTrading = async (
   }
   console.log(
     `Interval ${bar} | trade with ${tradeAbleCrypto.length} Ccy.`,
-    lastestCandles,
-    lastestSignalTs
   );
   if (tradeAbleCrypto.length === 0) {
     ctx.replyWithHTML("🛑 No currency to trade.");
@@ -96,10 +94,6 @@ export const fowardTrading = async (
               "|",
               decodeTimestamp(latestCross?.ts)
             );
-            // console.log(SYMBOL, 'Lastest Cross:',
-            //    emaCross.slice(-3).map(e => {
-            //     return {...e, ts: decodeTimestamp(e.ts)}
-            //   }))
           }
           if (
             latestCross?.ts === currentCandle?.ts &&
