@@ -6,8 +6,8 @@ import {closeFuturePosition,openFuturePosition} from "../helper/okx-trade";
 import {findEMACrossovers} from "../signals/ema-cross";
 import {ICandles,IntervalConfig,IPosSide} from "../type";
 import {decodeSymbol,decodeTimestamp,zerofy} from "../utils";
-import {USDT,WHITE_LIST_TOKENS_TRADE} from "../utils/config";
-import {formatReportInterval,parseConfigInterval} from "../utils/message";
+import {parseConfigInterval, USDT,WHITE_LIST_TOKENS_TRADE} from "../utils/config";
+import {formatReportInterval} from "../utils/message";
 dotenv.config();
 
 export const fowardTrading = async (
