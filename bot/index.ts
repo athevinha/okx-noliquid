@@ -2,18 +2,10 @@ import dotenv from "dotenv";
 import {Telegraf} from "telegraf";
 import {botLoginCommand} from "./command/auth";
 import {botCatchError} from "./command/catch";
-import {botBarCommand} from "./command/config";
-import {botReportPositions} from "./command/positions";
-import {botAutoTrading} from "./command/trade";
-import {closeFuturePosition, openFuturePosition} from "./helper/okx-trade";
-import {WHITE_LIST_TOKENS_TRADE} from "./utils/config";
-import {getAccountPositionsHistory} from "./helper/okx-account";
 import {botReportPositionsHistory} from "./command/history";
-import {getSymbolCandles} from "./helper/okx-candles";
-import {findEMACrossovers} from "./signals/ema-cross";
-import {decodeTimestamp} from "./utils";
+import {botReportPositions} from "./command/positions";
 import {botReportSymbolReport} from "./command/symbols-report";
-import {IIntervalData} from "./type";
+import {botAutoTrading} from "./command/trade";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
@@ -21,7 +13,6 @@ export async function bot(apiKey?: string) {
     const bot = new Telegraf(apiKey);
     const validUsername = "vicdvc";
     let authenticated = false;
-    const intervalData: IIntervalData = {}
     
     botLoginCommand({bot, authenticated, validUsername})
     botCatchError({bot})
