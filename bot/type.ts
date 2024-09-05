@@ -20,6 +20,8 @@ export type ICandlesEMACrossovers = Array<{
     volCcy: number
     volCcyQuote: number
     confirm: number,
+    calculatedSlope: number[],
+    slopeThreshold: number,
     type: 'bullish' | 'bearish',
     shortEMA: number,
     longEMA: number

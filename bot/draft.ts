@@ -15,7 +15,7 @@ const main = async () => {
         console.log(emaCross.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-3))
         // console.log(candles.map(a => {return {...a, ts: decodeTimestamp(Math.round(a.ts))}}).slice(-1))
   
-        // const trades = simulateTrades(emaCross, 500);
+        // const trades = simulateTradesEmaCross(emaCross, 500);
         // console.log(
         //   `-----------------------${SYMBOL}-----------------------------`
         // );
