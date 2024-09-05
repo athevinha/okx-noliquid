@@ -288,6 +288,23 @@ export type ICcyInfo = {
   sevenDayChangePercentage: string
   vol: number
 }
+export type IIntervalData = {[id: string]: {
+  bar: string,
+  leve: number,
+  mgnMode: ImgnMode,
+  sz: number,
+  intervalDelay: number
+  slopeThresholdUp?: number,
+  slopeThresholdUnder?: number,
+  slopeThreshAverageMode?: boolean
+  tokenTradingMode?: 'all' | 'whitelist' | string
+  estimatePnl?: number
+}}
+export type IntervalConfig = IIntervalData[keyof IIntervalData] & {
+  interval: NodeJS.Timeout;
+};
   export type IPosSide = "long" | "short"
   export type ISide = "buy" | 'sell'
   export type ImgnMode = "isolated" | "cross"
+
+  

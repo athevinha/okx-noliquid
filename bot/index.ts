@@ -13,22 +13,22 @@ import {getSymbolCandles} from "./helper/okx-candles";
 import {findEMACrossovers} from "./signals/ema-cross";
 import {decodeTimestamp} from "./utils";
 import {botReportSymbolReport} from "./command/symbols-report";
+import {IIntervalData} from "./type";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
   if (apiKey) {
     const bot = new Telegraf(apiKey);
     const validUsername = "vicdvc";
-    let bar = '1H'
     let authenticated = false;
-    let intervalId: NodeJS.Timeout | null = null;
+    const intervalData: IIntervalData = {}
     
     botLoginCommand({bot, authenticated, validUsername})
     botCatchError({bot})
     botReportPositions({bot})
     botReportPositionsHistory({bot})
     botReportSymbolReport({bot})
-    botAutoTrading({bot, intervalId, bar})
+    botAutoTrading({bot})
 
     bot.launch();
     
