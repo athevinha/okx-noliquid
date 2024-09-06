@@ -212,7 +212,7 @@ export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: M
 
     intervals.set(id, { ...config, interval });
 
-    const startReport = formatReportInterval(id, { ...config, interval }, true);
+    const startReport = formatReportInterval(id, { ...config, tokenTradingMode: tradeAbleCrypto.join('/'), interval }, true);
     ctx.replyWithHTML(startReport);
   });
 
