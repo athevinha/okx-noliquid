@@ -90,7 +90,6 @@ describe("OKX EMA Cross backtest", () => {
                 Action: result.action,
               }))
             );
-          console.log(symbol, 'Avaerage Slope', slopeThresholdUnder || slopeThresholdUp )
 
           totalPnL += tradeResults.totalPnL;
           if (tradeResults.totalPnL <= 0) lostCount++;

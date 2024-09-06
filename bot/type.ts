@@ -288,6 +288,62 @@ export type ICcyInfo = {
   sevenDayChangePercentage: string
   vol: number
 }
+export type IOrderDetails = {
+  accFillSz: string
+  algoClOrdId: string
+  algoId: string
+  attachAlgoClOrdId: string
+  attachAlgoOrds: Array<any>
+  avgPx: string
+  cTime: string
+  cancelSource: string
+  cancelSourceReason: string
+  category: string
+  ccy: string
+  clOrdId: string
+  fee: string
+  feeCcy: string
+  fillPx: string
+  fillSz: string
+  fillTime: string
+  instId: string
+  instType: string
+  isTpLimit: string
+  lever: string
+  linkedAlgoOrd: {
+    algoId: string
+  }
+  ordId: string
+  ordType: string
+  pnl: string
+  posSide: string
+  px: string
+  pxType: string
+  pxUsd: string
+  pxVol: string
+  quickMgnType: string
+  rebate: string
+  rebateCcy: string
+  reduceOnly: string
+  side: string
+  slOrdPx: string
+  slTriggerPx: string
+  slTriggerPxType: string
+  source: string
+  state: string
+  stpId: string
+  stpMode: string
+  sz: string
+  tag: string
+  tdMode: string
+  tgtCcy: string
+  tpOrdPx: string
+  tpTriggerPx: string
+  tpTriggerPxType: string
+  tradeId: string
+  uTime: string
+}
+
 export type IIntervalData = {[id: string]: {
   bar: string,
   leve: number,

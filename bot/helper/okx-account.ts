@@ -1,6 +1,6 @@
 import axios from "axios"
 import {OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
-import {IAccountBalance, ICandles, IInstType, IPositionHistory, IPositionOpen, IPositionRisk} from "../type"
+import {IAccountBalance, ICandles, IInstType, IOrderDetails, IPositionHistory, IPositionOpen, IPositionRisk} from "../type"
 import {makeHeaderAuthenticationOKX} from "./auth"
 
 export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
@@ -17,7 +17,7 @@ export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
 }
 
 
-export const getAccountPositions = async (instType: IInstType): Promise<IPositionOpen[]> => {
+export const getAccountPositions = async (instType: IInstType ): Promise<IPositionOpen[]> => {
     try {
         const path = `/api/v5/account/positions?instType=${instType}`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
@@ -30,6 +30,31 @@ export const getAccountPositions = async (instType: IInstType): Promise<IPositio
     }
 }
 
+export const getAccountPosition = async (instType: IInstType, posId: string, ): Promise<IPositionOpen[]> => {
+    try {
+        const path = `/api/v5/account/positions?posId=${posId}&instType=${instType}`
+        const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+            headers: makeHeaderAuthenticationOKX('GET', path, ''),
+        })
+        return res?.data?.data as IPositionOpen[]
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
+        return []
+    }
+}
+
+export const getAccountOrder = async (instId: string, ordId: string, ): Promise<IOrderDetails[]> => {
+    try {
+        const path = `/api/v5/trade/order?instId=${instId}&ordId=${ordId}`
+        const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+            headers: makeHeaderAuthenticationOKX('GET', path, ''),
+        })
+        return res?.data?.data as IOrderDetails[]
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
+        return []
+    }
+}
 export const getAccountPositionsHistory = async (instType: IInstType): Promise<IPositionHistory[]> => {
     try {
         const path = `/api/v5/account/positions-history?instType=${instType}`

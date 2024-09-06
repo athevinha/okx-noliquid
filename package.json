@@ -7,7 +7,8 @@
     "bot": "npx ts-node index.ts",
     "test": "mocha --timeout 20000 -r ts-node/register 'test/**/*.test.ts'",
     "test:trade": "mocha --timeout 200000 -r ts-node/register 'test/trade.test.ts'",
-    "test:candle": "mocha --timeout 200000 -r ts-node/register 'test/candle.test.ts'"
+    "test:candle": "mocha --timeout 200000 -r ts-node/register 'test/candle.test.ts'",
+    "test:positions": "mocha --timeout 200000 -r ts-node/register 'test/positions.test.ts'"
   },
   
   "author": "",

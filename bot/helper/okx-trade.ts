@@ -9,6 +9,7 @@ import {
   ISymbolPriceTicker,
   OKXResponse,
 } from "../type";
+import {decodeClOrdId} from "..";
 
 export const setLeveragePair = async (
   instId: string,
@@ -118,6 +119,7 @@ export const placeOrder = async ({
   szUSD,
   tpOrdPx,
   tpTriggerPx,
+  clOrdId,
 }: {
   instId: string;
   tdMode: string;
@@ -127,10 +129,10 @@ export const placeOrder = async ({
   szUSD: number;
   tpTriggerPx?: string;
   tpOrdPx?: string;
+  clOrdId?: string;
 }): Promise<OKXResponse> => {
   try {
     const sz = await convertUSDToContractOrderSize({ instId, sz: szUSD });
-    console.log(sz);
     const body = JSON.stringify({
       instId,
       tdMode,
@@ -140,7 +142,9 @@ export const placeOrder = async ({
       sz,
       tpOrdPx,
       tpTriggerPx,
+      clOrdId,
     });
+    console.log(body)
     const path = `/api/v5/trade/order`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
       headers: makeHeaderAuthenticationOKX("POST", path, body),
@@ -162,7 +166,8 @@ export const openFuturePosition = async ({
   mgnMode,
   size,
   posSide,
-  ordType = 'market'
+  ordType = 'market',
+  intervalId = "",
 }: {
   instId: string;
   mgnMode: ImgnMode
@@ -170,12 +175,14 @@ export const openFuturePosition = async ({
   ordType?: string;
   leverage: number;
   size: number;
+  intervalId?: string;
 }): Promise<OKXResponse> => {
   try {
+    const clOrdId = decodeClOrdId({intervalId, instId, posSide, leverage, size})
     const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
     await setPositionMode("long_short_mode");
     await setLeveragePair(instId, leverage, mgnMode, posSide);
-    const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size})
+    const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId})
     return po
   } catch (error: any) {
     console.log(error?.reason || "", error?.message || "", error.code || "")
