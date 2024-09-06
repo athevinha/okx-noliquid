@@ -19,9 +19,9 @@ export async function bot(apiKey?: string) {
     
     botLoginCommand({bot, authenticated, validUsername})
     botCatchError({bot})
-    botReportPositions({bot})
-    botReportPositionsHistory({bot})
-    botReportSymbolReport({bot})
+    botReportPositions({bot,intervals})
+    botReportPositionsHistory({bot,intervals})
+    botReportSymbolReport({bot, intervals})
     botAutoTrading({bot, intervals})
 
     bot.launch();
