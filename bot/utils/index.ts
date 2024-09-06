@@ -138,17 +138,17 @@ export const decodeTag = ({intervalId, instId, posSide, leverage, size}: {interv
 }
 
 export const getTradeAbleCrypto = async (tokenTradingMode:string) => {
+  const supportFutureCryptos = await getSupportCrypto({});
+  const supportFutureCryptosByInstId = supportFutureCryptos.map(
+    (e) => e.instId
+  );
   let tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
     if (tokenTradingMode === "whitelist")
       tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
     else if (tokenTradingMode === "all") {
-      const supportFutureCryptos = await getSupportCrypto({});
-      const supportFutureCryptosByInstId = supportFutureCryptos.map(
-        (e) => e.instId
-      );
       tradeAbleCrypto = supportFutureCryptosByInstId;
     } else {
       tradeAbleCrypto = tokenTradingMode?.split("/") || [];
     }
-  return tradeAbleCrypto
+  return tradeAbleCrypto.filter(instId => supportFutureCryptosByInstId.includes(instId))
 }
