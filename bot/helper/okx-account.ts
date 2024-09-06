@@ -17,13 +17,14 @@ export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
 }
 
 
-export const getAccountPositions = async (instType: IInstType ): Promise<IPositionOpen[]> => {
+export const getAccountPositions = async (instType: IInstType, instIds?:string[] ): Promise<IPositionOpen[]> => {
     try {
         const path = `/api/v5/account/positions?instType=${instType}`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
-        return res?.data?.data as IPositionOpen[]
+        if(!instIds || instIds.length === 0) return (res?.data?.data as IPositionOpen[])
+        return (res?.data?.data as IPositionOpen[]).filter(r => instIds?.includes(r.instId))
     } catch (error:any) {
         console.log(error?.reason || "", error?.message || "", error.code || "")
         return []
@@ -55,13 +56,14 @@ export const getAccountOrder = async ({instId, ordId, clOrdId}:{instId: string, 
         return []
     }
 }
-export const getAccountPositionsHistory = async (instType: IInstType): Promise<IPositionHistory[]> => {
+export const getAccountPositionsHistory = async (instType: IInstType, instIds?: string[]): Promise<IPositionHistory[]> => {
     try {
         const path = `/api/v5/account/positions-history?instType=${instType}`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
-        return res?.data?.data as IPositionHistory[]
+        if(!instIds || instIds.length === 0) return (res?.data?.data as IPositionHistory[])
+        return (res?.data?.data as IPositionHistory[]).filter(r => instIds?.includes(r.instId))
     } catch (error:any) {
         console.log(error?.reason || "", error?.message || "", error.code || "")
         return []

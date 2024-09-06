@@ -1,13 +1,21 @@
 import {Telegraf} from "telegraf";
 import {getAccountPositions} from "../helper/okx-account";
-import {zerofy} from "../utils";
+import {getTradeAbleCrypto, zerofy} from "../utils";
 import {USDT} from "../utils/config";
+import {IntervalConfig} from "../type";
 
-export const botReportPositions = ({ bot }: { bot: Telegraf }) => {
+export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
   bot.command("positions", async (ctx) => {
     try {
       // Fetch open positions
-      const positions = await getAccountPositions("SWAP");
+      const id = ctx.message.text.split(" ")[1];
+      let tokensFilter:string[] = []
+      const intervalConfig = intervals.get(id);
+
+      if (intervals.has(id) && intervalConfig && intervalConfig?.tokenTradingMode) {
+        tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
+      }
+      const positions = await getAccountPositions("SWAP", tokensFilter);
 
       if (positions.length === 0) {
         await ctx.reply("No open positions found.");
@@ -15,7 +23,7 @@ export const botReportPositions = ({ bot }: { bot: Telegraf }) => {
       }
 
       // Create the report for open positions
-      let positionReports = "";
+      let positionReports = tokensFilter.length > 0 ? `<b>Report for interval: </b> <code>${id}</code>\n` :"" ;
       let totalPnl = 0;
       let totalRealizedPnl = 0;
       // Create the report for open positions

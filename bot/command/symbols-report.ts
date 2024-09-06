@@ -2,14 +2,25 @@ import {Telegraf} from "telegraf";
 import {getAccountPositionsHistory} from "../helper/okx-account";
 import {
     generateTelegramTableReport,
+    getTradeAbleCrypto,
     zerofy
 } from "../utils";
+import {IntervalConfig} from "../type";
 
-export const botReportSymbolReport= ({ bot }: { bot: Telegraf }) => {
+export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
 
-  bot.command("symbols_report", async (ctx) => {
+  bot.command("symbols", async (ctx) => {
     try {
-      const positionsHistory = await getAccountPositionsHistory("SWAP");
+      const id = ctx.message.text.split(" ")[1];
+      let tokensFilter:string[] = []
+      const intervalConfig = intervals.get(id);
+
+      if (intervals.has(id) && intervalConfig && intervalConfig?.tokenTradingMode) {
+        tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
+      }
+
+      // Fetch positions history
+      const positionsHistory = await getAccountPositionsHistory("SWAP", tokensFilter);
 
       if (positionsHistory.length === 0) {
         await ctx.reply("No position history found.");
@@ -42,6 +53,11 @@ export const botReportSymbolReport= ({ bot }: { bot: Telegraf }) => {
         sortedTableData,
         tableHeaders
       );
+      if (tokensFilter.length  > 0) {
+        await ctx.reply(`<b>Report for interval: </b> <code>${id}</code>\n`, {
+          parse_mode: "HTML",
+        });
+      }
       await ctx.reply(fullReport, {
         parse_mode: "HTML",
       });

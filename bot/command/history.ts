@@ -6,16 +6,26 @@ import {
   formatU,
   generateTableReport,
   generateTelegramTableReport,
+  getTradeAbleCrypto,
   zerofy,
 } from "../utils";
 import { USDT } from "../utils/config";
 import { writeFileSync } from "fs";
+import {IntervalConfig} from "../type";
 
-export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
+export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
   bot.command("history", async (ctx) => {
     try {
+      const id = ctx.message.text.split(" ")[1];
+      let tokensFilter:string[] = []
+      const intervalConfig = intervals.get(id);
+
+      if (intervals.has(id) && intervalConfig && intervalConfig?.tokenTradingMode) {
+        tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
+      }
+
       // Fetch positions history
-      const positionsHistory = await getAccountPositionsHistory("SWAP");
+      const positionsHistory = await getAccountPositionsHistory("SWAP", tokensFilter);
 
       if (positionsHistory.length === 0) {
         await ctx.reply("No position history found.");
@@ -34,7 +44,7 @@ export const botReportPositionsHistory = ({ bot }: { bot: Telegraf }) => {
       );
       const showPositionHistory = 5;
       // Generate report for the last 10 positions
-      let positionReports = "";
+      let positionReports = tokensFilter.length > 0 ? `<b>Report for interval: </b> <code>${id}</code>\n` :"" ;
       recentPositions.forEach((position, index) => {
         if (index <= showPositionHistory) {
           const realizedPnlIcon =
