@@ -352,8 +352,9 @@ export type IIntervalData = {[id: string]: {
   intervalDelay: number
   slopeThresholdUp?: number,
   slopeThresholdUnder?: number,
-  slopeThreshAverageMode?: boolean
-  tokenTradingMode?: 'all' | 'whitelist' | string
+  slopeThreshAverageMode?: boolean,
+  tokenTradingMode?: 'all' | 'whitelist' | string,
+  tradeAbleCrypto?: string[],
 }}
 export type IntervalState = {
   positions: IPositionOpen[],

@@ -206,13 +206,13 @@ export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: M
         tradeAbleCrypto,
         lastestCandles,
         lastestSignalTs,
-        intervalId: id
+        intervalId: id,
       });
     }, config.intervalDelay);
 
-    intervals.set(id, { ...config, interval });
+    intervals.set(id, { ...config,tradeAbleCrypto,  interval });
 
-    const startReport = formatReportInterval(id, { ...config, tokenTradingMode: tradeAbleCrypto.join('/'), interval }, true);
+    const startReport = formatReportInterval(id, { ...config, interval }, true, tradeAbleCrypto);
     ctx.replyWithHTML(startReport);
   });
 
@@ -241,7 +241,7 @@ export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: M
 
     let report = "<b>Current Trading Intervals:</b>\n";
     intervals.forEach((intervalConfig, id) => {
-      report += formatReportInterval(id, intervalConfig, false) + "\n";
+      report += formatReportInterval(id, intervalConfig, false, intervalConfig?.tradeAbleCrypto) + "\n";
     });
 
     ctx.replyWithHTML(report);
