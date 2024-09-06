@@ -9,7 +9,7 @@ import {
   ISymbolPriceTicker,
   OKXResponse,
 } from "../type";
-import {decodeClOrdId} from "..";
+import {decodeClOrdId, decodeTag} from "../utils";
 
 export const setLeveragePair = async (
   instId: string,
@@ -119,7 +119,8 @@ export const placeOrder = async ({
   szUSD,
   tpOrdPx,
   tpTriggerPx,
-  clOrdId,
+  clOrdId="",
+  tag= "",
 }: {
   instId: string;
   tdMode: string;
@@ -130,6 +131,7 @@ export const placeOrder = async ({
   tpTriggerPx?: string;
   tpOrdPx?: string;
   clOrdId?: string;
+  tag?:string;
 }): Promise<OKXResponse> => {
   try {
     const sz = await convertUSDToContractOrderSize({ instId, sz: szUSD });
@@ -143,8 +145,8 @@ export const placeOrder = async ({
       tpOrdPx,
       tpTriggerPx,
       clOrdId,
+      tag
     });
-    console.log(body)
     const path = `/api/v5/trade/order`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
       headers: makeHeaderAuthenticationOKX("POST", path, body),
@@ -179,10 +181,11 @@ export const openFuturePosition = async ({
 }): Promise<OKXResponse> => {
   try {
     const clOrdId = decodeClOrdId({intervalId, instId, posSide, leverage, size})
+    const tag = decodeTag({intervalId, instId, posSide, leverage, size})
     const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
     await setPositionMode("long_short_mode");
     await setLeveragePair(instId, leverage, mgnMode, posSide);
-    const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId})
+    const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId, tag})
     return po
   } catch (error: any) {
     console.log(error?.reason || "", error?.message || "", error.code || "")
@@ -198,10 +201,14 @@ export const closeFuturePosition = async ({
   instId,
   mgnMode,
   posSide,
+  clOrdId = '',
+  tag = '',
 }: {
   instId: string;
-  mgnMode: ImgnMode
+  mgnMode: ImgnMode;
   posSide: IPosSide;
+  clOrdId?: string;
+  tag?:string;
 }): Promise<OKXResponse> => {
   try {
     await setPositionMode('long_short_mode')
@@ -209,6 +216,8 @@ export const closeFuturePosition = async ({
       instId,
       mgnMode,
       posSide,
+      clOrdId,
+      tag
     });
     const path = `/api/v5/trade/close-position`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {

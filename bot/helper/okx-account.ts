@@ -43,9 +43,9 @@ export const getAccountPosition = async (instType: IInstType, posId: string, ): 
     }
 }
 
-export const getAccountOrder = async (instId: string, ordId: string, ): Promise<IOrderDetails[]> => {
+export const getAccountOrder = async ({instId, ordId, clOrdId}:{instId: string, ordId?: string, clOrdId?:string}): Promise<IOrderDetails[]> => {
     try {
-        const path = `/api/v5/trade/order?instId=${instId}&ordId=${ordId}`
+        const path = `/api/v5/trade/order?instId=${instId}&clOrdId=${clOrdId}&ordId=${ordId}`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
@@ -81,13 +81,28 @@ export const getAccountPositionRisk = async (instType: IInstType): Promise<IPosi
     }
 }
 
-export const getAccountOrdersHistory = async (instType: IInstType): Promise<any[]> => {
+export const getAccountOrdersHistory = async ({ordType= 'market', instType, clOrdId, limit =100}:{ordType?: string, instType: IInstType, clOrdId?:string, limit?:number}): Promise<IOrderDetails[]> => {
     try {
-        const path = `/api/v5/trade/orders-history?ordType=limit,market,mmp,post_only,optimal_limit_ioc,mmp_and_post_only&instType=${instType}`
+        const path = `/api/v5/trade/orders-history?ordType=${ordType}&instType=${instType}&limit=${limit}`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
-        return res?.data?.data as IAccountBalance[]
+        console.log(res.data.data.map((e:any) => e.clOrdId))
+        return (res?.data?.data as IOrderDetails[]).filter(r => r.clOrdId === clOrdId)
+    } catch (error:any) {
+        console.log(error?.reason || "", error?.message || "", error.code || "")
+        return []
+    }
+}
+
+export const getAccountBillsHistory = async ({instType, clOrdId, limit =100}:{ instType: IInstType, clOrdId?:string, limit?:number}): Promise<any[]> => {
+    try {
+        const path = `/api/v5/account/bills&instType=${instType}&limit=${limit}`
+        const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+            headers: makeHeaderAuthenticationOKX('GET', path, ''),
+        })
+        console.log(res.data.data.map((e:any) => e.clOrdId))
+        return (res?.data?.data as any[]).filter(r => r.clOrdId === clOrdId)
     } catch (error:any) {
         console.log(error?.reason || "", error?.message || "", error.code || "")
         return []

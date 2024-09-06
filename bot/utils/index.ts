@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import {IPosSide} from '../type';
 export function decodeTimestamp(ts?: number, UTC: number =  7 * 60 * 60 * 1000): string {
     if(!ts) return '0'
     const date = new Date(ts + UTC);
@@ -125,3 +126,11 @@ export const generateTelegramTableReport = (data: Array<{ [key: string]: string 
 
   return `<pre>${headerRow}\n${separator}\n${rows}</pre>`;
 };
+
+export const decodeClOrdId = ({intervalId, instId, posSide, leverage, size}: {intervalId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
+  return `${intervalId}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,32).toLowerCase()
+}
+
+export const decodeTag = ({intervalId, instId, posSide, leverage, size}: {intervalId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
+  return `${intervalId}o${size}o${leverage}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,16).toLowerCase()
+}

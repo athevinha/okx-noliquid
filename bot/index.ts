@@ -29,7 +29,3 @@ export async function bot(apiKey?: string) {
     process.once("SIGTERM", () => bot.stop("SIGTERM"));
   }
 }
-
-export const decodeClOrdId = ({intervalId, instId, posSide, leverage, size}: {intervalId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
-  return `${intervalId}o${size}o${leverage}o${decodeSymbol(instId)}o${posSide}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,32).toLowerCase()
-}
