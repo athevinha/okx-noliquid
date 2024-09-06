@@ -1,9 +1,9 @@
 import {expect} from "chai";
-import {closeFuturePosition, openFuturePosition} from "../bot/helper/okx-trade";
-import {ImgnMode, IPosSide} from "../bot/type";
-import {getAccountBillsHistory, getAccountOrder, getAccountOrdersHistory, getAccountPosition, getAccountPositions, getAccountPositionsHistory} from "../bot/helper/okx-account";
 import {setTimeout} from "timers/promises";
-import {decodeClOrdId, decodeTag, zerofy} from "../bot/utils";
+import {getAccountOrder,getAccountPositionsHistory} from "../bot/helper/okx-account";
+import {closeFuturePosition,openFuturePosition} from "../bot/helper/okx-trade";
+import {ImgnMode,IPosSide} from "../bot/type";
+import {decodeClOrdId,decodeTag} from "../bot/utils";
 
 describe("OKX positions test", () => {
   const TEST_CONFIG = {
