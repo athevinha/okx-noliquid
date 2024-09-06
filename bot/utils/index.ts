@@ -1,9 +1,11 @@
 import crypto from 'crypto'
-export function decodeTimestamp(ts: number, UTC: number =  7 * 60 * 60 * 1000): string {
+export function decodeTimestamp(ts?: number, UTC: number =  7 * 60 * 60 * 1000): string {
+    if(!ts) return '0'
     const date = new Date(ts + UTC);
     return date.toISOString(); // Returns date in ISO 8601 format (e.g., '2023-08-23T12:34:56.789Z')
 }
-export function decodeTimestampAgo(timestamp: number, clean = false): string {
+export function decodeTimestampAgo(timestamp?: number, clean = false): string {
+  if(!timestamp) return "0"
   const currentTime = Date.now();
   const difference = currentTime - timestamp;
 
