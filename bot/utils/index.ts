@@ -1,5 +1,7 @@
 import crypto from 'crypto'
 import {IPosSide} from '../type';
+import {WHITE_LIST_TOKENS_TRADE} from './config';
+import {getSupportCrypto} from '../helper/okx-candles';
 export function decodeTimestamp(ts?: number, UTC: number =  7 * 60 * 60 * 1000): string {
     if(!ts) return '0'
     const date = new Date(ts + UTC);
@@ -133,4 +135,20 @@ export const decodeClOrdId = ({intervalId, instId, posSide, leverage, size}: {in
 
 export const decodeTag = ({intervalId, instId, posSide, leverage, size}: {intervalId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
   return `${intervalId}o${size}o${leverage}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,16).toLowerCase()
+}
+
+export const getTradeAbleCrypto = async (tokenTradingMode:string) => {
+  let tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
+    if (tokenTradingMode === "whitelist")
+      tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
+    else if (tokenTradingMode === "all") {
+      const supportFutureCryptos = await getSupportCrypto({});
+      const supportFutureCryptosByInstId = supportFutureCryptos.map(
+        (e) => e.instId
+      );
+      tradeAbleCrypto = supportFutureCryptosByInstId;
+    } else {
+      tradeAbleCrypto = tokenTradingMode?.split("/") || [];
+    }
+  return tradeAbleCrypto
 }

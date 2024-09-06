@@ -14,22 +14,24 @@ import {
 } from "../bot/utils";
 import {WHITE_LIST_TOKENS_TRADE} from "../bot/utils/config";
 // 1D 9 21 undefined undefined
+// 12H 9 21 undefined undefined
 // 4H 9 21 undefined undefined
+// 2H 9 21 undefined undefined
 // 15m 9 21 undefined 0.5
 // 30m 9 21 undefined auto
 const TEST_CONFIG = {
   FEE_PERCENTAGE: 0.18, // Open & Close Fee
-  BAR: "15m",
+  BAR: "4H",
   SHORT_EMA: 9,
   LONG_EMA: 21,
   LEVERAGE: 5,
   SZ_USD: 1000,
   WHITE_LIST_TRADING: true,
   SLOPE_THRESHOLD_UP: undefined,
-  SLOPE_THRESHOLD_UNDER: 0.5,
+  SLOPE_THRESHOLD_UNDER: undefined,
   SLOPE_AVERAGE_MODE: false,
   // LOG
-  LOG_HISTORY_TRADE: false,
+  LOG_HISTORY_TRADE: true,
   LOG_PNL_DETAILS: true,
 };
 describe("OKX EMA Cross backtest", () => {
@@ -51,7 +53,7 @@ describe("OKX EMA Cross backtest", () => {
           const candles = await getCandlesWithLimit({
             instID: `${symbol}`,
             bar: TEST_CONFIG.BAR,
-            limit: 10000,
+            limit: 100,
           });
           const emaCrossovers = findEMACrossovers(
             candles,

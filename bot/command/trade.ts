@@ -8,7 +8,7 @@ import {
   simulateTradesEmaCross,
 } from "../signals/ema-cross";
 import { ICandles, IntervalConfig, IntervalState, IPosSide } from "../type";
-import { decodeSymbol, decodeTimestamp, zerofy } from "../utils";
+import { decodeSymbol, decodeTimestamp, getTradeAbleCrypto, zerofy } from "../utils";
 import {
   parseConfigInterval,
   USDT,
@@ -21,7 +21,6 @@ export const fowardTrading = async ({
   ctx,
   config,
   tradeAbleCrypto,
-  intervalState,
   lastestCandles,
   lastestSignalTs,
   intervalId,
@@ -35,7 +34,6 @@ export const fowardTrading = async ({
       update_id: number;
     }
   >;
-  intervalState: IntervalState;
   config: IntervalConfig;
   tradeAbleCrypto: string[];
   lastestCandles: { [key: string]: ICandles };
@@ -179,9 +177,7 @@ export const fowardTrading = async ({
   }
 };
 
-export const botAutoTrading = ({ bot }: { bot: Telegraf }) => {
-  const intervals = new Map<string, IntervalConfig>();
-
+export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  }) => {
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
@@ -195,23 +191,7 @@ export const botAutoTrading = ({ bot }: { bot: Telegraf }) => {
     let lastestCandles: { [key: string]: ICandles } = {};
     let lastestSignalTs: { [instId: string]: number } = {};
 
-    let intervalState: IntervalState = {
-      positions: [],
-      positionsHistory: [],
-    };
-
-    let tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
-    if (config.tokenTradingMode === "whitelist")
-      tradeAbleCrypto = WHITE_LIST_TOKENS_TRADE;
-    else if (config.tokenTradingMode === "all") {
-      const supportFutureCryptos = await getSupportCrypto({});
-      const supportFutureCryptosByInstId = supportFutureCryptos.map(
-        (e) => e.instId
-      );
-      tradeAbleCrypto = supportFutureCryptosByInstId;
-    } else {
-      tradeAbleCrypto = config.tokenTradingMode?.split("/") || [];
-    }
+    let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode)
     await ctx.reply(
       `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`
     );
@@ -223,7 +203,6 @@ export const botAutoTrading = ({ bot }: { bot: Telegraf }) => {
       await fowardTrading({
         ctx,
         config: { ...config, interval },
-        intervalState,
         tradeAbleCrypto,
         lastestCandles,
         lastestSignalTs,
