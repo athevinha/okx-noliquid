@@ -298,8 +298,11 @@ export type IIntervalData = {[id: string]: {
   slopeThresholdUnder?: number,
   slopeThreshAverageMode?: boolean
   tokenTradingMode?: 'all' | 'whitelist' | string
-  estimatePnl?: number
 }}
+export type IntervalState = {
+  positions: IPositionOpen[],
+  positionsHistory: IPositionHistory[],
+}
 export type IntervalConfig = IIntervalData[keyof IIntervalData] & {
   interval: NodeJS.Timeout;
 };
