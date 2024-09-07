@@ -103,7 +103,7 @@ export function findEMACrossovers(
 ): ICandlesEMACrossovers {
   const longEMA = calculateEMA(candles, longPeriods);
   const shortEMA = calculateEMA(candles, shortPeriods).filter(
-    (ema) => ema.ts >= longEMA[0].ts
+    (ema) => ema?.ts >= longEMA[0]?.ts
   );
   const crossovers: ICandlesEMACrossovers = [];
 

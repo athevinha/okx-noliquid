@@ -16,14 +16,14 @@ export const DEFAULT_BOT_CONFIG = {
   bar: '1Dutc',
   leve: 5,
   mgnMode: 'isolated',
-  sz:500,
+  sz: 500,
   intervalDelay: 30 * 1000,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,
   tokenTradingMode: "whitelist"
 }
-export const MC_ALLOW_TO_TRADING = 300_000_000
+export const MC_ALLOW_TO_TRADING = 1_500_000_000
 export const OKX_BASE_FETCH_API_URL = "https://www.okx.com/priapi/v5";
 export const OKX_BASE_API_URL = "https://www.okx.com";
 export const USDT = "₮";
