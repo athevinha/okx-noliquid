@@ -9,7 +9,7 @@ import {
   ISymbolPriceTicker,
   OKXResponse,
 } from "../type";
-import {decodeClOrdId, decodeTag} from "../utils";
+import {decodeClOrdId, decodeTag, getRandomeHttpAgent} from "../utils";
 
 export const setLeveragePair = async (
   instId: string,
@@ -76,6 +76,7 @@ export const convertUSDToContractOrderSize = async ({
   sz: number;
 }): Promise<string> => {
   try {
+    const httpsAgent = getRandomeHttpAgent()
     const _instId = `${instId.split("-")[0]}-${instId.split("-")[1]}`;
     const [{ idxPx }] = await getSymbolPriceTicker({ instId: _instId });
     const path = `/api/v5/public/convert-contract-coin?type=${type}&instId=${instId}&sz=${
@@ -83,6 +84,7 @@ export const convertUSDToContractOrderSize = async ({
     }`;
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      httpsAgent,
     });
     const [response] = res?.data?.data as IContracConvertResponse[];
     return response.sz;

@@ -1,10 +1,8 @@
 import axios from "axios"
-import {MC_ALLOW_TO_TRADING, OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
-import {IAccountBalance, ICandles, IInstrumentsData} from "../type"
+import {IAccountBalance,ICandles,IInstrumentsData} from "../type"
+import {getRandomeHttpAgent} from "../utils"
+import {MC_ALLOW_TO_TRADING,OKX_BASE_API_URL} from "../utils/config"
 import {makeHeaderAuthenticationOKX} from "./auth"
-import {getRandomElementFromArray} from "../utils"
-import proxys from "../../proxys.json"
-import {HttpsProxyAgent} from "https-proxy-agent"
 import {getCurrencyInfo} from "./okx-ccy"
 // -- DEV --
 // ts	String	Opening time of the candlestick, Unix timestamp format in milliseconds, e.g. 1597026383085
@@ -42,16 +40,7 @@ export const getSymbolCandles = async ({
     let attempts = 0;
   
     const fetchCandles = async (): Promise<string[][]> => {
-      const proxy: any = getRandomElementFromArray(proxys);
-      const proxyHost = proxy.ip;
-      const proxyPort = proxy.port;
-      const proxyUsername = proxy.username; // If the proxy requires authentication
-      const proxyPassword = proxy.password; // If the proxy requires authentication
-  
-      const proxyURL = `http://${
-        proxyUsername && proxyPassword ? `${proxyUsername}:${proxyPassword}@` : ""
-      }${proxyHost}:${proxyPort}`;
-      const httpsAgent = new HttpsProxyAgent(proxyURL);
+      const httpsAgent = getRandomeHttpAgent()
   
       const path = `/api/v5/market/candles?instId=${instID}&after=${after || ''}&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`
       const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {

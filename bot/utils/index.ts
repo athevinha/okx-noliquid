@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import {IPosSide} from '../type';
 import {WHITE_LIST_TOKENS_TRADE} from './config';
 import {getSupportCrypto} from '../helper/okx-candles';
+import {HttpsProxyAgent} from 'https-proxy-agent';
+import proxys from "../../proxys.json"
 export function decodeTimestamp(ts?: number, UTC: number =  7 * 60 * 60 * 1000): string {
     if(!ts) return '0'
     const date = new Date(ts + UTC);
@@ -151,4 +153,18 @@ export const getTradeAbleCrypto = async (tokenTradingMode:string) => {
       tradeAbleCrypto = tokenTradingMode?.split("/") || [];
     }
   return tradeAbleCrypto.filter(instId => supportFutureCryptosByInstId.includes(instId))
+}
+
+export const getRandomeHttpAgent = () => {
+  const proxy: any = getRandomElementFromArray(proxys);
+  const proxyHost = proxy.ip;
+  const proxyPort = proxy.port;
+  const proxyUsername = proxy.username; // If the proxy requires authentication
+  const proxyPassword = proxy.password; // If the proxy requires authentication
+
+  const proxyURL = `http://${
+    proxyUsername && proxyPassword ? `${proxyUsername}:${proxyPassword}@` : ""
+  }${proxyHost}:${proxyPort}`;
+  const httpsAgent = new HttpsProxyAgent(proxyURL);
+  return httpsAgent
 }
