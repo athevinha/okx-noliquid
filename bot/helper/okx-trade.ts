@@ -101,9 +101,11 @@ export const getSymbolPriceTicker = async ({
   instId: string;
 }): Promise<ISymbolPriceTicker[]> => {
   try {
+    const httpsAgent = getRandomeHttpAgent()
     const path = `/api/v5/market/index-tickers?quoteCcy=${quoteCcy}&instId=${instId}`;
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      httpsAgent
     });
     return res?.data?.data as ISymbolPriceTicker[];
   } catch (error:any) {
