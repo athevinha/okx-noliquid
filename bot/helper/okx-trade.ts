@@ -183,7 +183,6 @@ export const openFuturePosition = async ({
   size: number;
   intervalId?: string;
 }): Promise<OKXResponse> => {
-  try {
     const maxRetries = 3;
     let attempts = 0;
     let po = {
@@ -192,12 +191,21 @@ export const openFuturePosition = async ({
       msg: ""
     }
     const openPosition = async (): Promise<OKXResponse> => {
-      const clOrdId = decodeClOrdId({intervalId, instId, posSide, leverage, size})
-      const tag = decodeTag({intervalId, instId, posSide, leverage, size})
-      const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
-      await setPositionMode("long_short_mode");
-      await setLeveragePair(instId, leverage, mgnMode, posSide);
-      return await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId, tag})
+      try {
+        const clOrdId = decodeClOrdId({intervalId, instId, posSide, leverage, size})
+        const tag = decodeTag({intervalId, instId, posSide, leverage, size})
+        const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
+        await setPositionMode("long_short_mode");
+        await setLeveragePair(instId, leverage, mgnMode, posSide);
+        return await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId, tag})
+      } catch (error:any) {
+        console.error(error?.reason || "", error?.message || "", error.code || "")
+        return {
+          code: error?.code,
+          data: [],
+          msg: `${error?.reason} ${error?.message}`,
+        };
+      }
     }
     while (attempts < maxRetries) {
       attempts += 1;
@@ -209,15 +217,6 @@ export const openFuturePosition = async ({
       }
     }
     return po
-  } catch (error: any) {
-    console.error(error?.reason || "", error?.message || "", error.code || "")
-    console.log(error)
-    return {
-      code: error?.code,
-      data: [],
-      msg: `${error?.reason} ${error?.message}`,
-    };
-  }
 };
 
 export const closeFuturePosition = async ({
@@ -241,21 +240,29 @@ export const closeFuturePosition = async ({
     msg: ""
   }
   const closePosition = async (): Promise<OKXResponse> => {
-    await setPositionMode('long_short_mode')
-    const body = JSON.stringify({
-      instId,
-      mgnMode,
-      posSide,
-      clOrdId,
-      tag
-    });
-    const path = `/api/v5/trade/close-position`;
-    const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
-      headers: makeHeaderAuthenticationOKX("POST", path, body),
-    });
-    return res.data as OKXResponse
+    try {
+      await setPositionMode('long_short_mode')
+      const body = JSON.stringify({
+        instId,
+        mgnMode,
+        posSide,
+        clOrdId,
+        tag
+      });
+      const path = `/api/v5/trade/close-position`;
+      const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+        headers: makeHeaderAuthenticationOKX("POST", path, body),
+      });
+      return res.data as OKXResponse
+    } catch (error:any) {
+      console.error(error?.reason || "", error?.message || "", error.code || "")
+    return {
+      code: error?.code,
+      data: [],
+      msg: `${error?.reason} ${error?.message}`,
+    };
+    }
   }
-  try {
     while (attempts < maxRetries) {
       attempts += 1;
       po = await closePosition();
@@ -264,13 +271,4 @@ export const closeFuturePosition = async ({
       }
     }
     return po
-  } catch (error:any) {
-    console.error(error?.reason || "", error?.message || "", error.code || "")
-    return {
-      code: error?.code,
-      data: [],
-      msg: `${error?.reason} ${error?.message}`,
-    };
-  }
- 
 }
