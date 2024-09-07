@@ -1,6 +1,4 @@
-import axios, {AxiosError} from "axios";
-import { OKX_BASE_API_URL } from "../utils/config";
-import { makeHeaderAuthenticationOKX } from "./auth";
+import axios from "axios";
 import {
   IContracConvertResponse,
   ImgnMode,
@@ -9,7 +7,9 @@ import {
   ISymbolPriceTicker,
   OKXResponse,
 } from "../type";
-import {decodeClOrdId, decodeTag, getRandomeHttpAgent} from "../utils";
+import {decodeClOrdId,decodeTag,getRandomeHttpAgent} from "../utils";
+import {OKX_BASE_API_URL} from "../utils/config";
+import {makeHeaderAuthenticationOKX} from "./auth";
 
 export const setLeveragePair = async (
   instId: string,
@@ -157,7 +157,6 @@ export const placeOrder = async ({
     });
     return res?.data;
   } catch (error: any) {
-    console.log(error)
     console.error(error?.reason ,error?.message ,error?.code);
     return {
       code: error?.code,
