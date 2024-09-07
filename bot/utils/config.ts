@@ -16,7 +16,7 @@ export const DEFAULT_BOT_CONFIG = {
   bar: '1Dutc',
   leve: 5,
   mgnMode: 'isolated',
-  sz: 500,
+  sz: 50,
   intervalDelay: 30 * 1000,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
