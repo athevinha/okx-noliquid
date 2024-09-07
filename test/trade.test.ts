@@ -21,7 +21,8 @@ import {WHITE_LIST_TOKENS_TRADE} from "../bot/utils/config";
 // 30m 9 21 undefined auto
 const TEST_CONFIG = {
   FEE_PERCENTAGE: 0.18, // Open & Close Fee
-  BAR: "4H",
+  BAR: "2H",
+  BAR_LIMIT: 3000,
   SHORT_EMA: 9,
   LONG_EMA: 21,
   LEVERAGE: 5,
@@ -33,6 +34,7 @@ const TEST_CONFIG = {
   // LOG
   LOG_HISTORY_TRADE: true,
   LOG_PNL_DETAILS: true,
+  LOG_PNL_SUMMARY: true,
 };
 describe("OKX EMA Cross backtest", () => {
   it("Trade whitelist contract (Future)", async () => {
@@ -53,7 +55,7 @@ describe("OKX EMA Cross backtest", () => {
           const candles = await getCandlesWithLimit({
             instID: `${symbol}`,
             bar: TEST_CONFIG.BAR,
-            limit: 100,
+            limit: TEST_CONFIG.BAR_LIMIT,
           });
           const emaCrossovers = findEMACrossovers(
             candles,
@@ -128,20 +130,22 @@ describe("OKX EMA Cross backtest", () => {
           "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime),
         }))
       );
-    console.log(`------------------------SUMMARY----------------------------`);
-    const Fee = (totalTradeVolume * TEST_CONFIG.FEE_PERCENTAGE) / 100;
-    const PercentPnl =
-      ((totalPnL - Fee) /
-        ((TEST_CONFIG.SZ_USD / TEST_CONFIG.LEVERAGE) *
-          supportFutureCryptosByInstId.length)) *
-      100;
-    console.log("Est. Lost/Win:", `${lostCount}/${winCount}`);
-    console.log("Est. Trade Time:", decodeTimestampAgo(earliestTradeTimestamp));
-    console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
-    console.log("Est. Total Fee ($):", zerofy(Fee));
-    console.log("Est. Total PnL ($):", zerofy(totalPnL));
-    console.log("Est. Realized PnL ($):", zerofy(totalPnL - Fee));
-    console.log("Est. Percent Realized PnL :", zerofy(PercentPnl) + "%");
+    if(TEST_CONFIG.LOG_PNL_SUMMARY){
+      console.log(`------------------------SUMMARY----------------------------`);
+      const Fee = (totalTradeVolume * TEST_CONFIG.FEE_PERCENTAGE) / 100;
+      const PercentPnl =
+        ((totalPnL - Fee) /
+          ((TEST_CONFIG.SZ_USD / TEST_CONFIG.LEVERAGE) *
+            supportFutureCryptosByInstId.length)) *
+        100;
+      console.log("Est. Lost/Win:", `${lostCount}/${winCount}`);
+      console.log("Est. Trade Time:", decodeTimestampAgo(earliestTradeTimestamp));
+      console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
+      console.log("Est. Total Fee ($):", zerofy(Fee));
+      console.log("Est. Total PnL ($):", zerofy(totalPnL));
+      console.log("Est. Realized PnL ($):", zerofy(totalPnL - Fee));
+      console.log("Est. Percent Realized PnL :", zerofy(PercentPnl) + "%");
+    }
     expect(supportFutureCryptosByInstId.length).eq(rankedResults.length);
   });
 });
