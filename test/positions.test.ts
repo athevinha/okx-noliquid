@@ -3,7 +3,7 @@ import {setTimeout} from "timers/promises";
 import {getAccountOrder,getAccountPositionsHistory} from "../bot/helper/okx-account";
 import {closeFuturePosition,openFuturePosition} from "../bot/helper/okx-trade";
 import {ImgnMode,IPosSide} from "../bot/type";
-import {decodeClOrdId,decodeTag} from "../bot/utils";
+import {decodeClOrdId,decodeTag, decodeTimestampAgo} from "../bot/utils";
 
 describe("OKX positions test", () => {
   const TEST_CONFIG = {
@@ -20,19 +20,22 @@ describe("OKX positions test", () => {
   const tag = decodeTag({intervalId, instId, leverage, posSide, size})
 
   it("open position OKX", async () => {
-    const status = await openFuturePosition({
-      intervalId,
-      instId: instId,
-      size: size,
-      mgnMode: mgnMode as ImgnMode,
-      posSide: posSide as IPosSide,
-      leverage: leverage
-    })
-    expect(status.msg).eq("")
-    ordId = status.data[0].ordId
-    expect(status.data[0].clOrdId).eq(clOrdId)
-    const order = await getAccountOrder({instId,ordId})
-    expect(order.length).greaterThan(0)
+    await Promise.all([1,2,3,4,5,6,7].map(async (e) => {
+      const status = await openFuturePosition({
+        intervalId,
+        instId: instId,
+        size: size,
+        mgnMode: mgnMode as ImgnMode,
+        posSide: posSide as IPosSide,
+        leverage: leverage
+      })
+      if(status.msg !== "") console.log(e)
+      expect(status.msg).eq("")
+      ordId = status.data[0].ordId
+      expect(status.data[0].clOrdId).eq(clOrdId)
+      const order = await getAccountOrder({instId,ordId})
+      expect(order.length).greaterThan(0)
+    }))
     await setTimeout(1000)
   });
   it("Close position OKX", async () => {
@@ -47,6 +50,7 @@ describe("OKX positions test", () => {
   });
 
   it("get history positions OKX", async () => {
+    await setTimeout(3000)
     const positions = await getAccountPositionsHistory('SWAP') 
     const position = positions[0]
     expect(position.instId).eq(instId)

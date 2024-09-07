@@ -155,6 +155,7 @@ export const placeOrder = async ({
     });
     return res?.data;
   } catch (error: any) {
+    console.log(error)
     console.error(error?.reason ,error?.message ,error?.code);
     return {
       code: error?.code,
@@ -182,15 +183,34 @@ export const openFuturePosition = async ({
   intervalId?: string;
 }): Promise<OKXResponse> => {
   try {
-    const clOrdId = decodeClOrdId({intervalId, instId, posSide, leverage, size})
-    const tag = decodeTag({intervalId, instId, posSide, leverage, size})
-    const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
-    await setPositionMode("long_short_mode");
-    await setLeveragePair(instId, leverage, mgnMode, posSide);
-    const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId, tag})
+    const maxRetries = 3;
+    let attempts = 0;
+    let po = {
+      code: "0",
+      data: [] as any[],
+      msg: ""
+    }
+    const openPosition = async (): Promise<OKXResponse> => {
+      const clOrdId = decodeClOrdId({intervalId, instId, posSide, leverage, size})
+      const tag = decodeTag({intervalId, instId, posSide, leverage, size})
+      const side: ISide = posSide  === 'long' ? 'buy' : 'sell'
+      await setPositionMode("long_short_mode");
+      await setLeveragePair(instId, leverage, mgnMode, posSide);
+      return await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId, tag})
+    }
+    while (attempts < maxRetries) {
+      attempts += 1;
+      
+      po = await openPosition();
+
+      if (po.msg === "") {
+        break;
+      }
+    }
     return po
   } catch (error: any) {
     console.error(error?.reason || "", error?.message || "", error.code || "")
+    console.log(error)
     return {
       code: error?.code,
       data: [],
@@ -212,7 +232,14 @@ export const closeFuturePosition = async ({
   clOrdId?: string;
   tag?:string;
 }): Promise<OKXResponse> => {
-  try {
+  const maxRetries = 3;
+  let attempts = 0;
+  let po = {
+    code: "0",
+    data: [] as any[],
+    msg: ""
+  }
+  const closePosition = async (): Promise<OKXResponse> => {
     await setPositionMode('long_short_mode')
     const body = JSON.stringify({
       instId,
@@ -226,6 +253,16 @@ export const closeFuturePosition = async ({
       headers: makeHeaderAuthenticationOKX("POST", path, body),
     });
     return res.data as OKXResponse
+  }
+  try {
+    while (attempts < maxRetries) {
+      attempts += 1;
+      po = await closePosition();
+      if (po.msg === "") {
+        break;
+      }
+    }
+    return po
   } catch (error:any) {
     console.error(error?.reason || "", error?.message || "", error.code || "")
     return {
