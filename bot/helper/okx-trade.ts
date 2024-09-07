@@ -87,7 +87,7 @@ export const convertUSDToContractOrderSize = async ({
     const [response] = res?.data?.data as IContracConvertResponse[];
     return response.sz;
   } catch (error:any) {
-    console.log(error?.reason ,error?.message ,error?.code);
+    console.error(error?.reason ,error?.message ,error?.code);
     return "0";
   }
 };
@@ -105,7 +105,7 @@ export const getSymbolPriceTicker = async ({
     });
     return res?.data?.data as ISymbolPriceTicker[];
   } catch (error:any) {
-    console.log(error?.reason ,error?.message ,error?.code);
+    console.error(error?.reason ,error?.message ,error?.code);
     return [];
   }
 };
@@ -188,7 +188,7 @@ export const openFuturePosition = async ({
     const po = await placeOrder({instId, tdMode: mgnMode, side, posSide, ordType, szUSD: size,clOrdId, tag})
     return po
   } catch (error: any) {
-    console.log(error?.reason || "", error?.message || "", error.code || "")
+    console.error(error?.reason || "", error?.message || "", error.code || "")
     return {
       code: error?.code,
       data: [],
@@ -225,7 +225,7 @@ export const closeFuturePosition = async ({
     });
     return res.data as OKXResponse
   } catch (error:any) {
-    console.log(error?.reason || "", error?.message || "", error.code || "")
+    console.error(error?.reason || "", error?.message || "", error.code || "")
     return {
       code: error?.code,
       data: [],

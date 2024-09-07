@@ -91,7 +91,7 @@ export const getSymbolCandles = async ({
         };
       });
     } catch (error:any) {
-      console.log(error?.reason ,error?.message ,error?.code);
+      console.error(error?.reason ,error?.message ,error?.code);
       return [];
     }
   };
@@ -132,7 +132,7 @@ export const getAccountConfig = async (): Promise<any[]> => {
         })
         return res?.data?.data as IAccountBalance[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }

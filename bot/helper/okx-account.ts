@@ -11,7 +11,7 @@ export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
         })
         return res?.data?.data as IAccountBalance[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -26,7 +26,7 @@ export const getAccountPositions = async (instType: IInstType, instIds?:string[]
         if(!instIds || instIds.length === 0) return (res?.data?.data as IPositionOpen[])
         return (res?.data?.data as IPositionOpen[]).filter(r => instIds?.includes(r.instId))
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -39,7 +39,7 @@ export const getAccountPosition = async (instType: IInstType, posId: string, ): 
         })
         return res?.data?.data as IPositionOpen[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -52,7 +52,7 @@ export const getAccountOrder = async ({instId, ordId, clOrdId}:{instId: string, 
         })
         return res?.data?.data as IOrderDetails[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -65,7 +65,7 @@ export const getAccountPositionsHistory = async (instType: IInstType, instIds?: 
         if(!instIds || instIds.length === 0) return (res?.data?.data as IPositionHistory[])
         return (res?.data?.data as IPositionHistory[]).filter(r => instIds?.includes(r.instId))
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -78,7 +78,7 @@ export const getAccountPositionRisk = async (instType: IInstType): Promise<IPosi
         })
         return res?.data?.data as IPositionRisk[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -92,7 +92,7 @@ export const getAccountOrdersHistory = async ({ordType= 'market', instType, clOr
         console.log(res.data.data.map((e:any) => e.clOrdId))
         return (res?.data?.data as IOrderDetails[]).filter(r => r.clOrdId === clOrdId)
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -106,7 +106,7 @@ export const getAccountBillsHistory = async ({instType, clOrdId, limit =100}:{ i
         console.log(res.data.data.map((e:any) => e.clOrdId))
         return (res?.data?.data as any[]).filter(r => r.clOrdId === clOrdId)
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -118,7 +118,7 @@ export const getAccountPendingOrders = async (instType: IInstType): Promise<any[
         })
         return res?.data?.data as IAccountBalance[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
@@ -131,7 +131,7 @@ export const getAccountConfig = async (): Promise<any[]> => {
         })
         return res?.data?.data as IAccountBalance[]
     } catch (error:any) {
-        console.log(error?.reason || "", error?.message || "", error.code || "")
+        console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }
 }
