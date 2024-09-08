@@ -1,6 +1,6 @@
 import axios from "axios"
 import {OKX_BASE_API_URL, OKX_BASE_FETCH_API_URL} from "../utils/config"
-import {IAccountBalance, ICandles, IInstType, IOrderDetails, IPositionHistory, IPositionOpen, IPositionRisk} from "../type"
+import {IAccountBalance, ICandles, IInstType, IOrderDetails, IPendingAlgoOrder, IPositionHistory, IPositionOpen, IPositionRisk} from "../type"
 import {makeHeaderAuthenticationOKX} from "./auth"
 
 export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
@@ -46,7 +46,7 @@ export const getAccountPosition = async (instType: IInstType, posId: string, ): 
 
 export const getAccountOrder = async ({instId, ordId, clOrdId}:{instId: string, ordId?: string, clOrdId?:string}): Promise<IOrderDetails[]> => {
     try {
-        const path = `/api/v5/trade/order?instId=${instId}&clOrdId=${clOrdId}&ordId=${ordId}`
+        const path = `/api/v5/trade/order?clOrdId=${clOrdId}${instId ? `&instId=$${instId}` : ''}&ordId=${ordId}`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
             headers: makeHeaderAuthenticationOKX('GET', path, ''),
         })
@@ -110,7 +110,7 @@ export const getAccountBillsHistory = async ({instType, clOrdId, limit =100}:{ i
         return []
     }
 }
-export const getAccountPendingOrders = async (instType: IInstType): Promise<any[]> => {
+export const getAccountPendingOrders = async (): Promise<any[]> => {
     try {
         const path = `/api/v5/trade/orders-pending`
         const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
@@ -118,6 +118,20 @@ export const getAccountPendingOrders = async (instType: IInstType): Promise<any[
         })
         return res?.data?.data as IAccountBalance[]
     } catch (error:any) {
+        console.error(error?.reason || "", error?.message || "", error.code || "")
+        return []
+    }
+}
+
+export const getAccountPendingAlgoOrders = async ({ordType="move_order_stop", limit=100, instId}:{ordType?: string, limit?: number, instId?: string}): Promise<IPendingAlgoOrder[]> => {
+    try {
+        const path = `/api/v5/trade/orders-algo-pending?ordType=${ordType}&limit=${limit}${instId ? `&instId=$${instId}` : ''}`
+        const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+            headers: makeHeaderAuthenticationOKX('GET', path, ''),
+        })
+        return res?.data?.data as IPendingAlgoOrder[]
+    } catch (error:any) {
+        // console.log(error?.response?.data?.msg)
         console.error(error?.reason || "", error?.message || "", error.code || "")
         return []
     }

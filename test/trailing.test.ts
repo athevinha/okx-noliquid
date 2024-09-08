@@ -2,6 +2,7 @@ import {expect} from "chai";
 import {openTrailingStopOrder} from "../bot/helper/okx.trade.algo";
 import {ImgnMode,IPosSide} from "../bot/type";
 import {openFuturePosition} from "../bot/helper/okx.trade";
+import {getAccountPendingAlgoOrders} from "../bot/helper/okx.account";
 
 describe("OKX trailing stoploss test", () => {
   const TEST_CONFIG = {
@@ -38,7 +39,7 @@ describe("OKX trailing stoploss test", () => {
   //   expect(status.msg).eq("");
   // });
  
-  it("Open position and trailing SL", async () => {
+  it("Open position and trailing loss", async () => {
     const status = await openFuturePosition({
       intervalId,
       instId: instId,
@@ -50,6 +51,12 @@ describe("OKX trailing stoploss test", () => {
     });
     expect(status.msg).eq("");
   });
+
+  it("Fetch open pending trailing loss orders", async () => {
+    const algoOrders = await getAccountPendingAlgoOrders({})
+    console.log(algoOrders)
+  });
+  
   
   // it("Close position with trailing loss fill", async () => {
   //   const status = await closeFuturePosition({

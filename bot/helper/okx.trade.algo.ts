@@ -56,3 +56,23 @@ export const openTrailingStopOrder = async ({
     }
   };
   
+export const closeTrailingStopOrder = async ({algoId, instId}: {algoId: string, instId: string}): Promise<OKXResponse> => {
+    try {
+        const body = JSON.stringify({
+          instId,
+          algoId
+        });
+        const path = `/api/v5/trade/cancel-algos`;
+        const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+          headers: makeHeaderAuthenticationOKX("POST", path, body),
+        });
+        return res?.data;
+      } catch (error: any) {
+        console.error(error?.reason ,error?.message ,error?.code);
+        return {
+          code: error?.code,
+          data: [],
+          msg: `${error?.reason} ${error?.message}`,
+        };
+      }
+}
