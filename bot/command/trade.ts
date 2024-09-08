@@ -191,7 +191,7 @@ export const fowardTrading = async ({
               )}${USDT}</code> | <code>${
                 openPositionParams.leverage
               }x</code>\n`;
-              notificationMessage+= `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n`
+              notificationMessage+= `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`
             }
             notificationMessage += `<code>-------------------------------</code>\n`;
             notificationMessage += `<code>${

@@ -53,7 +53,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
       let summaryReport = ``;
       summaryReport += `<b>Est. PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${totalPnl >= 0 ? "🟩" : "🟥"}\n`;
       summaryReport += `<b>Est. Realized PnL:</b> <code>${zerofy(totalRealizedPnl)}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;
-      summaryReport += `<b>Est. Max Loss:</b> <code>${zerofy(totalTrailingLossPnl)}${USDT}</code> • ${totalTrailingLossPnl >= 0 ? "🟪" : "🟧"}\n`;
+      summaryReport += `<b>Est. Trigs. loss:</b> <code>${zerofy(totalTrailingLossPnl)}${USDT}</code> • ${totalTrailingLossPnl >= 0 ? "🟪" : "🟧"}\n`;
       summaryReport += `<b>Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}</code>%)\n`;
       summaryReport += `<code>----------POSITIONS------------</code>\n`;
       
