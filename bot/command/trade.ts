@@ -67,7 +67,7 @@ export const fowardTrading = async ({
             instID: `${SYMBOL}`,
             before: 0,
             bar,
-            limit: 50,
+            limit: 300,
           });
 
           const candles = _candles.filter((candle) => candle.confirm === 1);
