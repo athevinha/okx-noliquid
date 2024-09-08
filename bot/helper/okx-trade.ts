@@ -139,6 +139,11 @@ export const placeOrder = async ({
 }): Promise<OKXResponse> => {
   try {
     const sz = await convertUSDToContractOrderSize({ instId, sz: szUSD });
+    if(!sz) return {
+      code: '',
+      msg: 'Convert USD contract error',
+      data: []
+    }
     const body = JSON.stringify({
       instId,
       tdMode,
@@ -174,6 +179,7 @@ export const openFuturePosition = async ({
   posSide,
   ordType = 'market',
   intervalId = "",
+  callbackRatio, // active trailing loss
 }: {
   instId: string;
   mgnMode: ImgnMode
@@ -182,6 +188,7 @@ export const openFuturePosition = async ({
   leverage: number;
   size: number;
   intervalId?: string;
+  callbackRatio?:string;
 }): Promise<OKXResponse> => {
     const maxRetries = 3;
     let attempts = 0;
@@ -207,6 +214,15 @@ export const openFuturePosition = async ({
         };
       }
     }
+    const openTrailingOrder = async (_callbackRatio: string): Promise<OKXResponse> => {
+        return await openTrailingStopOrder({
+          instId,
+          size,
+          posSide,
+          mgnMode,
+          callbackRatio: _callbackRatio,
+        })
+    }
     while (attempts < maxRetries) {
       attempts += 1;
       
@@ -216,6 +232,18 @@ export const openFuturePosition = async ({
         break;
       }
     }
+    attempts = 0
+
+    if(po.msg === "" && callbackRatio) {
+      while (attempts < maxRetries) {
+        attempts += 1;
+        po = await openTrailingOrder(callbackRatio);
+        if (po.msg === "") {
+          break;
+        }
+      }
+    }
+
     return po
 };
 
@@ -272,3 +300,51 @@ export const closeFuturePosition = async ({
     }
     return po
 }
+
+export const openTrailingStopOrder = async ({
+  instId,
+  mgnMode,
+  posSide,
+  callbackRatio,
+  size,
+  reduceOnly = false,
+}: {
+  instId: string;
+  mgnMode: ImgnMode;
+  posSide: IPosSide;
+  callbackRatio: string;
+  size: number;
+  reduceOnly?: boolean
+}): Promise<OKXResponse> => {
+  try {
+    const sz = await convertUSDToContractOrderSize({ instId, sz: size });
+    if(!sz) return {
+      code: '',
+      msg: 'Convert USD contract error',
+      data: []
+    }
+    const _side = posSide === 'long' ? 'sell' : (posSide === 'short' ? 'buy' : 'net')
+    const body = JSON.stringify({
+      instId,
+      tdMode: mgnMode,
+      side: _side,
+      posSide,
+      callbackRatio,
+      ordType: 'move_order_stop',
+      sz,
+      reduceOnly,
+    });
+    const path = `/api/v5/trade/order-algo`;
+    const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+      headers: makeHeaderAuthenticationOKX("POST", path, body),
+    });
+    return res?.data;
+  } catch (error: any) {
+    console.error(error?.reason ,error?.message ,error?.code);
+    return {
+      code: error?.code,
+      data: [],
+      msg: `${error?.reason} ${error?.message}`,
+    };
+  }
+};
