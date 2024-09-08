@@ -2,7 +2,7 @@ import {expect} from "chai";
 import {
   getCandlesWithLimit,
   getSupportCrypto
-} from "../bot/helper/okx-candles";
+} from "../bot/helper/okx.candles";
 import {
   findEMACrossovers,
   simulateTradesEmaCross

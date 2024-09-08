@@ -3,11 +3,11 @@ import { setTimeout } from "timers/promises";
 import {
   getAccountOrder,
   getAccountPositionsHistory,
-} from "../bot/helper/okx-account";
+} from "../bot/helper/okx.account";
 import {
   closeFuturePosition,
   openFuturePosition,
-} from "../bot/helper/okx-trade";
+} from "../bot/helper/okx.trade";
 import { ImgnMode, IPosSide } from "../bot/type";
 import { decodeClOrdId, decodeTag, decodeTimestampAgo } from "../bot/utils";
 

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { WHITE_LIST_TOKENS_TRADE } from "../bot/utils/config";
-import { getSupportCrypto, getSymbolCandles } from "../bot/helper/okx-candles";
-import {getCurrencyInfo} from "../bot/helper/okx-ccy";
+import { getSupportCrypto, getSymbolCandles } from "../bot/helper/okx.candles";
+import {getCurrencyInfo} from "../bot/helper/okx.ccy";
 
 describe("OKX crypto test fetch infor", () => {
   it("Can fetch multi CCY info", async () => {

@@ -1,5 +1,5 @@
 import {expect} from "chai";
-import {closeFuturePosition,openFuturePosition,openTrailingStopOrder} from "../bot/helper/okx-trade";
+import {closeFuturePosition,openFuturePosition,openTrailingStopOrder} from "../bot/helper/okx.trade";
 import {ImgnMode,IPosSide} from "../bot/type";
 
 describe("OKX trailing stoploss test", () => {

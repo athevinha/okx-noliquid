@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import {IPosSide} from '../type';
 import {WHITE_LIST_TOKENS_TRADE} from './config';
-import {getSupportCrypto} from '../helper/okx-candles';
+import {getSupportCrypto} from '../helper/okx.candles';
 import {HttpsProxyAgent} from 'https-proxy-agent';
 import proxys from "../../proxys.json"
 export function decodeTimestamp(ts?: number, UTC: number =  7 * 60 * 60 * 1000): string {

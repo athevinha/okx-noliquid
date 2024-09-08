@@ -1,4 +1,4 @@
-import {getSymbolCandles} from "./helper/okx-candles";
+import {getSymbolCandles} from "./helper/okx.candles";
 import {findEMACrossovers} from "./signals/ema-cross";
 import {decodeTimestamp} from "./utils";
 import {WHITE_LIST_TOKENS_TRADE} from "./utils/config";

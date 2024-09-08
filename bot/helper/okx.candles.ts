@@ -3,7 +3,7 @@ import {IAccountBalance,ICandles,IInstrumentsData} from "../type"
 import {getRandomeHttpAgent} from "../utils"
 import {MC_ALLOW_TO_TRADING,OKX_BASE_API_URL} from "../utils/config"
 import {makeHeaderAuthenticationOKX} from "./auth"
-import {getCurrencyInfo} from "./okx-ccy"
+import {getCurrencyInfo} from "./okx.ccy"
 // -- DEV --
 // ts	String	Opening time of the candlestick, Unix timestamp format in milliseconds, e.g. 1597026383085
 // o	String	Open price

@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 import {Context,NarrowedContext,Telegraf} from "telegraf";
 import {Message,Update} from "telegraf/typings/core/types/typegram";
-import {getSymbolCandles} from "../helper/okx-candles";
-import {closeFuturePosition,openFuturePosition} from "../helper/okx-trade";
+import {getSymbolCandles} from "../helper/okx.candles";
+import {closeFuturePosition,openFuturePosition} from "../helper/okx.trade";
 import {
   findEMACrossovers
 } from "../signals/ema-cross";

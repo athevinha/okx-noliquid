@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {getCandlesWithLimit, getSupportCrypto,getSymbolCandles} from '../bot/helper/okx-candles';
+import {getCandlesWithLimit, getSupportCrypto,getSymbolCandles} from '../bot/helper/okx.candles';
 
 describe('OKX candles test fetch', () => {
     it('Can fetch multi contract (Future) candles', async () => {

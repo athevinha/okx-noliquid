@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {getCandlesWithLimit, getSupportCrypto,getSymbolCandles} from '../bot/helper/okx-candles';
+import {getCandlesWithLimit, getSupportCrypto,getSymbolCandles} from '../bot/helper/okx.candles';
 import {calculateEMA, findEMACrossovers} from '../bot/signals/ema-cross';
 import {decodeTimestamp} from '../bot/utils';
 

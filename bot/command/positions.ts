@@ -1,5 +1,5 @@
 import {Telegraf} from "telegraf";
-import {getAccountPositions} from "../helper/okx-account";
+import {getAccountPositions} from "../helper/okx.account";
 import {getTradeAbleCrypto, zerofy} from "../utils";
 import {USDT} from "../utils/config";
 import {IntervalConfig} from "../type";

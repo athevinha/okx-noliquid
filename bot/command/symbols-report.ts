@@ -1,5 +1,5 @@
 import {Telegraf} from "telegraf";
-import {getAccountPositionsHistory} from "../helper/okx-account";
+import {getAccountPositionsHistory} from "../helper/okx.account";
 import {
     generateTelegramTableReport,
     getTradeAbleCrypto,
