@@ -47,18 +47,18 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
         report += `• <b>Avg. E:</b> <code>${zerofy(position.avgPx)}${USDT}</code>\n`;
         report += `• <b>PnL:</b> <code>${zerofy(position.upl)}${USDT}</code> (<code>${zerofy(Number(position.uplRatio) * 100)}</code>%) • ${pnlIcon}\n`;
         report += `• <b>Real. Pnl:</b> <code>${zerofy(realizedPnl)}${USDT}</code> • ${realizedPnlIcon}\n`;
-        report += trailingLossOrder ? `• <b>Trail. S/L:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n` : '';
+        report += trailingLossOrder ? `• <b>Trail:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n` : '';
         positionReports += report;
       });
       let summaryReport = ``;
+      summaryReport += `<code>----------POSITIONS------------</code>\n`;
       summaryReport += `<b>Est. PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${totalPnl >= 0 ? "🟢" : "🔴"}\n`;
       summaryReport += `<b>Est. Realized PnL:</b> <code>${zerofy(totalRealizedPnl)}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
       summaryReport += `<b>Est. Trigs. loss:</b> <code>${zerofy(totalTrailingLossPnl)}${USDT}</code> • ${totalTrailingLossPnl >= 0 ? "🟣" : "🟠"}\n`;
       summaryReport += `<b>Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}</code>%)\n`;
-      summaryReport += `<code>----------POSITIONS------------</code>\n`;
       
       // Send the report to the user
-      await ctx.reply(summaryReport + positionReports, { parse_mode: "HTML", link_preview_options:{is_disabled: true} });
+      await ctx.reply(positionReports + summaryReport, { parse_mode: "HTML", link_preview_options:{is_disabled: true} });
     } catch (err: any) {
       await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
     }

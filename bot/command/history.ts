@@ -74,6 +74,7 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
 
       // Generate the summary report
       let summaryReport = ``;
+      summaryReport += `<code>-----------HISTORYS------------</code>\n`;
       summaryReport += `<b>Total Positions:</b> <code>${totalPositions}</code>\n`;
       summaryReport += `<b>Total Volume:</b> <code>${zerofy(
         totalVolume
@@ -84,10 +85,9 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
       summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
         totalRealizedPnl
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
-      summaryReport += `<code>-----------HISTORYS------------</code>\n`;
 
       // Send the summary and the detailed reports
-      await ctx.reply(summaryReport + positionReports, {
+      await ctx.reply(positionReports + summaryReport, {
         parse_mode: "HTML",
         link_preview_options: { is_disabled: true },
       });
