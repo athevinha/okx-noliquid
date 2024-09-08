@@ -44,7 +44,7 @@ export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, interv
         .map(([symbol, pnl]) => ({
           "Ccy": symbol,
           "PnL": `${zerofy(pnl)}${USDT}`,
-          Ic: pnl >= 0 ? "🟩" : "🟥",
+          Ic: pnl >= 0 ? "🟢" : "🔴",
           PnLValue: pnl,
         }))
         .slice(0, 50);

@@ -44,7 +44,7 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
       recentPositions.forEach((position, index) => {
         if (index <= showPositionHistory) {
           const realizedPnlIcon =
-            parseFloat(zerofy(position.realizedPnl)) >= 0 ? "🟩" : "🟥";
+            parseFloat(zerofy(position.realizedPnl)) >= 0 ? "🟢" : "🔴";
 
           const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
           let report = ``;
@@ -83,7 +83,7 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
       )}${USDT}</code>\n`;
       summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
         totalRealizedPnl
-      )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;
+      )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
       summaryReport += `<code>-----------HISTORYS------------</code>\n`;
 
       // Send the summary and the detailed reports

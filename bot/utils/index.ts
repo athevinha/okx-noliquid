@@ -196,7 +196,7 @@ export const estimatePnl = ({posSide, sz, c, e}: {
       Number(c);
   }
   estPnlStopLoss = estPnlStopLossPercent * Number(sz);
-  let estPnlStopLossIcon = estPnlStopLoss >= 0 ? "🟪" : "🟧";
+  let estPnlStopLossIcon = estPnlStopLoss >= 0 ? "🟣" : "🟧";
   return {
     estPnlStopLoss,
     estPnlStopLossPercent,
