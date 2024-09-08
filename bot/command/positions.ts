@@ -26,6 +26,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
       let positionReports = tokensFilter.length > 0 ? `<b>Report for interval: </b> <code>${id}</code>\n` :"" ;
       let totalPnl = 0;
       let totalRealizedPnl = 0;
+      let totalBet = 0;
       // Create the report for open positions
       positions.forEach((position, _) => {
         const pnlIcon = parseFloat(zerofy(position.upl)) >= 0 ? "🟩" : "🟥";
@@ -33,6 +34,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
         const realizedPnlIcon = realizedPnl >= 0 ? "🟩" : "🟥";
         totalPnl += parseFloat(position.upl);
         totalRealizedPnl += realizedPnl;
+        totalBet += (Number(position.notionalUsd) / Number(position.lever))
         if(_ > 10) return;
         const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`
         // Split the += into logical chunks for easier debugging
@@ -47,7 +49,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
       positionReports += `<code>-------------------------------</code>\n`;
       positionReports += `<b>Est. PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${totalPnl >= 0 ? "🟩" : "🟥"}\n`;
       positionReports += `<b>Est. Realized PnL:</b> <code>${zerofy(totalRealizedPnl)}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;
-  
+      positionReports += `<b>Est. Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}%</code>)\n`;
       // Send the report to the user
       await ctx.reply(positionReports, { parse_mode: "HTML", link_preview_options:{is_disabled: true} });
     } catch (err: any) {
