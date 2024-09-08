@@ -34,7 +34,7 @@ dotenv.config();
  * @param {string[]} tradeAbleCrypto - List of cryptocurrencies that are available for trading.
  * @param {Object} lastestCandles - A record of the latest confirmed candles for each symbol.
  *    Format: { [key: string]: ICandles[] } where `key` is the symbol (e.g., BTC-USDT) and `ICandles[]` represents the candles data.
- * @param {Object} lastestSignalTs - A record of the last confirmed signal timestamps for each symbol.
+ * @param {Object} lastestSignalTs - A record of the last confirmed signal bot make tx timestamps for each symbol.
  *    Format: { [instId: string]: number } where `instId` is the symbol and `number` is the timestamp of the last executed signal.
  * @param {string} [intervalId] - Optional ID of the trading interval for logging and tracking purposes.
  *
