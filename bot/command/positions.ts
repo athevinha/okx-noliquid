@@ -1,5 +1,5 @@
 import {Telegraf} from "telegraf";
-import {getAccountPositions} from "../helper/okx.account";
+import {getAccountPendingAlgoOrders, getAccountPositions} from "../helper/okx.account";
 import {axiosErrorDecode, getTradeAbleCrypto, zerofy} from "../utils";
 import {USDT} from "../utils/config";
 import {IntervalConfig} from "../type";
@@ -16,7 +16,8 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
         tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
       }
       const positions = await getAccountPositions("SWAP", tokensFilter);
-
+      let trailingLossOrders = (await getAccountPendingAlgoOrders({}));
+      trailingLossOrders = tokensFilter.length === 0 ? trailingLossOrders : trailingLossOrders.filter((order => tokensFilter.includes(order.instId)))
       if (positions.length === 0) {
         await ctx.reply("No open positions found.");
         return;
@@ -26,30 +27,46 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
       let positionReports = tokensFilter.length > 0 ? `<b>Report for interval: </b> <code>${id}</code>\n` :"" ;
       let totalPnl = 0;
       let totalRealizedPnl = 0;
+      let totalTrailingLossPnl = 0;
       let totalBet = 0;
       // Create the report for open positions
       positions.forEach((position, _) => {
         const pnlIcon = parseFloat(zerofy(position.upl)) >= 0 ? "🟩" : "🟥";
         const realizedPnl = parseFloat(position.realizedPnl) + parseFloat(position.upl)
         const realizedPnlIcon = realizedPnl >= 0 ? "🟩" : "🟥";
+        const trailingLossOrder = trailingLossOrders.filter(order => order.instId === position.instId)?.[0]
+        let estPnlStopLossPercent = 0
+        let estPnlStopLoss = 0
+        if(trailingLossOrder) {
+          if(position.posSide === 'short') {
+            estPnlStopLossPercent = (Number(position.avgPx) - Number(trailingLossOrder.moveTriggerPx)) / Number(trailingLossOrder.moveTriggerPx);
+          } else if(position.posSide === 'long') {
+            estPnlStopLossPercent = (Number(trailingLossOrder.moveTriggerPx) - Number(position.avgPx)) / Number(trailingLossOrder.moveTriggerPx);
+          }
+          estPnlStopLoss = estPnlStopLossPercent * Number(position.notionalUsd) 
+          totalTrailingLossPnl += estPnlStopLoss
+        }
+        let estPnlStopLossIcon = estPnlStopLoss >= 0 ? "🟪" : "🟧";
+
         totalPnl += parseFloat(position.upl);
         totalRealizedPnl += realizedPnl;
         totalBet += (Number(position.notionalUsd) / Number(position.lever))
         if(_ > 10) return;
         const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`
         // Split the += into logical chunks for easier debugging
-        let report = `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId.split('-').slice(0,2).join('/')}</a></b> (<code>${zerofy(position.notionalUsd)}${USDT}</code>)\n`;
-        report += `• <b>Avg Entry:</b> <code>${zerofy(position.avgPx)}${USDT}</code>\n`;
-        report += `• <b>Margin Ratio:</b> <code>${zerofy(position.mgnRatio)}</code>%\n`;
-        report += `• <b>Leverage:</b> <code>${zerofy(position.lever)}</code>x\n`;
-        report += `• <b>PnL:</b> <code>${zerofy(Number(position.uplRatio) * 100)}</code>% (<code>${zerofy(position.upl)}${USDT}</code>) • ${pnlIcon}\n`;
-        report += `• <b>Realized Pnl:</b> <code>${zerofy(realizedPnl)}${USDT}</code> • ${realizedPnlIcon}\n`;
+        let report = `[<code>${position.posSide.toUpperCase()}</code>] <b><a href="${tradeLink}">${position.instId.split('-')[0]} <code>${zerofy(position.lever)}x</code></a></b> (<code>${zerofy(position.notionalUsd)}${USDT}</code>)\n`;
+        report += `• <b>Avg. E:</b> <code>${zerofy(position.avgPx)}${USDT}</code>\n`;
+        report += `• <b>PnL:</b> <code>${zerofy(position.upl)}${USDT}</code> (<code>${zerofy(Number(position.uplRatio) * 100)}</code>%) • ${pnlIcon}\n`;
+        report += `• <b>Real. Pnl:</b> <code>${zerofy(realizedPnl)}${USDT}</code> • ${realizedPnlIcon}\n`;
+        report += trailingLossOrder ? `• <b>Trail. S/L:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n` : '';
         positionReports += report;
       });
       positionReports += `<code>-------------------------------</code>\n`;
       positionReports += `<b>Est. PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${totalPnl >= 0 ? "🟩" : "🟥"}\n`;
       positionReports += `<b>Est. Realized PnL:</b> <code>${zerofy(totalRealizedPnl)}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;
-      positionReports += `<b>Est. Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}%</code>)\n`;
+      positionReports += `<b>Est. Max Loss:</b> <code>${zerofy(totalTrailingLossPnl)}${USDT}</code> • ${totalTrailingLossPnl >= 0 ? "🟪" : "🟧"}\n`;
+      positionReports += `<b>Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}</code>%)\n`;
+      
       // Send the report to the user
       await ctx.reply(positionReports, { parse_mode: "HTML", link_preview_options:{is_disabled: true} });
     } catch (err: any) {
