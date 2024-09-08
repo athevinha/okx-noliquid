@@ -1,6 +1,7 @@
 import {Telegraf} from "telegraf";
 import {getAccountPositionsHistory} from "../helper/okx.account";
 import {
+  axiosErrorDecode,
     generateTelegramTableReport,
     getTradeAbleCrypto,
     zerofy
@@ -62,8 +63,7 @@ export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, interv
         parse_mode: "HTML",
       });
     } catch (err: any) {
-      console.error("Error fetching symbol rank: ", err.message || err);
-      await ctx.reply("Error fetching symbol rank: ", err.message || err);
+      await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
     }
   });
 };

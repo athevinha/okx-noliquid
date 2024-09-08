@@ -8,6 +8,7 @@ import {
 } from "../signals/ema-cross";
 import {ICandles,IntervalConfig,IPosSide} from "../type";
 import {
+  axiosErrorDecode,
   decodeSymbol,
   decodeTimestamp,
   getTradeAbleCrypto,
@@ -196,11 +197,7 @@ export const fowardTrading = async ({
     }
     lastestCandles[BASE_SYMBOL] = [pendingCandle];
   } catch (err: any) {
-    console.log(err);
-    console.error("Interval error: ", err.message || err);
-    await ctx.replyWithHTML(
-      `<code>${err.message || err.reason || err.code}</code>`
-    );
+    await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
 };
 

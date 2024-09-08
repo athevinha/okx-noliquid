@@ -2,6 +2,7 @@ import {Telegraf} from "telegraf";
 import {getAccountPositionsHistory} from "../helper/okx.account";
 import {IntervalConfig} from "../type";
 import {
+  axiosErrorDecode,
   decodeTimestampAgo,
   getTradeAbleCrypto,
   zerofy
@@ -93,8 +94,7 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
         link_preview_options: { is_disabled: true },
       });
     } catch (err: any) {
-      console.error("Error fetching position history: ", err.message || err);
-      await ctx.reply("Error fetching position history.");
+      await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
     }
   });
 };

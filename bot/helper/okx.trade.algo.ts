@@ -7,6 +7,7 @@ import {
 import {OKX_BASE_API_URL} from "../utils/config";
 import {makeHeaderAuthenticationOKX} from "./auth";
 import {convertUSDToContractOrderSize} from "./okx.trade";
+import {axiosErrorDecode} from "../utils";
 
 export const openTrailingStopOrder = async ({
     instId,
@@ -47,7 +48,7 @@ export const openTrailingStopOrder = async ({
       });
       return res?.data;
     } catch (error: any) {
-      console.error(error?.reason ,error?.message ,error?.code);
+      axiosErrorDecode(error);
       return {
         code: error?.code,
         data: [],
@@ -68,7 +69,7 @@ export const closeTrailingStopOrder = async ({algoId, instId}: {algoId: string, 
         });
         return res?.data;
       } catch (error: any) {
-        console.error(error?.reason ,error?.message ,error?.code);
+        axiosErrorDecode(error);
         return {
           code: error?.code,
           data: [],

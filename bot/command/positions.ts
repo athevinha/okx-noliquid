@@ -1,6 +1,6 @@
 import {Telegraf} from "telegraf";
 import {getAccountPositions} from "../helper/okx.account";
-import {getTradeAbleCrypto, zerofy} from "../utils";
+import {axiosErrorDecode, getTradeAbleCrypto, zerofy} from "../utils";
 import {USDT} from "../utils/config";
 import {IntervalConfig} from "../type";
 
@@ -53,8 +53,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
       // Send the report to the user
       await ctx.reply(positionReports, { parse_mode: "HTML", link_preview_options:{is_disabled: true} });
     } catch (err: any) {
-      console.error("Error fetching positions: ", err.message || err);
-      await ctx.reply("Error fetching positions.");
+      await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
     }
   });
 };

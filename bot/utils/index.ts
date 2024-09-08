@@ -168,3 +168,8 @@ export const getRandomeHttpAgent = () => {
   const httpsAgent = new HttpsProxyAgent(proxyURL);
   return httpsAgent
 }
+
+export const axiosErrorDecode = (error:any, log: boolean = true) => {
+  if(log) console.error(error?.response?.data?.msg, error?.reason || "", error?.message || "", error?.response?.data?.code || error.code || "")
+  return error?.response?.data?.msg + error?.reason || "" + error?.message || "" + error?.response?.data?.code || error?.code || ""
+}

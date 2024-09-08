@@ -53,7 +53,7 @@ describe("OKX trailing stoploss test", () => {
   });
 
   it("Fetch open pending trailing loss orders", async () => {
-    const algoOrders = await getAccountPendingAlgoOrders({})
+    const algoOrders = await getAccountPendingAlgoOrders({instId})
     console.log(algoOrders)
   });
   
