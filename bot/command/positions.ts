@@ -1,8 +1,8 @@
 import {Telegraf} from "telegraf";
 import {getAccountPendingAlgoOrders, getAccountPositions} from "../helper/okx.account";
-import {axiosErrorDecode, getTradeAbleCrypto, zerofy} from "../utils";
+import {axiosErrorDecode, estimatePnl, getTradeAbleCrypto, zerofy} from "../utils";
 import {USDT} from "../utils/config";
-import {IntervalConfig} from "../type";
+import {IntervalConfig, IPosSide} from "../type";
 
 export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
   bot.command("positions", async (ctx) => {
@@ -35,19 +35,8 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
         const realizedPnl = parseFloat(position.realizedPnl) + parseFloat(position.upl)
         const realizedPnlIcon = realizedPnl >= 0 ? "🟩" : "🟥";
         const trailingLossOrder = trailingLossOrders.filter(order => order.instId === position.instId)?.[0]
-        let estPnlStopLossPercent = 0
-        let estPnlStopLoss = 0
-        if(trailingLossOrder) {
-          if(position.posSide === 'short') {
-            estPnlStopLossPercent = (Number(position.avgPx) - Number(trailingLossOrder.moveTriggerPx)) / Number(trailingLossOrder.moveTriggerPx);
-          } else if(position.posSide === 'long') {
-            estPnlStopLossPercent = (Number(trailingLossOrder.moveTriggerPx) - Number(position.avgPx)) / Number(trailingLossOrder.moveTriggerPx);
-          }
-          estPnlStopLoss = estPnlStopLossPercent * Number(position.notionalUsd) 
-          totalTrailingLossPnl += estPnlStopLoss
-        }
-        let estPnlStopLossIcon = estPnlStopLoss >= 0 ? "🟪" : "🟧";
-
+        const {estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon} = estimatePnl({posSide: position.posSide as IPosSide, sz: position.notionalUsd, e: position.avgPx, c: trailingLossOrder.moveTriggerPx })
+        totalTrailingLossPnl += estPnlStopLoss
         totalPnl += parseFloat(position.upl);
         totalRealizedPnl += realizedPnl;
         totalBet += (Number(position.notionalUsd) / Number(position.lever))

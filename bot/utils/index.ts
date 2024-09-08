@@ -173,3 +173,33 @@ export const axiosErrorDecode = (error:any, log: boolean = true) => {
   if(log) console.error(error?.response?.data?.msg || "", error?.reason || "", error?.message || "", error?.response?.data?.code || error.code || "")
   return `${error?.response?.data?.msg || ""}${error?.reason || ""}${error?.message || ""}${error?.response?.data?.code || error?.code || ""}`
 }
+
+export const estimatePnl = ({posSide, sz, c, e}: {
+  posSide: IPosSide;
+  sz: number | string;
+  c: number | string;
+  e: number | string;
+}): {
+  estPnlStopLoss: number;
+  estPnlStopLossPercent: number;
+  estPnlStopLossIcon: string;
+} => {
+  let estPnlStopLossPercent = 0;
+  let estPnlStopLoss = 0;
+  if (posSide === "short") {
+    estPnlStopLossPercent =
+      (Number(e) - Number(c)) /
+      Number(c);
+  } else if (posSide === "long") {
+    estPnlStopLossPercent =
+      (Number(c) - Number(e)) /
+      Number(c);
+  }
+  estPnlStopLoss = estPnlStopLossPercent * Number(sz);
+  let estPnlStopLossIcon = estPnlStopLoss >= 0 ? "🟪" : "🟧";
+  return {
+    estPnlStopLoss,
+    estPnlStopLossPercent,
+    estPnlStopLossIcon
+  };
+};

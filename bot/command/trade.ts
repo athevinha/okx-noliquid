@@ -11,6 +11,7 @@ import {
   axiosErrorDecode,
   decodeSymbol,
   decodeTimestamp,
+  estimatePnl,
   getTradeAbleCrypto,
   zerofy,
 } from "../utils";
@@ -68,7 +69,7 @@ export const fowardTrading = async ({
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   intervalId?: string;
 }) => {
-  const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder } =
+  const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder, variance} =
     config;
 
   try {
@@ -97,7 +98,6 @@ export const fowardTrading = async ({
             bar,
             limit: 300,
           });
-
           const candles = _candles.filter((candle) => candle.confirm === 1);
           const emaCross = findEMACrossovers(candles, 9, 21);
           const latestCross = emaCross[emaCross.length - 1];
@@ -123,6 +123,7 @@ export const fowardTrading = async ({
               mgnMode,
               posSide:
                 latestCross.type === "bullish" ? "short" : ("long" as IPosSide),
+              isCloseAlgoOrders: true
             };
             const { msg: closeMsg } = await closeFuturePosition(
               closePositionParams
@@ -135,6 +136,7 @@ export const fowardTrading = async ({
               posSide:
                 latestCross.type === "bullish" ? "long" : ("short" as IPosSide),
               size: sz,
+              callbackRatio: variance
             };
             if (
               (!slopeThresholdUnder ||
@@ -147,6 +149,20 @@ export const fowardTrading = async ({
             } else {
               openMsg = "Slope out of range";
             }
+            let estimateMoveTrigglePrice = 0
+            if(openPositionParams?.posSide === 'long' && variance) estimateMoveTrigglePrice = latestCross.c - latestCross.c * Number(variance) 
+            else if (openPositionParams?.posSide === 'short' && variance) estimateMoveTrigglePrice = latestCross.c + latestCross.c * Number(variance) 
+            
+            const {
+              estPnlStopLoss,
+              estPnlStopLossPercent,
+              estPnlStopLossIcon,
+            } = estimatePnl({
+              posSide: openPositionParams.posSide as IPosSide,
+              sz,
+              e: latestCross.c,
+              c: estimateMoveTrigglePrice,
+            });
 
             let notificationMessage = "";
             notificationMessage += `🔔 <b>[${decodeSymbol(
@@ -169,12 +185,14 @@ export const fowardTrading = async ({
             notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
               latestCross.shortEMA
             )}</code> | <code>${zerofy(latestCross.longEMA)}</code>\n`;
-            if (openMsg === "")
+            if (openMsg === "") {
               notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
                 openPositionParams.size
               )}${USDT}</code> | <code>${
                 openPositionParams.leverage
               }x</code>\n`;
+              notificationMessage+= `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n`
+            }
             notificationMessage += `<code>-------------------------------</code>\n`;
             notificationMessage += `<code>${
               openMsg === ""

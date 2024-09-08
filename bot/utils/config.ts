@@ -21,6 +21,7 @@ export const DEFAULT_BOT_CONFIG = {
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,
+  variance: undefined,
   tokenTradingMode: "whitelist"
 }
 export const MC_ALLOW_TO_TRADING = 1_500_000_000
@@ -30,7 +31,7 @@ export const USDT = "₮";
 
 export const parseConfigInterval = (configString: string) => {
   const configParts = configString.split(" ");
-  let {bar, leve, mgnMode, sz, intervalDelay, slopeThresholdUp, slopeThresholdUnder, slopeThreshAverageMode,  tokenTradingMode}: any = DEFAULT_BOT_CONFIG
+  let {bar, leve, mgnMode, sz, intervalDelay, slopeThresholdUp, slopeThresholdUnder, slopeThreshAverageMode, variance, tokenTradingMode}: any = DEFAULT_BOT_CONFIG
   configParts.forEach((part) => {
     if (part.startsWith("bar-")) {
       bar = part.replace("bar-", "");
@@ -50,6 +51,9 @@ export const parseConfigInterval = (configString: string) => {
       slopeThreshAverageMode = part.replace("avgMode-", "") === "true";
     } else if (part.startsWith("tokenMode-")) {
       tokenTradingMode = part.replace("tokenMode-", "") as "all" | "whitelist" | string;
+    }else if (part.startsWith("variance-")) {
+      variance = part.replace("variance-", "") as string;
+      if(Number(variance)) variance = (Number(variance) / 100).toString()
     }
   });
 
@@ -63,5 +67,6 @@ export const parseConfigInterval = (configString: string) => {
     slopeThresholdUnder,
     slopeThreshAverageMode,
     tokenTradingMode,
+    variance
   };
 };
