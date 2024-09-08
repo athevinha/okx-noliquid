@@ -65,13 +65,17 @@ export const closeAllTrailingStopWithInstId = async ({instId}: {instId: string})
           instId: algo.instId,
           algoId: algo.algoId
         })).slice(0,10));
+        if (body.length === 0) return {
+          code: '404',
+          data: [],
+          msg: 'No trailing loss orders found.',
+        };
         const path = `/api/v5/trade/cancel-algos`;
         const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
           headers: makeHeaderAuthenticationOKX("POST", path, body),
         });
         return res?.data as OKXResponse;
       } catch (error: any) {
-        ;
         return {
           code: error?.code,
           data: [],
