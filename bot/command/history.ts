@@ -1,17 +1,12 @@
-import { Telegraf } from "telegraf";
-import { getAccountPositionsHistory } from "../helper/okx.account";
-import {
-  decodeTimestamp,
-  decodeTimestampAgo,
-  formatU,
-  generateTableReport,
-  generateTelegramTableReport,
-  getTradeAbleCrypto,
-  zerofy,
-} from "../utils";
-import { USDT } from "../utils/config";
-import { writeFileSync } from "fs";
+import {Telegraf} from "telegraf";
+import {getAccountPositionsHistory} from "../helper/okx.account";
 import {IntervalConfig} from "../type";
+import {
+  decodeTimestampAgo,
+  getTradeAbleCrypto,
+  zerofy
+} from "../utils";
+import {USDT} from "../utils/config";
 
 export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
   bot.command("history", async (ctx) => {
