@@ -1,22 +1,49 @@
 import dotenv from "dotenv";
-import { Context, NarrowedContext, Telegraf } from "telegraf";
-import { Message, Update } from "telegraf/typings/core/types/typegram";
-import { getSupportCrypto, getSymbolCandles } from "../helper/okx-candles";
-import { closeFuturePosition, openFuturePosition } from "../helper/okx-trade";
+import {Context,NarrowedContext,Telegraf} from "telegraf";
+import {Message,Update} from "telegraf/typings/core/types/typegram";
+import {getSymbolCandles} from "../helper/okx-candles";
+import {closeFuturePosition,openFuturePosition} from "../helper/okx-trade";
 import {
-  findEMACrossovers,
-  simulateTradesEmaCross,
+  findEMACrossovers
 } from "../signals/ema-cross";
-import { ICandles, IntervalConfig, IntervalState, IPosSide } from "../type";
-import { decodeSymbol, decodeTimestamp, getTradeAbleCrypto, zerofy } from "../utils";
+import {ICandles,IntervalConfig,IPosSide} from "../type";
+import {
+  decodeSymbol,
+  decodeTimestamp,
+  getTradeAbleCrypto,
+  zerofy,
+} from "../utils";
 import {
   parseConfigInterval,
   USDT,
   WHITE_LIST_TOKENS_TRADE,
 } from "../utils/config";
-import { formatReportInterval } from "../utils/message";
+import {formatReportInterval} from "../utils/message";
 dotenv.config();
-
+/**
+ * Executes trading logic for the given interval configuration.
+ *
+ * @param {Object} ctx - The context from the Telegram bot, used to send messages to the user.
+ * @param {IntervalConfig} config - Configuration object for the trading interval, including:
+ *    - bar: Time period for each candle (e.g., 1m, 5m, 15m).
+ *    - mgnMode: Margin mode, either "isolated" or "cross".
+ *    - leve: Leverage used for trading.
+ *    - sz: Position size for trades.
+ *    - slopeThresholdUp: Maximum allowed slope for opening a position.
+ *    - slopeThresholdUnder: Minimum allowed slope for opening a position.
+ * @param {string[]} tradeAbleCrypto - List of cryptocurrencies that are available for trading.
+ * @param {Object} lastestCandles - A record of the latest confirmed candles for each symbol.
+ *    Format: { [key: string]: ICandles[] } where `key` is the symbol (e.g., BTC-USDT) and `ICandles[]` represents the candles data.
+ * @param {Object} lastestSignalTs - A record of the last confirmed signal timestamps for each symbol.
+ *    Format: { [instId: string]: number } where `instId` is the symbol and `number` is the timestamp of the last executed signal.
+ * @param {string} [intervalId] - Optional ID of the trading interval for logging and tracking purposes.
+ *
+ * @returns {Promise<void>} - Sends trade signals via the Telegram bot if an EMA crossover occurs, and opens or closes positions based on the type of crossover (bullish or bearish).
+ * Handles both opening and closing positions based on EMA crossovers and applies slope filtering if configured.
+ * Sends notifications of trade actions to the user via the Telegram bot context.
+ *
+ * @throws {Error} - If any error occurs during the trading logic execution, it is logged, and an error message is sent to the user via the Telegram bot.
+ */
 export const fowardTrading = async ({
   ctx,
   config,
@@ -36,8 +63,8 @@ export const fowardTrading = async ({
   >;
   config: IntervalConfig;
   tradeAbleCrypto: string[];
-  lastestCandles: { [key: string]: ICandles };
-  lastestSignalTs: { [instId: string]: number };
+  lastestCandles: { [key: string]: ICandles }; // lastest Candle has confirm
+  lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   intervalId?: string;
 }) => {
   const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder } =
@@ -54,7 +81,7 @@ export const fowardTrading = async ({
 
     const [pendingCandle] = baseCandles.filter(
       (baseCandles) => baseCandles.confirm === 0
-    );
+    ); // Pending candles in current
     const lastestCandle = lastestCandles?.[BASE_SYMBOL]?.[0];
     if (
       pendingCandle &&
@@ -177,7 +204,13 @@ export const fowardTrading = async ({
   }
 };
 
-export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  }) => {
+export const botAutoTrading = ({
+  bot,
+  intervals,
+}: {
+  bot: Telegraf;
+  intervals: Map<string, IntervalConfig>;
+}) => {
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
@@ -191,7 +224,7 @@ export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: M
     let lastestCandles: { [key: string]: ICandles } = {};
     let lastestSignalTs: { [instId: string]: number } = {};
 
-    let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode)
+    let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode);
     await ctx.reply(
       `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`
     );
@@ -210,9 +243,14 @@ export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: M
       });
     }, config.intervalDelay);
 
-    intervals.set(id, { ...config,tradeAbleCrypto,  interval });
+    intervals.set(id, { ...config, tradeAbleCrypto, interval });
 
-    const startReport = formatReportInterval(id, { ...config, interval }, true, tradeAbleCrypto);
+    const startReport = formatReportInterval(
+      id,
+      { ...config, interval },
+      true,
+      tradeAbleCrypto
+    );
     ctx.replyWithHTML(startReport);
   });
 
@@ -241,7 +279,13 @@ export const botAutoTrading = ({ bot, intervals }: { bot: Telegraf, intervals: M
 
     let report = "<b>Current Trading Intervals:</b>\n";
     intervals.forEach((intervalConfig, id) => {
-      report += formatReportInterval(id, intervalConfig, false, intervalConfig?.tradeAbleCrypto) + "\n";
+      report +=
+        formatReportInterval(
+          id,
+          intervalConfig,
+          false,
+          intervalConfig?.tradeAbleCrypto
+        ) + "\n";
     });
 
     ctx.replyWithHTML(report);
