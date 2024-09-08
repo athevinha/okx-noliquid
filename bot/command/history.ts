@@ -48,11 +48,9 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
 
           const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
           let report = ``;
-          report += `<b>[${position.posSide.toUpperCase()}]</b> <b><a href="${tradeLink}">${position.instId
-            .split("-")
-            .slice(0, 2)
-            .join("/")}</a></b> | ${decodeTimestampAgo(
-            Number(position.uTime)
+          report += `<code>[${position.posSide.toUpperCase()}]</code> <b><a href="${tradeLink}">${position.instId
+            .split("-")[0]}</a></b> | ${decodeTimestampAgo(
+            Number(position.uTime), true
           )}\n`;
           report += `• <b>O/C Avg Px:</b> <code>${zerofy(
             position.openAvgPx
@@ -86,7 +84,7 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
       summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
         totalRealizedPnl
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟩" : "🟥"}\n`;
-      summaryReport += `<code>-------------------------------</code>\n`;
+      summaryReport += `<code>-----------HISTORYS------------</code>\n`;
 
       // Send the summary and the detailed reports
       await ctx.reply(summaryReport + positionReports, {

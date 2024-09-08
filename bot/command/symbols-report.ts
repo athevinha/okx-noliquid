@@ -7,6 +7,7 @@ import {
     zerofy
 } from "../utils";
 import {IntervalConfig} from "../type";
+import {USDT} from "../utils/config";
 
 export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
 
@@ -30,7 +31,7 @@ export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, interv
       const symbolPnLMap: Record<string, number> = {};
 
       positionsHistory.forEach((position) => {
-        const symbol = position.instId.split("-").slice(0, 2).join("/");
+        const symbol = position.instId.split("-")[0];
         const pnl = parseFloat(zerofy(position.realizedPnl));
         if (!symbolPnLMap[symbol]) {
           symbolPnLMap[symbol] = 0;
@@ -41,15 +42,15 @@ export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, interv
 
       const tableData = Object.entries(symbolPnLMap)
         .map(([symbol, pnl]) => ({
-          Symbol: symbol,
-          "Realized PnL": `${zerofy(pnl)} USD`,
-          Icon: pnl >= 0 ? "🟩" : "🟥",
+          "Ccy": symbol,
+          "PnL": `${zerofy(pnl)}${USDT}`,
+          Ic: pnl >= 0 ? "🟩" : "🟥",
           PnLValue: pnl,
         }))
         .slice(0, 50);
 
       const sortedTableData = tableData.sort((a, b) => b.PnLValue - a.PnLValue);
-      const tableHeaders = ["Symbol", "Realized PnL", "Icon"];
+      const tableHeaders = ["Ccy", "PnL", "Ic"];
       const fullReport = generateTelegramTableReport(
         sortedTableData,
         tableHeaders
@@ -63,6 +64,7 @@ export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, interv
         parse_mode: "HTML",
       });
     } catch (err: any) {
+      console.log(axiosErrorDecode(err))
       await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
     }
   });
