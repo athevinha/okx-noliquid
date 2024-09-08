@@ -8,7 +8,8 @@
     "test": "mocha --timeout 5000000 -r ts-node/register 'test/**/*.test.ts'",
     "test:trade": "mocha --timeout 500000 -r ts-node/register 'test/trade.test.ts'",
     "test:candle": "mocha --timeout 500000 -r ts-node/register 'test/candle.test.ts'",
-    "test:positions": "mocha --timeout 500000 -r ts-node/register 'test/positions.test.ts'"
+    "test:positions": "mocha --timeout 500000 -r ts-node/register 'test/positions.test.ts'",
+    "test:emacross": "mocha --timeout 500000 -r ts-node/register 'test/emacross.test.ts'"
   },
   
   "author": "",
