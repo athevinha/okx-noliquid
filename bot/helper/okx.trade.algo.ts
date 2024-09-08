@@ -8,6 +8,7 @@ import {OKX_BASE_API_URL} from "../utils/config";
 import {makeHeaderAuthenticationOKX} from "./auth";
 import {convertUSDToContractOrderSize} from "./okx.trade";
 import {axiosErrorDecode} from "../utils";
+import {getAccountPendingAlgoOrders} from "./okx.account";
 
 export const openTrailingStopOrder = async ({
     instId,
@@ -52,28 +53,29 @@ export const openTrailingStopOrder = async ({
       return {
         code: error?.code,
         data: [],
-        msg: `${error?.reason} ${error?.message}`,
+        msg: axiosErrorDecode(error),
       };
     }
   };
   
-export const closeTrailingStopOrder = async ({algoId, instId}: {algoId: string, instId: string}): Promise<OKXResponse> => {
+export const closeAllTrailingStopWithInstId = async ({instId}: {instId: string}): Promise<OKXResponse> => {
     try {
-        const body = JSON.stringify({
-          instId,
-          algoId
-        });
+        const algoOrders = await getAccountPendingAlgoOrders({instId})
+        const body = JSON.stringify(algoOrders.map(algo => ({
+          instId: algo.instId,
+          algoId: algo.algoId
+        })).slice(0,10));
         const path = `/api/v5/trade/cancel-algos`;
         const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
           headers: makeHeaderAuthenticationOKX("POST", path, body),
         });
-        return res?.data;
+        return res?.data as OKXResponse;
       } catch (error: any) {
-        axiosErrorDecode(error);
+        ;
         return {
           code: error?.code,
           data: [],
-          msg: `${error?.reason} ${error?.message}`,
+          msg: axiosErrorDecode(error),
         };
       }
 }

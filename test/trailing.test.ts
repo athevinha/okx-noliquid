@@ -1,7 +1,7 @@
 import {expect} from "chai";
-import {openTrailingStopOrder} from "../bot/helper/okx.trade.algo";
+import {closeAllTrailingStopWithInstId, openTrailingStopOrder} from "../bot/helper/okx.trade.algo";
 import {ImgnMode,IPosSide} from "../bot/type";
-import {openFuturePosition} from "../bot/helper/okx.trade";
+import {closeFuturePosition, openFuturePosition} from "../bot/helper/okx.trade";
 import {getAccountPendingAlgoOrders} from "../bot/helper/okx.account";
 
 describe("OKX trailing stoploss test", () => {
@@ -15,31 +15,7 @@ describe("OKX trailing stoploss test", () => {
     callbackRatioLoss: 0.04 
   };
   const { callbackRatioLoss, intervalId, instId, mgnMode, size, posSide, leverage } = TEST_CONFIG;
-  // it("Open Position", async () => {
-  //   const status = await openFuturePosition({
-  //     intervalId,
-  //     instId: instId,
-  //     size: size,
-  //     mgnMode: mgnMode as ImgnMode,
-  //     posSide: posSide as IPosSide,
-  //     leverage: leverage,
-  //   });
-  //   expect(status.msg).eq("");
-  // });
-
-  // it("Fill Trailing SL", async () => {
-  //   const status = await openTrailingStopOrder({
-  //     instId,
-  //     mgnMode,
-  //     posSide,
-  //     callbackRatio: callbackRatioLoss.toString(),
-  //     size: size
-  //   })
-  //   console.log(status)
-  //   expect(status.msg).eq("");
-  // });
- 
-  it("Open position and trailing loss", async () => {
+  it("open position with trailing loss", async () => {
     const status = await openFuturePosition({
       intervalId,
       instId: instId,
@@ -47,26 +23,21 @@ describe("OKX trailing stoploss test", () => {
       mgnMode: mgnMode as ImgnMode,
       posSide: posSide as IPosSide,
       leverage: leverage,
-      callbackRatio: callbackRatioLoss.toString()
+      callbackRatio: callbackRatioLoss.toString() // trailing percent ratio
     });
     expect(status.msg).eq("");
   });
 
   it("Fetch open pending trailing loss orders", async () => {
     const algoOrders = await getAccountPendingAlgoOrders({instId})
-    console.log(algoOrders)
+    expect(algoOrders.length).greaterThan(0)
   });
-  
-  
-  // it("Close position with trailing loss fill", async () => {
-  //   const status = await closeFuturePosition({
-  //     instId: instId,
-  //     mgnMode: mgnMode as ImgnMode,
-  //     posSide: posSide as IPosSide,
-  //   });
-  //   expect(status.msg).eq("");
-  //   expect(status.data.length).greaterThan(0);
-  // });
- 
+
+  it("closes all pending trailing loss orders", async () => {
+    const status = await closeFuturePosition({instId, mgnMode, posSide, isCloseAlgoOrders:true})
+    expect(status.msg).eq('')
+    const algoOrders = await getAccountPendingAlgoOrders({instId})
+    expect(algoOrders.length).eq(0)
+  });
 
 });

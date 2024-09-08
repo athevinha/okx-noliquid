@@ -189,7 +189,7 @@ export const getAccountPendingAlgoOrders = async ({
 }): Promise<IPendingAlgoOrder[]> => {
   try {
     const path = `/api/v5/trade/orders-algo-pending?ordType=${ordType}&limit=${limit}${
-      instId ? `&instId=$${instId}` : ""
+      instId ? `&instId=${instId}` : ""
     }`;
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),

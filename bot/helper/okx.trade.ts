@@ -15,7 +15,7 @@ import {
 } from "../utils";
 import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
-import { openTrailingStopOrder } from "./okx.trade.algo";
+import { closeAllTrailingStopWithInstId, openTrailingStopOrder } from "./okx.trade.algo";
 
 export const setLeveragePair = async (
   instId: string,
@@ -277,12 +277,14 @@ export const closeFuturePosition = async ({
   posSide,
   clOrdId = "",
   tag = "",
+  isCloseAlgoOrders = true
 }: {
   instId: string;
   mgnMode: ImgnMode;
   posSide: IPosSide;
   clOrdId?: string;
   tag?: string;
+  isCloseAlgoOrders?:boolean
 }): Promise<OKXResponse> => {
   const maxRetries = 3;
   let attempts = 0;
@@ -320,6 +322,9 @@ export const closeFuturePosition = async ({
       };
     }
   };
+  const closeAlgoOrders = async (): Promise<OKXResponse> => {
+    return await closeAllTrailingStopWithInstId({instId})
+  }
   while (attempts < maxRetries) {
     attempts += 1;
     po = await closePosition();
@@ -327,5 +332,17 @@ export const closeFuturePosition = async ({
       break;
     }
   }
+  attempts = 0;
+
+  if (po.msg === "" && isCloseAlgoOrders) {
+    while (attempts < maxRetries) {
+      attempts += 1;
+      po = await closeAlgoOrders();
+      if (po.msg === "") {
+        break;
+      }
+    }
+  }
+
   return po;
 };
