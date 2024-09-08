@@ -286,7 +286,7 @@ export const closeFuturePosition = async ({
   tag?: string;
   isCloseAlgoOrders?:boolean
 }): Promise<OKXResponse> => {
-  const maxRetries = 3;
+  const maxRetries = 2;
   let attempts = 0;
   let po = {
     code: "0",
