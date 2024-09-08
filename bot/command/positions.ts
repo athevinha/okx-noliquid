@@ -19,7 +19,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
       let trailingLossOrders = (await getAccountPendingAlgoOrders({}));
       trailingLossOrders = tokensFilter.length === 0 ? trailingLossOrders : trailingLossOrders.filter((order => tokensFilter.includes(order.instId)))
       if (positions.length === 0) {
-        await ctx.replyWithHTML("<code>No positions found or too many requets.</code>");
+        await ctx.replyWithHTML("<code>No positions found.</code>");
         return;
       }
 

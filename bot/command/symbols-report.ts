@@ -25,7 +25,7 @@ export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, interv
       const positionsHistory = await getAccountPositionsHistory("SWAP", tokensFilter);
 
       if (positionsHistory.length === 0) {
-        await ctx.replyWithHTML("<code>No symbols found or too many requets.</code>");
+        await ctx.replyWithHTML("<code>No symbols found .</code>");
         return;
       }
       const symbolPnLMap: Record<string, number> = {};

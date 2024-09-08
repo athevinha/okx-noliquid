@@ -24,7 +24,7 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
       const positionsHistory = await getAccountPositionsHistory("SWAP", tokensFilter);
 
       if (positionsHistory.length === 0) {
-        await ctx.replyWithHTML("<code>No position history found or too many requets.</code>");
+        await ctx.replyWithHTML("<code>No position history found.</code>");
         return;
       }
 
