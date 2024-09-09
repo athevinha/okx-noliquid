@@ -25,7 +25,7 @@ const TEST_CONFIG = {
   SHORT_EMA: 9,
   LONG_EMA: 21,
   LEVERAGE: 5,
-  SZ_USD: 1000,
+  SZ_USD: 300,
   WHITE_LIST_TRADING: false,
   SLOPE_THRESHOLD_UP: undefined,
   SLOPE_THRESHOLD_UNDER: undefined,
@@ -101,11 +101,13 @@ describe("OKX EMA Cross backtest", () => {
           earliestTradeTimestamp = Number(candles[0]?.ts);
 
           return {
+            ...tradeResults,
             symbol,
             totalPnL: tradeResults.totalPnL,
             volume: tradeResults.totalVolumeInUSD,
             totalTransactions: tradeResults.totalTransactions,
             startTradeTime: tradeResults.historyTrades[0]?.ts,
+            winRate: tradeResults.win / (tradeResults.win + tradeResults.loss),
             endTradeTime:
               tradeResults.historyTrades[tradeResults.historyTrades.length - 1]
                 ?.ts,
@@ -123,10 +125,11 @@ describe("OKX EMA Cross backtest", () => {
       console.table(
         rankedResults.map((result, index) => ({
           Symbol: result.symbol.split("-")[0],
-          "PnL ($)": zerofy(result.totalPnL),
           "Volume ($)": zerofy(result.volume),
-          Transactions: result.totalTransactions,
-          "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime),
+          "Lost/Win": `${result.loss}/${result.win} (${result.loss + result.win})`,
+          "Win rate": zerofy(result.winRate * 100) + '%',
+          "PnL ($)": zerofy(result.totalPnL),
+          "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime,true),
         }))
       );
     if(TEST_CONFIG.LOG_PNL_SUMMARY){
@@ -137,7 +140,7 @@ describe("OKX EMA Cross backtest", () => {
           ((TEST_CONFIG.SZ_USD / TEST_CONFIG.LEVERAGE) *
             supportFutureCryptosByInstId.length)) *
         100;
-      console.log("Est. Lost/Win:", `${lostCount}/${winCount}`);
+      console.log("Est. Lost/Win:", `${lostCount}/${winCount}`, `(${zerofy(winCount / (winCount + lostCount) * 100)}%)`);
       console.log("Est. Trade Time:", decodeTimestampAgo(earliestTradeTimestamp));
       console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
       console.log("Est. Total Fee ($):", zerofy(Fee));

@@ -65,7 +65,7 @@ export const closeAllTrailingStopWithInstId = async ({instId}: {instId: string})
           instId: algo.instId,
           algoId: algo.algoId
         })).slice(0,10));
-        if (body.length === 0) return {
+        if (JSON.parse(body).length === 0) return {
           code: '404',
           data: [],
           msg: 'No trailing loss orders found.',

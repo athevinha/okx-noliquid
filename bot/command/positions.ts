@@ -35,7 +35,7 @@ export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, interval
         const realizedPnl = parseFloat(position.realizedPnl) + parseFloat(position.upl)
         const realizedPnlIcon = realizedPnl >= 0 ? "🟢" : "🔴";
         const trailingLossOrder = trailingLossOrders.filter(order => order.instId === position.instId)?.[0]
-        const {estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon} = estimatePnl({posSide: position.posSide as IPosSide, sz: position.notionalUsd, e: position.avgPx, c: trailingLossOrder.moveTriggerPx })
+        const {estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon} = estimatePnl({posSide: position.posSide as IPosSide, sz: position.notionalUsd, e: position.avgPx, c: trailingLossOrder?.moveTriggerPx })
         totalTrailingLossPnl += estPnlStopLoss
         totalPnl += parseFloat(position.upl);
         totalRealizedPnl += realizedPnl;

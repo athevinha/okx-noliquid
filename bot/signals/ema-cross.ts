@@ -187,6 +187,8 @@ export function simulateTradesEmaCross(
   let historyTrades: HistoryTrade[] = [];
   let totalTransactions = 0;
   let totalVolumeInUSD = 0;
+  let loss = 0;
+  let win = 0;
   let avgPositiveSlope = 0;
   let avgNegativeSlope = 0
 
@@ -197,8 +199,14 @@ export function simulateTradesEmaCross(
         if (position.type === "short") {
           const pnl = (position.entryPrice - c) * position.baseTokenAmount; // Short PnL = (entry price - exit price) * base token amount
           const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
-          if (pnl > 0) avgPositiveSlope += openPositionSlope
-          else avgNegativeSlope += openPositionSlope
+          if (pnl > 0) {
+            avgPositiveSlope += openPositionSlope
+            win++
+          }
+          else {
+            avgNegativeSlope += openPositionSlope
+            loss++
+          }
           historyTrades.push({
             ts,
             positionType: `${position.type}`,
@@ -246,8 +254,14 @@ export function simulateTradesEmaCross(
         if (position.type === "long") {
           const pnl = (c - position.entryPrice) * position.baseTokenAmount; // Long PnL = (exit price - entry price) * base token amount
           const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
-          if (pnl > 0) avgPositiveSlope += openPositionSlope
-          else avgNegativeSlope += openPositionSlope
+          if (pnl > 0) {
+            avgPositiveSlope += openPositionSlope
+            win++
+          }
+          else {
+            avgNegativeSlope += openPositionSlope
+            loss++
+          }
           historyTrades.push({
             ts,
             positionType: `${position.type}`,
@@ -300,8 +314,14 @@ export function simulateTradesEmaCross(
         : (position.entryPrice - currentPrice) * position.baseTokenAmount; // Short PnL
 
     const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
-    if (pnl > 0) avgPositiveSlope += openPositionSlope
-    else avgNegativeSlope += openPositionSlope
+    if (pnl > 0) {
+      avgPositiveSlope += openPositionSlope
+      win++
+    }
+    else {
+      avgNegativeSlope += openPositionSlope
+      loss++
+    }
 
     historyTrades.push({
       ts: Date.now(), // Use the last timestamp for consistency
@@ -332,5 +352,7 @@ export function simulateTradesEmaCross(
     avgPositiveSlope,
     avgNegativeSlope,
     activePositions: positions,
+    win,
+    loss
   };
 }
