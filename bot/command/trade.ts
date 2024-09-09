@@ -132,7 +132,7 @@ export const fowardTrading = async ({
             let openMsg = "";
             if(variance === 'auto'){
               const atrs = calculateATR(candles, 14)
-              _variance = atrs[atrs.length - 1]?.fluctuationsPercent.toFixed(4)
+              variance = atrs[atrs.length - 1]?.fluctuationsPercent.toFixed(4)
             }
             const openPositionParams = {
               instId: SYMBOL,
