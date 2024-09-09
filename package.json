@@ -10,7 +10,8 @@
     "test:candle": "mocha --timeout 500000 -r ts-node/register 'test/candle.test.ts'",
     "test:positions": "mocha --timeout 500000 -r ts-node/register 'test/positions.test.ts'",
     "test:emacross": "mocha --timeout 500000 -r ts-node/register 'test/emacross.test.ts'",
-    "test:trailing": "mocha --timeout 500000 -r ts-node/register 'test/trailing.test.ts'"
+    "test:trailing": "mocha --timeout 500000 -r ts-node/register 'test/trailing.test.ts'",
+    "test:atr": "mocha --timeout 500000 -r ts-node/register 'test/atr.test.ts'"
   },
   
   "author": "",

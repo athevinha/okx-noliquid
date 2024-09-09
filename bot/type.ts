@@ -1,15 +1,15 @@
-export type ICandles = Array<{
-    ts: number
-    o: number
-    h: number
-    l: number
-    c: number
-    vol: number
-    volCcy: number
-    volCcyQuote: number
-    confirm: number
-}>
-  
+export type ICandle = {
+  ts: number
+  o: number
+  h: number
+  l: number
+  c: number
+  vol: number
+  volCcy: number
+  volCcyQuote: number
+  confirm: number
+}
+export type ICandles = Array<ICandle>
 export type ICandlesEMACrossovers = Array<{
     ts: number
     o: number
