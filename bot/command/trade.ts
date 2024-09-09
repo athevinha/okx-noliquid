@@ -21,6 +21,7 @@ import {
   WHITE_LIST_TOKENS_TRADE,
 } from "../utils/config";
 import {formatReportInterval} from "../utils/message";
+import {calculateATR} from "../signals/atr";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -69,9 +70,9 @@ export const fowardTrading = async ({
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   intervalId?: string;
 }) => {
-  const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder, variance} =
+  const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder} =
     config;
-
+  let variance = config.variance
   try {
     const BASE_SYMBOL = WHITE_LIST_TOKENS_TRADE[0];
     const baseCandles = await getSymbolCandles({
@@ -129,6 +130,10 @@ export const fowardTrading = async ({
               closePositionParams
             );
             let openMsg = "";
+            if(variance === 'auto'){
+              const atrs = calculateATR(candles, 14)
+              _variance = atrs[atrs.length - 1]?.fluctuationsPercent.toFixed(4)
+            }
             const openPositionParams = {
               instId: SYMBOL,
               leverage: leve,

@@ -54,6 +54,7 @@ export const parseConfigInterval = (configString: string) => {
     }else if (part.startsWith("variance-")) {
       variance = part.replace("variance-", "") as string;
       if(Number(variance)) variance = (Number(variance) / 100).toString()
+      else if(variance === 'auto') variance = 'auto'
     }
   });
 
