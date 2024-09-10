@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import {IPosSide} from '../type';
+import {IPosSide, OKXResponse} from '../type';
 import {USE_PROXY, WHITE_LIST_TOKENS_TRADE} from './config';
 import {getSupportCrypto} from '../helper/okx.candles';
 import {HttpsProxyAgent} from 'https-proxy-agent';
@@ -204,3 +204,9 @@ export const estimatePnl = ({posSide, sz, c, e}: {
     estPnlStopLossIcon
   };
 };
+
+export const okxReponseChecker = (po: OKXResponse, isCheckSCode: boolean = true) => {
+  const status =  po.msg === "" && po.code === '0' && (!isCheckSCode || po?.data?.[0]?.sCode === "0")
+  if(status === false) console.error(po)
+  return status
+}

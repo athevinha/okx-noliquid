@@ -12,6 +12,7 @@ import {
   decodeClOrdId,
   decodeTag,
   getRandomeHttpAgent,
+  okxReponseChecker,
 } from "../utils";
 import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
@@ -179,8 +180,8 @@ export const placeOrder = async ({
       sz,
       tpOrdPx,
       tpTriggerPx,
-      clOrdId,
-      tag,
+      // clOrdId,
+      // tag,
     });
     const path = `/api/v5/trade/order`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
@@ -277,17 +278,17 @@ export const openFuturePosition = async ({
   while (attempts < maxRetries) {
     attempts += 1;
       po = await openPosition();
-      if (po.msg === "" && po.code === "0") {
+      if (okxReponseChecker(po)) {
         break;
       }
   }
   attempts = 0;
 
-  if (po.msg === "" && callbackRatio) {
+  if (okxReponseChecker(po) && callbackRatio) {
     while (attempts < maxRetries) {
       attempts += 1;
       po = await openTrailingOrder(callbackRatio);
-      if (po.msg === "" && po.code === "0") {
+      if (okxReponseChecker(po)) {
         break;
       }
     }
@@ -325,8 +326,8 @@ export const closeFuturePosition = async ({
         instId,
         mgnMode,
         posSide,
-        clOrdId,
-        tag,
+        // clOrdId,
+        // tag,
       });
       const path = `/api/v5/trade/close-position`;
       const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
@@ -355,17 +356,16 @@ export const closeFuturePosition = async ({
   while (attempts < maxRetries) {
     attempts += 1;
     po = await closePosition();
-    if (po.msg === "" && po.code === '0') {
+    if (okxReponseChecker(po, false)) {
       break;
     }
   }
   attempts = 0;
-
-  if (po.msg === "" && isCloseAlgoOrders) {
+  if (okxReponseChecker(po, false)&& isCloseAlgoOrders) {
     while (attempts < maxRetries) {
       attempts += 1;
       po = await closeAlgoOrders();
-      if (po.msg === "" && po.code === '0') {
+      if (okxReponseChecker(po)) {
         break;
       }
     }
