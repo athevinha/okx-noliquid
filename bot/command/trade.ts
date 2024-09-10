@@ -124,7 +124,7 @@ export const fowardTrading = async ({
               mgnMode,
               posSide:
                 latestCross.type === "bullish" ? "short" : ("long" as IPosSide),
-              isCloseAlgoOrders: true
+              isCloseAlgoOrders: variance === 'auto' || Number?.(variance) ? true : false
             };
             const { msg: closeMsg } = await closeFuturePosition(
               closePositionParams

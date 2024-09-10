@@ -64,7 +64,6 @@ describe("Candles ATR test", () => {
         leverage: leverage,
         callbackRatio: currentAtr.fluctuationsPercent.toFixed(4) // trailing percent ratio
       });
-    console.log(oStatus)
     expect(oStatus.msg).eq("");
     expect(oStatus.code).eq("0");
     const status = await closeFuturePosition({instId: TEST_CONFIG.SYMBOL, mgnMode, posSide, isCloseAlgoOrders:true})
