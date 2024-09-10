@@ -18,7 +18,7 @@ describe('OKX convert size to contract', () => {
             })
         }))
         expect(contract.length).eq(supportFutureCryptosByInstId.length)
-        expect(contract.filter(sz => sz.length === 0)).eq(0)
+        expect(contract.filter(sz => sz.length === 0).length).eq(0)
 
     });
 });
