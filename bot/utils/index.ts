@@ -185,17 +185,13 @@ export const estimatePnl = ({posSide, sz, c, e}: {
   estPnlStopLossPercent: number;
   estPnlStopLossIcon: string;
 } => {
+  console.log('e', e,'c', c)
   let estPnlStopLossPercent = 0;
   let estPnlStopLoss = 0;
-  if (posSide === "short") {
-    estPnlStopLossPercent =
-      (Number(e) - Number(c)) /
-      Number(c);
-  } else if (posSide === "long") {
-    estPnlStopLossPercent =
-      (Number(c) - Number(e)) /
-      Number(c);
-  }
+  if(posSide === 'long') estPnlStopLossPercent = (Number(c) - Number(e)) /
+      Number(e);
+  else if(posSide === 'short') estPnlStopLossPercent = (Number(e) - Number(c)) /
+  Number(e);
   estPnlStopLoss = estPnlStopLossPercent * Number(sz);
   let estPnlStopLossIcon = estPnlStopLoss >= 0 ? "🟣" : "🟠";
   return {
