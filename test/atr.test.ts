@@ -56,7 +56,7 @@ describe("Candles ATR test", () => {
         posSide: "long" as IPosSide,
     }
     
-    const oStatus = await openFuturePosition({
+    const {openAlgoOrderRes, openPositionRes} = await openFuturePosition({
         instId: TEST_CONFIG.SYMBOL,
         size: size,
         mgnMode: mgnMode as ImgnMode,
@@ -64,9 +64,11 @@ describe("Candles ATR test", () => {
         leverage: leverage,
         callbackRatio: currentAtr.fluctuationsPercent.toFixed(4) // trailing percent ratio
       });
-    expect(oStatus.msg).eq("");
-    expect(oStatus.code).eq("0");
-    const status = await closeFuturePosition({instId: TEST_CONFIG.SYMBOL, mgnMode, posSide, isCloseAlgoOrders:true})
-    expect(status.msg).eq('')
+    expect(openAlgoOrderRes.msg).eq("");
+    expect(openPositionRes.msg).eq("");
+    const {closeAlgoOrderRes, closePositionRes} = await closeFuturePosition({instId: TEST_CONFIG.SYMBOL, mgnMode, posSide, isCloseAlgoOrders:true})
+    expect(closeAlgoOrderRes.msg).eq('')
+    expect(closePositionRes.msg).eq('')
+
   });
 });

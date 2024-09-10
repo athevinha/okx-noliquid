@@ -39,7 +39,7 @@ describe("OKX trailing stoploss test", () => {
   it("open position with trailing loss", async () => {
     let statuss = await Promise.all(
       supportFutureCryptosByInstId.map(async (spCrypto) => {
-        const status = await openFuturePosition({
+        const res = await openFuturePosition({
           intervalId,
           instId: spCrypto,
           size: size,
@@ -48,10 +48,13 @@ describe("OKX trailing stoploss test", () => {
           leverage: leverage,
           callbackRatio: callbackRatioLoss.toString(), // trailing percent ratio
         });
-        return status;
+        return res;
       })
     );
-    expect(statuss.filter((s) => s.msg === "").length).eq(
+    expect(statuss.filter((s) => s.openAlgoOrderRes.msg === "").length).eq(
+      supportFutureCryptosByInstId.length
+    );
+    expect(statuss.filter((s) => s.openPositionRes.msg === "").length).eq(
       supportFutureCryptosByInstId.length
     );
   });
@@ -66,16 +69,19 @@ describe("OKX trailing stoploss test", () => {
   it("closes all pending trailing loss orders", async () => {
     let statuss = await Promise.all(
       supportFutureCryptosByInstId.map(async (spCrypto) => {
-        const status = await closeFuturePosition({
+        const res = await closeFuturePosition({
           instId: spCrypto,
           mgnMode,
           posSide,
           isCloseAlgoOrders: true,
         });
-        return status;
+        return res;
       })
     );
-    expect(statuss.filter((s) => s.msg === "").length).eq(
+    expect(statuss.filter((s) => s.closeAlgoOrderRes.msg === "").length).eq(
+      supportFutureCryptosByInstId.length
+    );
+    expect(statuss.filter((s) => s.closePositionRes.msg === "").length).eq(
       supportFutureCryptosByInstId.length
     );
 

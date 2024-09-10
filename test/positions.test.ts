@@ -24,7 +24,7 @@ describe("OKX positions with test", () => {
   const { intervalId, instId, mgnMode, size, posSide, leverage } = TEST_CONFIG;
   const tag = decodeTag({ intervalId, instId, leverage, posSide, size });
   it("open position OKX", async () => {
-    const status = await openFuturePosition({
+    const {openAlgoOrderRes, openPositionRes} = await openFuturePosition({
       intervalId,
       instId: instId,
       size: size,
@@ -32,21 +32,23 @@ describe("OKX positions with test", () => {
       posSide: posSide as IPosSide,
       leverage: leverage,
     });
-    expect(status.msg).eq("");
-    ordId = status.data[0].ordId;
+    expect(openAlgoOrderRes.msg).eq("");
+    expect(openPositionRes.msg).eq("");
+
+    ordId = openPositionRes.data[0].ordId;
     const order = await getAccountOrder({ instId, ordId });
     expect(order.length).greaterThan(0);
     await setTimeout(1000);
   });
   it("Close position OKX", async () => {
-    const status = await closeFuturePosition({
+    const {closeAlgoOrderRes, closePositionRes} = await closeFuturePosition({
       instId: instId,
       mgnMode: mgnMode as ImgnMode,
       posSide: posSide as IPosSide,
       tag,
       isCloseAlgoOrders: false
     });
-    expect(status.msg).eq("");
-    expect(status.data.length).greaterThan(0);
+    expect(closeAlgoOrderRes.msg).eq('')
+    expect(closePositionRes.msg).eq('')
   });
 });

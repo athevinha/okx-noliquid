@@ -210,3 +210,11 @@ export const okxReponseChecker = (po: OKXResponse, isCheckSCode: boolean = true)
   if(status === false) console.error(po)
   return status
 }
+
+export const okxReponseDecode = (po: OKXResponse, isCheckSCode: boolean = true):string => {
+  let msg = po.msg
+  if(isCheckSCode && po?.data?.[0]?.sMsg && (po?.data?.[0]?.sCode !== '0')) {
+    msg += po?.data?.[0]?.sMsg
+  }
+  return msg
+}

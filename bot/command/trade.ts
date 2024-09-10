@@ -118,21 +118,23 @@ export const fowardTrading = async ({
             currentCandle?.confirm === 1
           ) {
             lastestSignalTs[SYMBOL] = latestCross.ts;
-
+            const isTrailingLossMode = variance === 'auto' || variance !== undefined
             const closePositionParams = {
               instId: SYMBOL,
               mgnMode,
               posSide:
                 latestCross.type === "bullish" ? "short" : ("long" as IPosSide),
-              isCloseAlgoOrders: variance === 'auto' || Number?.(variance) ? true : false
+              isCloseAlgoOrders: isTrailingLossMode ? true : false
             };
-            const { msg: closeMsg } = await closeFuturePosition(
+            const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition(
               closePositionParams
             );
-            let openMsg = "";
+            let openPositionMsg = "", openAlgoOrderResMsg = "";
             if(variance === 'auto'){
               const atrs = calculateATR(candles, 14)
               variance = atrs[atrs.length - 1]?.fluctuationsPercent.toFixed(4)
+              if (Number(variance) < 0.001) variance = '0.001' 
+              else if (Number(variance) > 1) variance = '1' 
             }
             const openPositionParams = {
               instId: SYMBOL,
@@ -149,10 +151,11 @@ export const fowardTrading = async ({
               (!slopeThresholdUp ||
                 latestCross.slopeThreshold >= slopeThresholdUp)
             ) {
-              const openPosition = await openFuturePosition(openPositionParams);
-              openMsg = openPosition.msg;
+              const {openAlgoOrderRes, openPositionRes} = await openFuturePosition(openPositionParams);
+              openPositionMsg = openPositionRes.msg;
+              openAlgoOrderResMsg = openAlgoOrderRes.msg
             } else {
-              openMsg = "Slope out of range";
+              openPositionMsg = "Slope out of range";
             }
             let estimateMoveTrigglePrice = 0
             if(openPositionParams?.posSide === 'long' && variance) estimateMoveTrigglePrice = latestCross.c - latestCross.c * Number(variance) 
@@ -190,29 +193,48 @@ export const fowardTrading = async ({
             notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
               latestCross.shortEMA
             )}</code> | <code>${zerofy(latestCross.longEMA)}</code>\n`;
-            if (openMsg === "") {
+            if (openPositionMsg === "") {
               notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
                 openPositionParams.size
               )}${USDT}</code> | <code>${
                 openPositionParams.leverage
               }x</code>\n`;
-              notificationMessage+= `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`
+              if(isTrailingLossMode) notificationMessage+= `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`
             }
-            notificationMessage += `<code>-------------------------------</code>\n`;
+            notificationMessage += `<code>------------ORDERS-------------</code>\n`;
+         
             notificationMessage += `<code>${
-              openMsg === ""
+              openPositionMsg === ""
                 ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(
                     openPositionParams.instId
                   )}`
-                : "🔴 O: " + openMsg
+                : "🔴 O: " + openPositionMsg
             }</code>\n`;
             notificationMessage += `<code>${
-              closeMsg === ""
+              closePositionRes.msg === ""
                 ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
                     closePositionParams.instId
                   )}`
-                : "🔴 C: " + closeMsg
+                : "🔴 C: " + closePositionRes.msg
             }</code>\n`;
+
+            if(isTrailingLossMode) {
+              notificationMessage += `<code>------------ALGO---------------</code>\n`;
+              notificationMessage += `<code>${
+                openAlgoOrderResMsg === ""
+                  ? `🟢 O: Trailing ${decodeSymbol(
+                      openPositionParams.instId
+                    )}`
+                  : "🔴 O: " + openAlgoOrderResMsg
+              }</code>\n`;
+              notificationMessage += `<code>${
+                closeAlgoOrderRes.msg === ""
+                  ? `🟢 C: Cancel trailing ${decodeSymbol(
+                      closePositionParams.instId
+                    )}`
+                  : "🔴 C: " + closeAlgoOrderRes.msg
+              }</code>\n`;
+            }
             await ctx.reply(notificationMessage, { parse_mode: "HTML" });
           }
         })
