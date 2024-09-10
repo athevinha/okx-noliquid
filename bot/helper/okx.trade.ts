@@ -16,8 +16,10 @@ import {
 } from "../utils";
 import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
-import { closeAllTrailingStopWithInstId, openTrailingStopOrder } from "./okx.trade.algo";
-import {contactRequest} from "telegraf/typings/button";
+import {
+  closeAllTrailingStopWithInstId,
+  openTrailingStopOrder,
+} from "./okx.trade.algo";
 
 export const setLeveragePair = async (
   instId: string,
@@ -84,7 +86,7 @@ export const convertUSDToContractOrderSize = async ({
   sz: number;
 }): Promise<string> => {
   try {
-    let _sz = ''
+    let _sz = "";
     const maxRetries = 5;
     let attempts = 0;
 
@@ -100,16 +102,16 @@ export const convertUSDToContractOrderSize = async ({
         httpsAgent,
       });
       const [response] = res?.data?.data as IContracConvertResponse[];
-      return response.sz
-    }
-    
+      return response.sz;
+    };
+
     while (attempts < maxRetries) {
       attempts += 1;
       try {
         _sz = await convert();
-        if(_sz.length > 0) break;
+        if (_sz.length > 0) break;
       } catch (error) {
-        axiosErrorDecode(error)
+        axiosErrorDecode(error);
       }
     }
 
@@ -251,7 +253,7 @@ export const openFuturePosition = async ({
       return {
         code: error?.code,
         data: [],
-        msg: 'Open pos: ' + axiosErrorDecode(error),
+        msg: "Open pos: " + axiosErrorDecode(error),
       };
     }
   };
@@ -266,21 +268,20 @@ export const openFuturePosition = async ({
         mgnMode,
         callbackRatio: _callbackRatio,
       });
-    } catch (error:any) {
+    } catch (error: any) {
       return {
         code: error?.code,
         data: [],
-        msg: 'Trailing: ' + axiosErrorDecode(error),
+        msg: "Trailing: " + axiosErrorDecode(error),
       };
     }
-   
   };
   while (attempts < maxRetries) {
     attempts += 1;
-      po = await openPosition();
-      if (okxReponseChecker(po)) {
-        break;
-      }
+    po = await openPosition();
+    if (okxReponseChecker(po)) {
+      break;
+    }
   }
   attempts = 0;
 
@@ -303,14 +304,14 @@ export const closeFuturePosition = async ({
   posSide,
   clOrdId = "",
   tag = "",
-  isCloseAlgoOrders = true
+  isCloseAlgoOrders = true,
 }: {
   instId: string;
   mgnMode: ImgnMode;
   posSide: IPosSide;
   clOrdId?: string;
   tag?: string;
-  isCloseAlgoOrders?:boolean
+  isCloseAlgoOrders?: boolean;
 }): Promise<OKXResponse> => {
   const maxRetries = 2;
   let attempts = 0;
@@ -344,15 +345,15 @@ export const closeFuturePosition = async ({
   };
   const closeAlgoOrders = async (): Promise<OKXResponse> => {
     try {
-      return await closeAllTrailingStopWithInstId({instId})
-    } catch (error:any) {
+      return await closeAllTrailingStopWithInstId({ instId });
+    } catch (error: any) {
       return {
         code: error?.code,
         data: [],
         msg: axiosErrorDecode(error),
       };
     }
-  }
+  };
   while (attempts < maxRetries) {
     attempts += 1;
     po = await closePosition();
@@ -361,7 +362,7 @@ export const closeFuturePosition = async ({
     }
   }
   attempts = 0;
-  if (okxReponseChecker(po, false)&& isCloseAlgoOrders) {
+  if (okxReponseChecker(po, false) && isCloseAlgoOrders) {
     while (attempts < maxRetries) {
       attempts += 1;
       po = await closeAlgoOrders();
