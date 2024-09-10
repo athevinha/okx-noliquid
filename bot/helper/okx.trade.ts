@@ -82,18 +82,36 @@ export const convertUSDToContractOrderSize = async ({
   sz: number;
 }): Promise<string> => {
   try {
-    const httpsAgent = getRandomeHttpAgent();
-    const _instId = `${instId.split("-")[0]}-${instId.split("-")[1]}`;
-    const [{ idxPx }] = await getSymbolPriceTicker({ instId: _instId });
-    const path = `/api/v5/public/convert-contract-coin?type=${type}&instId=${instId}&sz=${
-      sz / Number(idxPx)
-    }`;
-    const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
-      headers: makeHeaderAuthenticationOKX("GET", path, ""),
-      httpsAgent,
-    });
-    const [response] = res?.data?.data as IContracConvertResponse[];
-    return response.sz;
+    let _sz = ''
+    const maxRetries = 3;
+    let attempts = 0;
+
+    const convert = async () => {
+      const httpsAgent = getRandomeHttpAgent();
+      const _instId = `${instId.split("-")[0]}-${instId.split("-")[1]}`;
+      const [{ idxPx }] = await getSymbolPriceTicker({ instId: _instId });
+      const path = `/api/v5/public/convert-contract-coin?type=${type}&instId=${instId}&sz=${
+        sz / Number(idxPx)
+      }`;
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX("GET", path, ""),
+        httpsAgent,
+      });
+      const [response] = res?.data?.data as IContracConvertResponse[];
+      return response.sz
+    }
+    
+    while (attempts < maxRetries) {
+      attempts += 1;
+      try {
+        _sz = await convert();
+        if(_sz.length > 0) break;
+      } catch (error) {
+        axiosErrorDecode(error)
+      }
+    }
+
+    return _sz;
   } catch (error: any) {
     axiosErrorDecode(error);
     return "0";

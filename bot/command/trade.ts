@@ -114,8 +114,8 @@ export const fowardTrading = async ({
           }
           if (
             latestCross?.ts === currentCandle?.ts &&
-            lastestSignalTs[SYMBOL] !== latestCross?.ts &&
-            currentCandle.confirm === 1
+            lastestSignalTs?.[SYMBOL] !== latestCross?.ts &&
+            currentCandle?.confirm === 1
           ) {
             lastestSignalTs[SYMBOL] = latestCross.ts;
 

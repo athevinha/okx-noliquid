@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import {IPosSide} from '../type';
-import {WHITE_LIST_TOKENS_TRADE} from './config';
+import {USE_PROXY, WHITE_LIST_TOKENS_TRADE} from './config';
 import {getSupportCrypto} from '../helper/okx.candles';
 import {HttpsProxyAgent} from 'https-proxy-agent';
 import proxys from "../../proxys.json"
@@ -156,6 +156,7 @@ export const getTradeAbleCrypto = async (tokenTradingMode:string) => {
 }
 
 export const getRandomeHttpAgent = () => {
+  if(!USE_PROXY) return undefined
   const proxy: any = getRandomElementFromArray(proxys);
   const proxyHost = proxy.ip;
   const proxyPort = proxy.port;
