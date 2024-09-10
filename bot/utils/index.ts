@@ -185,7 +185,6 @@ export const estimatePnl = ({posSide, sz, c, e}: {
   estPnlStopLossPercent: number;
   estPnlStopLossIcon: string;
 } => {
-  console.log('e', e,'c', c)
   let estPnlStopLossPercent = 0;
   let estPnlStopLoss = 0;
   if(posSide === 'long') estPnlStopLossPercent = (Number(c) - Number(e)) /

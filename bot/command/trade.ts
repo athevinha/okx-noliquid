@@ -73,6 +73,7 @@ export const fowardTrading = async ({
   const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder} =
     config;
   let variance = config.variance
+  console.log('variance', variance)
   try {
     const BASE_SYMBOL = WHITE_LIST_TOKENS_TRADE[0];
     const baseCandles = await getSymbolCandles({
