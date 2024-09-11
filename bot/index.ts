@@ -6,7 +6,7 @@ import {botReportPositionsHistory} from "./command/history";
 import {botReportPositions} from "./command/positions";
 import {botReportSymbolReport} from "./command/symbols-report";
 import {botAutoTrading} from "./command/trade";
-import {IntervalConfig, IPosSide} from "./type";
+import {CampaignConfig, IPosSide} from "./type";
 import {decodeSymbol} from "./utils";
 dotenv.config();
 
@@ -15,7 +15,7 @@ export async function bot(apiKey?: string) {
     const bot = new Telegraf(apiKey);
     const validUsername = "vicdvc";
     let authenticated = false;
-    const intervals = new Map<string, IntervalConfig>();
+    const intervals = new Map<string, CampaignConfig>();
     
     botLoginCommand({bot, authenticated, validUsername})
     botCatchError({bot})

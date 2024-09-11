@@ -1,7 +1,7 @@
 import {decodeSymbol} from ".";
-import {IntervalConfig} from "../type";
+import {CampaignConfig} from "../type";
 
-  export const formatReportInterval = (id: string, config: IntervalConfig, isStart: boolean, tradeAbleCrypto?: string[]) => {
+  export const formatReportInterval = (id: string, config: CampaignConfig, isStart: boolean, tradeAbleCrypto?: string[]) => {
     const currencies:string[] = (tradeAbleCrypto ? tradeAbleCrypto.map(token => decodeSymbol(token)) : config.tokenTradingMode?.split('/').map(token => decodeSymbol(token))) || []
     let report = isStart
       ? `<b>Start Trading ID:</b> <code>${id}</code>\n`

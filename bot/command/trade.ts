@@ -6,7 +6,7 @@ import {closeFuturePosition,openFuturePosition} from "../helper/okx.trade";
 import {
   findEMACrossovers
 } from "../signals/ema-cross";
-import {ICandles,IntervalConfig,IPosSide, IWsCandlesReponse} from "../type";
+import {ICandles,CampaignConfig,IPosSide, IWsCandlesReponse} from "../type";
 import {
   axiosErrorDecode,
   decodeSymbol,
@@ -29,7 +29,7 @@ dotenv.config();
  * Executes trading logic for the given interval configuration.
  *
  * @param {Object} ctx - The context from the Telegram bot, used to send messages to the user.
- * @param {IntervalConfig} config - Configuration object for the trading interval, including:
+ * @param {CampaignConfig} config - Configuration object for the trading interval, including:
  *    - bar: Time period for each candle (e.g., 1m, 5m, 15m).
  *    - mgnMode: Margin mode, either "isolated" or "cross".
  *    - leve: Leverage used for trading.
@@ -67,7 +67,7 @@ export const fowardTrading = async ({
     }
   >;
   wsCandles: IWsCandlesReponse,
-  config: IntervalConfig;
+  config: CampaignConfig;
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   intervalId?: string;
@@ -223,7 +223,7 @@ export const botAutoTrading = ({
   intervals,
 }: {
   bot: Telegraf;
-  intervals: Map<string, IntervalConfig>;
+  intervals: Map<string, CampaignConfig>;
 }) => {
   let lastestSignalTs: { [instId: string]: number } = {};
   bot.command("start", async (ctx) => {
@@ -294,8 +294,8 @@ export const botAutoTrading = ({
       return;
     }
 
-    const intervalConfig = intervals.get(id);
-    intervalConfig?.WS.close()
+    const CampaignConfig = intervals.get(id);
+    CampaignConfig?.WS.close()
     intervals.delete(id);
 
     ctx.replyWithHTML(`🛑 Stopped trading interval <b><code>${id}</code>.</b>`);
@@ -308,13 +308,13 @@ export const botAutoTrading = ({
     }
 
     let report = "<b>Current Trading Intervals:</b>\n";
-    intervals.forEach((intervalConfig, id) => {
+    intervals.forEach((CampaignConfig, id) => {
       report +=
         formatReportInterval(
           id,
-          intervalConfig,
+          CampaignConfig,
           false,
-          intervalConfig?.tradeAbleCrypto
+          CampaignConfig?.tradeAbleCrypto
         ) + "\n";
     });
 
@@ -322,8 +322,8 @@ export const botAutoTrading = ({
   });
 
   bot.command("stops", (ctx) => {
-    intervals.forEach((intervalConfig) => {
-      intervalConfig?.WS.close()
+    intervals.forEach((CampaignConfig) => {
+      CampaignConfig?.WS.close()
 
     });
     intervals.clear();

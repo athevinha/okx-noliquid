@@ -363,7 +363,7 @@ export type IntervalState = {
   positions: IPositionOpen[],
   positionsHistory: IPositionHistory[],
 }
-export type IntervalConfig = IIntervalData[keyof IIntervalData] & {
+export type CampaignConfig = IIntervalData[keyof IIntervalData] & {
   WS: WebSocket;
 };
 

@@ -2,18 +2,18 @@ import {Telegraf} from "telegraf";
 import {getAccountPendingAlgoOrders, getAccountPositions} from "../helper/okx.account";
 import {axiosErrorDecode, estimatePnl, getTradeAbleCrypto, zerofy} from "../utils";
 import {USDT} from "../utils/config";
-import {IntervalConfig, IPosSide} from "../type";
+import {CampaignConfig, IPosSide} from "../type";
 
-export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
+export const botReportPositions = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, CampaignConfig>  })  => {
   bot.command("positions", async (ctx) => {
     try {
       // Fetch open positions
       const id = ctx.message.text.split(" ")[1];
       let tokensFilter:string[] = []
-      const intervalConfig = intervals.get(id);
+      const CampaignConfig = intervals.get(id);
 
-      if (intervals.has(id) && intervalConfig && intervalConfig?.tokenTradingMode) {
-        tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
+      if (intervals.has(id) && CampaignConfig && CampaignConfig?.tokenTradingMode) {
+        tokensFilter = await getTradeAbleCrypto(CampaignConfig?.tokenTradingMode)
       }
       const positions = await getAccountPositions("SWAP", tokensFilter);
       let trailingLossOrders = (await getAccountPendingAlgoOrders({}));

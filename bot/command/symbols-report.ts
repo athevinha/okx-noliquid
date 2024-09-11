@@ -6,19 +6,19 @@ import {
     getTradeAbleCrypto,
     zerofy
 } from "../utils";
-import {IntervalConfig} from "../type";
+import {CampaignConfig} from "../type";
 import {USDT} from "../utils/config";
 
-export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
+export const botReportSymbolReport= ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, CampaignConfig>  })  => {
 
   bot.command("symbols", async (ctx) => {
     try {
       const id = ctx.message.text.split(" ")[1];
       let tokensFilter:string[] = []
-      const intervalConfig = intervals.get(id);
+      const CampaignConfig = intervals.get(id);
 
-      if (intervals.has(id) && intervalConfig && intervalConfig?.tokenTradingMode) {
-        tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
+      if (intervals.has(id) && CampaignConfig && CampaignConfig?.tokenTradingMode) {
+        tokensFilter = await getTradeAbleCrypto(CampaignConfig?.tokenTradingMode)
       }
 
       // Fetch positions history
