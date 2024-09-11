@@ -346,7 +346,7 @@ export type IOrderDetails = {
   uTime: string
 }
 
-export type IIntervalData = {[id: string]: {
+export type CampaignData = {[id: string]: {
   bar: string,
   leve: number,
   mgnMode: ImgnMode,
@@ -363,7 +363,7 @@ export type IntervalState = {
   positions: IPositionOpen[],
   positionsHistory: IPositionHistory[],
 }
-export type CampaignConfig = IIntervalData[keyof IIntervalData] & {
+export type CampaignConfig = CampaignData[keyof CampaignData] & {
   WS: WebSocket;
 };
 
