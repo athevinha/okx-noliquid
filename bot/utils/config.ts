@@ -1,4 +1,4 @@
-import {ImgnMode} from "../type";
+import { ImgnMode } from "../type";
 
 export const WHITE_LIST_TOKENS_TRADE = [
   "BTC-USDT-SWAP",
@@ -10,21 +10,20 @@ export const WHITE_LIST_TOKENS_TRADE = [
   // "OP-USDT-SWAP",
   // "MEW-USDT-SWAP",
   // "MEME-USDT-SWAP",
-
 ];
 export const DEFAULT_BOT_CONFIG = {
-  bar: '1Dutc',
+  bar: "1Dutc",
   leve: 5,
-  mgnMode: 'isolated',
+  mgnMode: "isolated",
   sz: 50,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,
   variance: undefined,
-  tokenTradingMode: "whitelist"
-}
-export const USE_PROXY = true
-export const MC_ALLOW_TO_TRADING = 500_000_000
+  tokenTradingMode: "whitelist",
+};
+export const USE_PROXY = true;
+export const MC_ALLOW_TO_TRADING = 500_000_000;
 export const OKX_BASE_FETCH_API_URL = "https://www.okx.com/priapi/v5";
 export const OKX_BASE_WS_URL = "wss://ws.okx.com:8443";
 export const OKX_BASE_API_URL = "https://www.okx.com";
@@ -32,7 +31,17 @@ export const USDT = "₮";
 
 export const parseConfigInterval = (configString: string) => {
   const configParts = configString.split(" ");
-  let {bar, leve, mgnMode, sz, slopeThresholdUp, slopeThresholdUnder, slopeThreshAverageMode, variance, tokenTradingMode}: any = DEFAULT_BOT_CONFIG
+  let {
+    bar,
+    leve,
+    mgnMode,
+    sz,
+    slopeThresholdUp,
+    slopeThresholdUnder,
+    slopeThreshAverageMode,
+    variance,
+    tokenTradingMode,
+  }: any = DEFAULT_BOT_CONFIG;
   configParts.forEach((part) => {
     if (part.startsWith("bar-")) {
       bar = part.replace("bar-", "");
@@ -49,11 +58,14 @@ export const parseConfigInterval = (configString: string) => {
     } else if (part.startsWith("avgMode-")) {
       slopeThreshAverageMode = part.replace("avgMode-", "") === "true";
     } else if (part.startsWith("tokenMode-")) {
-      tokenTradingMode = part.replace("tokenMode-", "") as "all" | "whitelist" | string;
-    }else if (part.startsWith("variance-")) {
+      tokenTradingMode = part.replace("tokenMode-", "") as
+        | "all"
+        | "whitelist"
+        | string;
+    } else if (part.startsWith("variance-")) {
       variance = part.replace("variance-", "") as string;
-      if(Number(variance)) variance = (Number(variance) / 100).toString()
-      else if(variance === 'auto') variance = 'auto'
+      if (Number(variance)) variance = (Number(variance) / 100).toString();
+      else if (variance === "auto") variance = "auto";
     }
   });
 
@@ -66,6 +78,6 @@ export const parseConfigInterval = (configString: string) => {
     slopeThresholdUnder,
     slopeThreshAverageMode,
     tokenTradingMode,
-    variance
+    variance,
   };
 };

@@ -1,18 +1,14 @@
-import {expect} from "chai";
+import { expect } from "chai";
 import {
   getCandlesWithLimit,
-  getSupportCrypto
+  getSupportCrypto,
 } from "../bot/helper/okx.candles";
 import {
   findEMACrossovers,
-  simulateTradesEmaCross
+  simulateTradesEmaCross,
 } from "../bot/signals/ema-cross";
-import {
-  decodeTimestamp,
-  decodeTimestampAgo,
-  zerofy
-} from "../bot/utils";
-import {WHITE_LIST_TOKENS_TRADE} from "../bot/utils/config";
+import { decodeTimestamp, decodeTimestampAgo, zerofy } from "../bot/utils";
+import { WHITE_LIST_TOKENS_TRADE } from "../bot/utils/config";
 // 1D 9 21 undefined undefined
 // 12H 9 21 undefined undefined
 // 1H 9 21 undefined undefined
@@ -59,27 +55,38 @@ describe("OKX EMA Cross backtest", () => {
           const emaCrossovers = findEMACrossovers(
             candles,
             TEST_CONFIG.SHORT_EMA,
-            TEST_CONFIG.LONG_EMA
+            TEST_CONFIG.LONG_EMA,
           );
           let slopeThresholdUnder = undefined;
-          let slopeThresholdUp = undefined
-          if(TEST_CONFIG.SLOPE_AVERAGE_MODE) { 
-            const {avgNegativeSlope, avgPositiveSlope} = simulateTradesEmaCross(
-              emaCrossovers,
-              TEST_CONFIG.SZ_USD,
-              candles[candles.length - 1].c,
-              undefined,
-              undefined,
-            );
-            slopeThresholdUnder = avgNegativeSlope > avgPositiveSlope ? avgNegativeSlope : undefined
-            slopeThresholdUp = avgNegativeSlope < avgPositiveSlope ?  avgPositiveSlope  : undefined
+          let slopeThresholdUp = undefined;
+          if (TEST_CONFIG.SLOPE_AVERAGE_MODE) {
+            const { avgNegativeSlope, avgPositiveSlope } =
+              simulateTradesEmaCross(
+                emaCrossovers,
+                TEST_CONFIG.SZ_USD,
+                candles[candles.length - 1].c,
+                undefined,
+                undefined,
+              );
+            slopeThresholdUnder =
+              avgNegativeSlope > avgPositiveSlope
+                ? avgNegativeSlope
+                : undefined;
+            slopeThresholdUp =
+              avgNegativeSlope < avgPositiveSlope
+                ? avgPositiveSlope
+                : undefined;
           }
           const tradeResults = simulateTradesEmaCross(
             emaCrossovers,
             TEST_CONFIG.SZ_USD,
             candles[candles.length - 1].c,
-            TEST_CONFIG.SLOPE_AVERAGE_MODE ? slopeThresholdUnder : TEST_CONFIG.SLOPE_THRESHOLD_UNDER ,
-            TEST_CONFIG.SLOPE_AVERAGE_MODE ? slopeThresholdUp : TEST_CONFIG.SLOPE_THRESHOLD_UP 
+            TEST_CONFIG.SLOPE_AVERAGE_MODE
+              ? slopeThresholdUnder
+              : TEST_CONFIG.SLOPE_THRESHOLD_UNDER,
+            TEST_CONFIG.SLOPE_AVERAGE_MODE
+              ? slopeThresholdUp
+              : TEST_CONFIG.SLOPE_THRESHOLD_UP,
           );
           if (TEST_CONFIG.LOG_HISTORY_TRADE)
             console.table(
@@ -91,7 +98,7 @@ describe("OKX EMA Cross backtest", () => {
                 "Slope Diveder": zerofy(result.slopeThreshold || 0),
                 Type: result.positionType,
                 Action: result.action,
-              }))
+              })),
             );
 
           totalPnL += tradeResults.totalPnL;
@@ -112,13 +119,13 @@ describe("OKX EMA Cross backtest", () => {
               tradeResults.historyTrades[tradeResults.historyTrades.length - 1]
                 ?.ts,
           };
-        })
+        }),
       )
     ).filter((res) => res);
 
     // Rank symbols by PnL
     const rankedResults = results.sort(
-      (a, b) => Number(a.totalPnL) - Number(b.totalPnL)
+      (a, b) => Number(a.totalPnL) - Number(b.totalPnL),
     );
 
     if (TEST_CONFIG.LOG_PNL_DETAILS)
@@ -127,21 +134,30 @@ describe("OKX EMA Cross backtest", () => {
           Symbol: result.symbol.split("-")[0],
           "Volume ($)": zerofy(result.volume),
           "Lost/Win": `${result.loss}/${result.win} (${result.loss + result.win})`,
-          "Win rate": zerofy(result.winRate * 100) + '%',
+          "Win rate": zerofy(result.winRate * 100) + "%",
           "PnL ($)": zerofy(result.totalPnL),
-          "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime,true),
-        }))
+          "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime, true),
+        })),
       );
-    if(TEST_CONFIG.LOG_PNL_SUMMARY){
-      console.log(`------------------------SUMMARY----------------------------`);
+    if (TEST_CONFIG.LOG_PNL_SUMMARY) {
+      console.log(
+        `------------------------SUMMARY----------------------------`,
+      );
       const Fee = (totalTradeVolume * TEST_CONFIG.FEE_PERCENTAGE) / 100;
       const PercentPnl =
         ((totalPnL - Fee) /
           ((TEST_CONFIG.SZ_USD / TEST_CONFIG.LEVERAGE) *
             supportFutureCryptosByInstId.length)) *
         100;
-      console.log("Est. Lost/Win:", `${lostCount}/${winCount}`, `(${zerofy(winCount / (winCount + lostCount) * 100)}%)`);
-      console.log("Est. Trade Time:", decodeTimestampAgo(earliestTradeTimestamp));
+      console.log(
+        "Est. Lost/Win:",
+        `${lostCount}/${winCount}`,
+        `(${zerofy((winCount / (winCount + lostCount)) * 100)}%)`,
+      );
+      console.log(
+        "Est. Trade Time:",
+        decodeTimestampAgo(earliestTradeTimestamp),
+      );
       console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
       console.log("Est. Total Fee ($):", zerofy(Fee));
       console.log("Est. Total PnL ($):", zerofy(totalPnL));

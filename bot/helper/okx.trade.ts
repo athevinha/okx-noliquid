@@ -26,7 +26,7 @@ export const setLeveragePair = async (
   instId: string,
   lever: number,
   mgnMode: string,
-  posSide: string
+  posSide: string,
 ): Promise<OKXResponse> => {
   try {
     const body = JSON.stringify({
@@ -49,7 +49,7 @@ export const setLeveragePair = async (
   }
 };
 export const setPositionMode = async (
-  mode: string = "long_short_mode"
+  mode: string = "long_short_mode",
 ): Promise<OKXResponse> => {
   try {
     const body = {
@@ -63,9 +63,9 @@ export const setPositionMode = async (
         headers: makeHeaderAuthenticationOKX(
           "POST",
           path,
-          JSON.stringify(body)
+          JSON.stringify(body),
         ),
-      }
+      },
     );
     return res?.data;
   } catch (error: any) {
@@ -219,7 +219,10 @@ export const openFuturePosition = async ({
   size: number;
   campaignId?: string;
   callbackRatio?: string;
-}): Promise<{openPositionRes: OKXResponse, openAlgoOrderRes: OKXResponse}> => {
+}): Promise<{
+  openPositionRes: OKXResponse;
+  openAlgoOrderRes: OKXResponse;
+}> => {
   const maxRetries = 3;
   let attempts = 0;
   let openPositionRes: OKXResponse = {
@@ -264,7 +267,7 @@ export const openFuturePosition = async ({
     }
   };
   const openTrailingOrder = async (
-    _callbackRatio: string
+    _callbackRatio: string,
   ): Promise<OKXResponse> => {
     try {
       return await openTrailingStopOrder({
@@ -301,15 +304,15 @@ export const openFuturePosition = async ({
     }
   }
 
-  return{
+  return {
     openPositionRes: {
       ...openPositionRes,
-      msg: okxReponseDecode(openPositionRes)
+      msg: okxReponseDecode(openPositionRes),
     },
     openAlgoOrderRes: {
       ...openAlgoOrderRes,
-      msg: okxReponseDecode(openAlgoOrderRes)
-    }
+      msg: okxReponseDecode(openAlgoOrderRes),
+    },
   };
 };
 
@@ -327,7 +330,10 @@ export const closeFuturePosition = async ({
   clOrdId?: string;
   tag?: string;
   isCloseAlgoOrders?: boolean;
-}): Promise<{closePositionRes: OKXResponse, closeAlgoOrderRes: OKXResponse}> => {
+}): Promise<{
+  closePositionRes: OKXResponse;
+  closeAlgoOrderRes: OKXResponse;
+}> => {
   const maxRetries = 2;
   let attempts = 0;
   let closePositionRes: OKXResponse = {
@@ -377,7 +383,7 @@ export const closeFuturePosition = async ({
   while (attempts < maxRetries) {
     attempts += 1;
     closePositionRes = await closePosition();
-    if(closePositionRes.code === '51023'){
+    if (closePositionRes.code === "51023") {
       break;
     }
     if (okxReponseChecker(closePositionRes, false)) {
@@ -389,7 +395,7 @@ export const closeFuturePosition = async ({
     while (attempts < maxRetries) {
       attempts += 1;
       closeAlgoOrderRes = await closeAlgoOrders();
-      if(closeAlgoOrderRes.code === '404'){
+      if (closeAlgoOrderRes.code === "404") {
         break;
       }
       if (okxReponseChecker(closeAlgoOrderRes)) {
@@ -401,11 +407,11 @@ export const closeFuturePosition = async ({
   return {
     closePositionRes: {
       ...closePositionRes,
-      msg: okxReponseDecode(closePositionRes)
+      msg: okxReponseDecode(closePositionRes),
     },
     closeAlgoOrderRes: {
       ...closeAlgoOrderRes,
-      msg: okxReponseDecode(closeAlgoOrderRes)
-    }
+      msg: okxReponseDecode(closeAlgoOrderRes),
+    },
   };
 };

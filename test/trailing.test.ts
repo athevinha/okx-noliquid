@@ -49,20 +49,20 @@ describe("OKX trailing stoploss test", () => {
           callbackRatio: callbackRatioLoss.toString(), // trailing percent ratio
         });
         return res;
-      })
+      }),
     );
     expect(statuss.filter((s) => s.openAlgoOrderRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
     expect(statuss.filter((s) => s.openPositionRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
   });
 
   it("Fetch open pending trailing loss orders", async () => {
     const algoOrders = await getAccountPendingAlgoOrders({});
     expect(algoOrders.length).greaterThanOrEqual(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
   });
 
@@ -76,13 +76,13 @@ describe("OKX trailing stoploss test", () => {
           isCloseAlgoOrders: true,
         });
         return res;
-      })
+      }),
     );
     expect(statuss.filter((s) => s.closeAlgoOrderRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
     expect(statuss.filter((s) => s.closePositionRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
 
     const algoOrders = await getAccountPendingAlgoOrders({ instId });

@@ -10,7 +10,7 @@ import { decodeTimestamp, decodeTimestampAgo } from "../utils";
  */
 export function calculateEMA(
   candles: ICandles,
-  periods: number
+  periods: number,
 ): Array<{ ts: number; ema: number; crossPercentFilter?: number }> {
   const multiplier = 2 / (periods + 1);
   let ema = 0;
@@ -47,12 +47,12 @@ export function calculateSlope(
   prevShortEMA: number,
   prevLongEMA: number,
   currentShortEMA: number,
-  currentLongEMA: number
+  currentLongEMA: number,
 ): number {
   const deltaShortEMA = currentShortEMA - prevShortEMA;
   const deltaLongEMA = currentLongEMA - prevLongEMA;
   return Math.abs(
-    (deltaShortEMA - deltaLongEMA) / (prevLongEMA + deltaLongEMA)
+    (deltaShortEMA - deltaLongEMA) / (prevLongEMA + deltaLongEMA),
   ); // Normalized slope
 }
 /**
@@ -99,11 +99,11 @@ export function calculateGoodSlopeThreshold(candles: ICandles): number {
 export function findEMACrossovers(
   candles: ICandles,
   shortPeriods: number,
-  longPeriods: number
+  longPeriods: number,
 ): ICandlesEMACrossovers {
   const longEMA = calculateEMA(candles, longPeriods);
   const shortEMA = calculateEMA(candles, shortPeriods).filter(
-    (ema) => ema?.ts >= longEMA[0]?.ts
+    (ema) => ema?.ts >= longEMA[0]?.ts,
   );
   const crossovers: ICandlesEMACrossovers = [];
 
@@ -120,13 +120,13 @@ export function findEMACrossovers(
       prevShortEMA,
       prevLongEMA,
       currentShortEMA,
-      currentLongEMA
+      currentLongEMA,
     );
     const calculatedSlopePre = calculateSlope(
       prev2ShortEMA,
       prev2LongEMA,
       prevShortEMA,
-      prevLongEMA
+      prevLongEMA,
     );
     const slopeThreshold = calculatedSlopePre / calculatedSlope;
     // Check for a valid bullish crossover
@@ -181,7 +181,7 @@ export function simulateTradesEmaCross(
   usdVolume: number,
   currentPrice: number,
   slopeThresholdUnder?: number,
-  slopeThresholdUp?: number
+  slopeThresholdUp?: number,
 ) {
   let positions: Position[] = [];
   let historyTrades: HistoryTrade[] = [];
@@ -190,7 +190,7 @@ export function simulateTradesEmaCross(
   let loss = 0;
   let win = 0;
   let avgPositiveSlope = 0;
-  let avgNegativeSlope = 0
+  let avgNegativeSlope = 0;
 
   emaCrossovers.map((crossover) => {
     const { ts, c, type, calculatedSlope, slopeThreshold } = crossover;
@@ -198,14 +198,14 @@ export function simulateTradesEmaCross(
       positions = positions.filter((position) => {
         if (position.type === "short") {
           const pnl = (position.entryPrice - c) * position.baseTokenAmount; // Short PnL = (entry price - exit price) * base token amount
-          const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
+          const openPositionSlope =
+            historyTrades[historyTrades.length - 1].slopeThreshold || 0;
           if (pnl > 0) {
-            avgPositiveSlope += openPositionSlope
-            win++
-          }
-          else {
-            avgNegativeSlope += openPositionSlope
-            loss++
+            avgPositiveSlope += openPositionSlope;
+            win++;
+          } else {
+            avgNegativeSlope += openPositionSlope;
+            loss++;
           }
           historyTrades.push({
             ts,
@@ -253,14 +253,14 @@ export function simulateTradesEmaCross(
       positions = positions.filter((position) => {
         if (position.type === "long") {
           const pnl = (c - position.entryPrice) * position.baseTokenAmount; // Long PnL = (exit price - entry price) * base token amount
-          const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
+          const openPositionSlope =
+            historyTrades[historyTrades.length - 1].slopeThreshold || 0;
           if (pnl > 0) {
-            avgPositiveSlope += openPositionSlope
-            win++
-          }
-          else {
-            avgNegativeSlope += openPositionSlope
-            loss++
+            avgPositiveSlope += openPositionSlope;
+            win++;
+          } else {
+            avgNegativeSlope += openPositionSlope;
+            loss++;
           }
           historyTrades.push({
             ts,
@@ -313,14 +313,14 @@ export function simulateTradesEmaCross(
         ? (currentPrice - position.entryPrice) * position.baseTokenAmount // Long PnL
         : (position.entryPrice - currentPrice) * position.baseTokenAmount; // Short PnL
 
-    const openPositionSlope = historyTrades[historyTrades.length - 1].slopeThreshold || 0
+    const openPositionSlope =
+      historyTrades[historyTrades.length - 1].slopeThreshold || 0;
     if (pnl > 0) {
-      avgPositiveSlope += openPositionSlope
-      win++
-    }
-    else {
-      avgNegativeSlope += openPositionSlope
-      loss++
+      avgPositiveSlope += openPositionSlope;
+      win++;
+    } else {
+      avgNegativeSlope += openPositionSlope;
+      loss++;
     }
 
     historyTrades.push({
@@ -339,11 +339,21 @@ export function simulateTradesEmaCross(
 
   // Calculate total PnL
   const totalPnL = historyTrades.reduce((acc, trade) => acc + trade.pnl, 0);
-  const positivePnLTrades = historyTrades.filter(trade => trade.pnl > 0 && trade.slopeThreshold !== undefined);
-  const negativePnLTrades = historyTrades.filter(trade => trade.pnl < 0 && trade.slopeThreshold !== undefined);
+  const positivePnLTrades = historyTrades.filter(
+    (trade) => trade.pnl > 0 && trade.slopeThreshold !== undefined,
+  );
+  const negativePnLTrades = historyTrades.filter(
+    (trade) => trade.pnl < 0 && trade.slopeThreshold !== undefined,
+  );
 
- avgPositiveSlope = positivePnLTrades.length > 0 ? avgPositiveSlope / positivePnLTrades.length : 0;
- avgNegativeSlope = negativePnLTrades.length > 0 ? avgNegativeSlope / negativePnLTrades.length : 0;
+  avgPositiveSlope =
+    positivePnLTrades.length > 0
+      ? avgPositiveSlope / positivePnLTrades.length
+      : 0;
+  avgNegativeSlope =
+    negativePnLTrades.length > 0
+      ? avgNegativeSlope / negativePnLTrades.length
+      : 0;
   return {
     totalPnL: totalPnL,
     totalTransactions,
@@ -353,6 +363,6 @@ export function simulateTradesEmaCross(
     avgNegativeSlope,
     activePositions: positions,
     win,
-    loss
+    loss,
   };
 }

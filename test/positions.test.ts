@@ -24,7 +24,7 @@ describe("OKX positions with test", () => {
   const { campaignId, instId, mgnMode, size, posSide, leverage } = TEST_CONFIG;
   const tag = decodeTag({ campaignId, instId, leverage, posSide, size });
   it("open position OKX", async () => {
-    const {openAlgoOrderRes, openPositionRes} = await openFuturePosition({
+    const { openAlgoOrderRes, openPositionRes } = await openFuturePosition({
       campaignId,
       instId: instId,
       size: size,
@@ -41,14 +41,14 @@ describe("OKX positions with test", () => {
     await setTimeout(1000);
   });
   it("Close position OKX", async () => {
-    const {closeAlgoOrderRes, closePositionRes} = await closeFuturePosition({
+    const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition({
       instId: instId,
       mgnMode: mgnMode as ImgnMode,
       posSide: posSide as IPosSide,
       tag,
-      isCloseAlgoOrders: false
+      isCloseAlgoOrders: false,
     });
-    expect(closeAlgoOrderRes.msg).eq('')
-    expect(closePositionRes.msg).eq('')
+    expect(closeAlgoOrderRes.msg).eq("");
+    expect(closePositionRes.msg).eq("");
   });
 });
