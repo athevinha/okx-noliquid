@@ -4,7 +4,6 @@ import { axiosErrorDecode, getRandomeHttpAgent } from "../utils";
 import { MC_ALLOW_TO_TRADING, OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 import { getCurrencyInfo } from "./okx.ccy";
-import {setTimeout} from "timers/promises";
 // -- DEV --
 // ts	String	Opening time of the candlestick, Unix timestamp format in milliseconds, e.g. 1597026383085
 // o	String	Open price
@@ -61,9 +60,9 @@ export const getSymbolCandles = async ({
       attempts += 1;
       try {
         arrayCandles = await fetchCandles();
-        if(arrayCandles.length > 0) break;
+        if (arrayCandles.length > 0) break;
       } catch (error) {
-        axiosErrorDecode(error)
+        axiosErrorDecode(error);
       }
     }
 
@@ -140,7 +139,7 @@ export const getSupportCrypto = async ({
     });
     if (res.data.code !== "0") console.log(res.data.msg);
     const instInfo = (res.data?.data as IInstrumentsData[]).filter(
-      (e) => e.instId.includes("USDT") && !e.instId.includes("USDC")
+      (e) => e.instId.includes("USDT") && !e.instId.includes("USDC"),
     );
 
     const instData: IInstrumentsData[] = [];
@@ -148,7 +147,7 @@ export const getSupportCrypto = async ({
       instInfo.map(async (inst) => {
         const info = await getCurrencyInfo(inst.instId.split("-")[0]);
         if ((info?.marketCap || 0) >= MC_ALLOW_TO_TRADING) instData.push(inst);
-      })
+      }),
     );
     return instData;
   } catch (error: any) {

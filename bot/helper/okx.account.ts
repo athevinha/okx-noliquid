@@ -27,7 +27,7 @@ export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
 
 export const getAccountPositions = async (
   instType: IInstType,
-  instIds?: string[]
+  instIds?: string[],
 ): Promise<IPositionOpen[]> => {
   try {
     const path = `/api/v5/account/positions?instType=${instType}`;
@@ -37,7 +37,7 @@ export const getAccountPositions = async (
     if (!instIds || instIds.length === 0)
       return res?.data?.data as IPositionOpen[];
     return (res?.data?.data as IPositionOpen[]).filter((r) =>
-      instIds?.includes(r.instId)
+      instIds?.includes(r.instId),
     );
   } catch (error: any) {
     axiosErrorDecode(error);
@@ -47,7 +47,7 @@ export const getAccountPositions = async (
 
 export const getAccountPosition = async (
   instType: IInstType,
-  posId: string
+  posId: string,
 ): Promise<IPositionOpen[]> => {
   try {
     const path = `/api/v5/account/positions?posId=${posId}&instType=${instType}`;
@@ -85,7 +85,7 @@ export const getAccountOrder = async ({
 };
 export const getAccountPositionsHistory = async (
   instType: IInstType,
-  instIds?: string[]
+  instIds?: string[],
 ): Promise<IPositionHistory[]> => {
   try {
     const path = `/api/v5/account/positions-history?instType=${instType}`;
@@ -95,7 +95,7 @@ export const getAccountPositionsHistory = async (
     if (!instIds || instIds.length === 0)
       return res?.data?.data as IPositionHistory[];
     return (res?.data?.data as IPositionHistory[]).filter((r) =>
-      instIds?.includes(r.instId)
+      instIds?.includes(r.instId),
     );
   } catch (error: any) {
     axiosErrorDecode(error);
@@ -104,7 +104,7 @@ export const getAccountPositionsHistory = async (
 };
 
 export const getAccountPositionRisk = async (
-  instType: IInstType
+  instType: IInstType,
 ): Promise<IPositionRisk[]> => {
   try {
     const path = `/api/v5/account/account-position-risk?instType=${instType}`;
@@ -136,7 +136,7 @@ export const getAccountOrdersHistory = async ({
     });
     console.log(res.data.data.map((e: any) => e.clOrdId));
     return (res?.data?.data as IOrderDetails[]).filter(
-      (r) => r.clOrdId === clOrdId
+      (r) => r.clOrdId === clOrdId,
     );
   } catch (error: any) {
     axiosErrorDecode(error);

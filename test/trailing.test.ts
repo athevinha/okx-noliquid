@@ -24,12 +24,12 @@ describe("OKX trailing stoploss test", () => {
     size: 100,
     mgnMode: "isolated" as ImgnMode,
     posSide: "long" as IPosSide,
-    intervalId: "test" + Math.random().toFixed(4).replaceAll(".", ""),
+    campaignId: "test" + Math.random().toFixed(4).replaceAll(".", ""),
     callbackRatioLoss: 0.3,
   };
   const {
     callbackRatioLoss,
-    intervalId,
+    campaignId,
     instId,
     mgnMode,
     size,
@@ -40,7 +40,7 @@ describe("OKX trailing stoploss test", () => {
     let statuss = await Promise.all(
       supportFutureCryptosByInstId.map(async (spCrypto) => {
         const res = await openFuturePosition({
-          intervalId,
+          campaignId,
           instId: spCrypto,
           size: size,
           mgnMode: mgnMode as ImgnMode,
@@ -49,20 +49,20 @@ describe("OKX trailing stoploss test", () => {
           callbackRatio: callbackRatioLoss.toString(), // trailing percent ratio
         });
         return res;
-      })
+      }),
     );
     expect(statuss.filter((s) => s.openAlgoOrderRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
     expect(statuss.filter((s) => s.openPositionRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
   });
 
   it("Fetch open pending trailing loss orders", async () => {
     const algoOrders = await getAccountPendingAlgoOrders({});
     expect(algoOrders.length).greaterThanOrEqual(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
   });
 
@@ -76,13 +76,13 @@ describe("OKX trailing stoploss test", () => {
           isCloseAlgoOrders: true,
         });
         return res;
-      })
+      }),
     );
     expect(statuss.filter((s) => s.closeAlgoOrderRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
     expect(statuss.filter((s) => s.closePositionRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length
+      supportFutureCryptosByInstId.length,
     );
 
     const algoOrders = await getAccountPendingAlgoOrders({ instId });

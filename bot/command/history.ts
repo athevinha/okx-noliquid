@@ -1,27 +1,42 @@
-import {Telegraf} from "telegraf";
-import {getAccountPositionsHistory} from "../helper/okx.account";
-import {IntervalConfig} from "../type";
+import { Telegraf } from "telegraf";
+import { getAccountPositionsHistory } from "../helper/okx.account";
+import { CampaignConfig } from "../type";
 import {
   axiosErrorDecode,
   decodeTimestampAgo,
   getTradeAbleCrypto,
-  zerofy
+  zerofy,
 } from "../utils";
-import {USDT} from "../utils/config";
+import { USDT } from "../utils/config";
 
-export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, intervals: Map<string, IntervalConfig>  })  => {
+export const botReportPositionsHistory = ({
+  bot,
+  intervals,
+}: {
+  bot: Telegraf;
+  intervals: Map<string, CampaignConfig>;
+}) => {
   bot.command("history", async (ctx) => {
     try {
       const id = ctx.message.text.split(" ")[1];
-      let tokensFilter:string[] = []
-      const intervalConfig = intervals.get(id);
+      let tokensFilter: string[] = [];
+      const CampaignConfig = intervals.get(id);
 
-      if (intervals.has(id) && intervalConfig && intervalConfig?.tokenTradingMode) {
-        tokensFilter = await getTradeAbleCrypto(intervalConfig?.tokenTradingMode)
+      if (
+        intervals.has(id) &&
+        CampaignConfig &&
+        CampaignConfig?.tokenTradingMode
+      ) {
+        tokensFilter = await getTradeAbleCrypto(
+          CampaignConfig?.tokenTradingMode,
+        );
       }
 
       // Fetch positions history
-      const positionsHistory = await getAccountPositionsHistory("SWAP", tokensFilter);
+      const positionsHistory = await getAccountPositionsHistory(
+        "SWAP",
+        tokensFilter,
+      );
 
       if (positionsHistory.length === 0) {
         await ctx.replyWithHTML("<code>No position history found.</code>");
@@ -36,11 +51,14 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
 
       // Get the last 10 positions history
       const recentPositions = positionsHistory.sort(
-        (a, b) => Number(b.uTime) - Number(a.uTime)
+        (a, b) => Number(b.uTime) - Number(a.uTime),
       );
       const showPositionHistory = 5;
       // Generate report for the last 10 positions
-      let positionReports = tokensFilter.length > 0 ? `<b>Report for interval: </b> <code>${id}</code>\n` :"" ;
+      let positionReports =
+        tokensFilter.length > 0
+          ? `<b>Report for interval: </b> <code>${id}</code>\n`
+          : "";
       recentPositions.forEach((position, index) => {
         if (index <= showPositionHistory) {
           const realizedPnlIcon =
@@ -48,19 +66,18 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
 
           const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
           let report = ``;
-          report += `<code>[${position.posSide.toUpperCase()}]</code> <b><a href="${tradeLink}">${position.instId
-            .split("-")[0]}</a></b> | ${decodeTimestampAgo(
-            Number(position.uTime), true
-          )}\n`;
+          report += `<code>[${position.posSide.toUpperCase()}]</code> <b><a href="${tradeLink}">${
+            position.instId.split("-")[0]
+          }</a></b> | ${decodeTimestampAgo(Number(position.uTime), true)}\n`;
           report += `• <b>O/C Avg Px:</b> <code>${zerofy(
-            position.openAvgPx
+            position.openAvgPx,
           )}${USDT}</code> | <code>${zerofy(
-            position.closeAvgPx
+            position.closeAvgPx,
           )}${USDT}</code>\n`;
           report += `• <b>Pnl:</b> <code>${zerofy(
-            position.realizedPnl
+            position.realizedPnl,
           )}${USDT}</code> ( <code>${zerofy(
-            position.fee
+            position.fee,
           )}${USDT}</code> ) • ${realizedPnlIcon}\n`;
 
           positionReports += report;
@@ -77,13 +94,13 @@ export const botReportPositionsHistory = ({ bot, intervals }: { bot: Telegraf, i
       summaryReport += `<code>-----------HISTORYS------------</code>\n`;
       summaryReport += `<b>Total Positions:</b> <code>${totalPositions}</code>\n`;
       summaryReport += `<b>Total Volume:</b> <code>${zerofy(
-        totalVolume
+        totalVolume,
       )}</code>\n`;
       summaryReport += `<b>Total Fee:</b> <code>${zerofy(
-        totalFee
+        totalFee,
       )}${USDT}</code>\n`;
       summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
-        totalRealizedPnl
+        totalRealizedPnl,
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
 
       // Send the summary and the detailed reports
