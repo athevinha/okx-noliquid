@@ -26,5 +26,8 @@ describe("OKX socket test", () => {
         console.log('subcribed:', param)
     },
    })
+   await setTimeout(10000)
+   ws.close()
   });
+  
 });
