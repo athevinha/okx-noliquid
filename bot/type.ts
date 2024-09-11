@@ -423,4 +423,15 @@ export type IPendingAlgoOrder = {
   export type ImgnMode = "isolated" | "cross"
 
   
-  
+export type IWsRequestParams = {
+  op: string,
+  args: {channel: string, instId: string}[]
+}
+
+export type IWsCandlesReponse = {
+  arg: {
+    channel: string
+    instId: string
+  }
+  data: Array<{ts: string,o: string, h: string, l: string, c: string, confirm:string}>
+}
