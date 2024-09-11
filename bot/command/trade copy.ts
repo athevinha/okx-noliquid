@@ -6,12 +6,11 @@ import {closeFuturePosition,openFuturePosition} from "../helper/okx.trade";
 import {
   findEMACrossovers
 } from "../signals/ema-cross";
-import {ICandles,IntervalConfig,IPosSide, IWsCandlesReponse} from "../type";
+import {ICandles,IntervalConfig,IPosSide} from "../type";
 import {
   axiosErrorDecode,
   decodeSymbol,
   decodeTimestamp,
-  decodeTimestampAgo,
   estimatePnl,
   getTradeAbleCrypto,
   zerofy,
@@ -23,7 +22,6 @@ import {
 } from "../utils/config";
 import {formatReportInterval} from "../utils/message";
 import {calculateATR} from "../signals/atr";
-import {wsCandles} from "../helper/okx.socket";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -53,8 +51,8 @@ export const fowardTrading = async ({
   ctx,
   config,
   tradeAbleCrypto,
+  lastestCandles,
   lastestSignalTs,
-  wsCandles,
   intervalId,
 }: {
   ctx: NarrowedContext<
@@ -66,9 +64,9 @@ export const fowardTrading = async ({
       update_id: number;
     }
   >;
-  wsCandles: IWsCandlesReponse,
   config: IntervalConfig;
   tradeAbleCrypto: string[];
+  lastestCandles: { [key: string]: ICandles }; // lastest Candle has confirm
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   intervalId?: string;
 }) => {
@@ -76,28 +74,56 @@ export const fowardTrading = async ({
     config;
   let variance = config.variance
   try {
-    const wsCandle = wsCandles?.data?.[0]
-    if (wsCandle.confirm !== '1') return;
-    await Promise.all(
+    const BASE_SYMBOL = WHITE_LIST_TOKENS_TRADE[0];
+    const baseCandles = await getSymbolCandles({
+      instID: `${BASE_SYMBOL}`,
+      before: 0,
+      bar,
+      limit: 50,
+    });
+
+    const [pendingCandle] = baseCandles.filter(
+      (baseCandles) => baseCandles.confirm === 0
+    ); // Pending candles in current
+    const lastestCandle = lastestCandles?.[BASE_SYMBOL]?.[0];
+    if (
+      pendingCandle &&
+      lastestCandle &&
+      pendingCandle?.ts !== lastestCandle?.ts
+    ) {
+      await Promise.all(
         tradeAbleCrypto.map(async (SYMBOL) => {
-          const candles = (await getSymbolCandles({
+          let _candles = await getSymbolCandles({
             instID: `${SYMBOL}`,
             before: 0,
             bar,
             limit: 300,
-          })).filter(can => can.ts <= Number(wsCandle.ts));
+          });
+          const candles = _candles.filter((candle) => candle.confirm === 1);
           const emaCross = findEMACrossovers(candles, 9, 21);
-          const lastestCross = emaCross[emaCross.length - 1]
-
-          if(lastestCross.ts === Number(wsCandle.ts)) {
-            console.log(SYMBOL,'cross')
-            lastestSignalTs[SYMBOL] = lastestCross.ts;
+          const latestCross = emaCross[emaCross.length - 1];
+          const currentCandle = candles[candles.length - 1];
+          if (SYMBOL === BASE_SYMBOL) {
+            console.log(
+              SYMBOL,
+              "Lastest Candle:",
+              decodeTimestamp(currentCandle?.ts),
+              "|",
+              decodeTimestamp(latestCross?.ts)
+            );
+          }
+          if (
+            latestCross?.ts === currentCandle?.ts &&
+            lastestSignalTs?.[SYMBOL] !== latestCross?.ts &&
+            currentCandle?.confirm === 1
+          ) {
+            lastestSignalTs[SYMBOL] = latestCross.ts;
             const isTrailingLossMode = variance === 'auto' || variance !== undefined
             const closePositionParams = {
               instId: SYMBOL,
               mgnMode,
               posSide:
-                lastestCross.type === "bullish" ? "short" : ("long" as IPosSide),
+                latestCross.type === "bullish" ? "short" : ("long" as IPosSide),
               isCloseAlgoOrders: isTrailingLossMode ? true : false
             };
             const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition(
@@ -115,15 +141,15 @@ export const fowardTrading = async ({
               leverage: leve,
               mgnMode,
               posSide:
-                lastestCross.type === "bullish" ? "long" : ("short" as IPosSide),
+                latestCross.type === "bullish" ? "long" : ("short" as IPosSide),
               size: sz,
               callbackRatio: variance
             };
             if (
               (!slopeThresholdUnder ||
-                lastestCross.slopeThreshold <= slopeThresholdUnder) &&
+                latestCross.slopeThreshold <= slopeThresholdUnder) &&
               (!slopeThresholdUp ||
-                lastestCross.slopeThreshold >= slopeThresholdUp)
+                latestCross.slopeThreshold >= slopeThresholdUp)
             ) {
               const {openAlgoOrderRes, openPositionRes} = await openFuturePosition(openPositionParams);
               openPositionMsg = openPositionRes.msg;
@@ -132,8 +158,8 @@ export const fowardTrading = async ({
               openPositionMsg = "Slope out of range";
             }
             let estimateMoveTrigglePrice = 0
-            if(openPositionParams?.posSide === 'long' && variance) estimateMoveTrigglePrice = lastestCross.c - lastestCross.c * Number(variance) 
-            else if (openPositionParams?.posSide === 'short' && variance) estimateMoveTrigglePrice = lastestCross.c + lastestCross.c * Number(variance) 
+            if(openPositionParams?.posSide === 'long' && variance) estimateMoveTrigglePrice = latestCross.c - latestCross.c * Number(variance) 
+            else if (openPositionParams?.posSide === 'short' && variance) estimateMoveTrigglePrice = latestCross.c + latestCross.c * Number(variance) 
             
             const {
               estPnlStopLoss,
@@ -142,7 +168,7 @@ export const fowardTrading = async ({
             } = estimatePnl({
               posSide: openPositionParams.posSide as IPosSide,
               sz,
-              e: lastestCross.c,
+              e: latestCross.c,
               c: estimateMoveTrigglePrice,
             });
 
@@ -151,22 +177,22 @@ export const fowardTrading = async ({
               SYMBOL
             )}]</b> | <code>${intervalId}</code> crossover Alert \n`;
             notificationMessage += `${
-              lastestCross.type === "bullish" ? "📈" : "📉"
+              latestCross.type === "bullish" ? "📈" : "📉"
             } <b>Type:</b> <code>${
-              lastestCross.type === "bullish" ? "Bullish" : "Bearish"
+              latestCross.type === "bullish" ? "Bullish" : "Bearish"
             }</code>\n`;
             notificationMessage += `💰 <b>Price:</b> <code>${
-              zerofy(lastestCross.c) + USDT
+              zerofy(latestCross.c) + USDT
             }</code>\n`;
             notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
-              Math.round(lastestCross.ts)
+              Math.round(latestCross.ts)
             )}</code>\n`;
             notificationMessage += `⛓️ <b>Slope:</b> <code>${zerofy(
-              lastestCross.slopeThreshold
+              latestCross.slopeThreshold
             )}</code>\n`;
             notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
-              lastestCross.shortEMA
-            )}</code> | <code>${zerofy(lastestCross.longEMA)}</code>\n`;
+              latestCross.shortEMA
+            )}</code> | <code>${zerofy(latestCross.longEMA)}</code>\n`;
             if (openPositionMsg === "") {
               notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
                 openPositionParams.size
@@ -212,7 +238,9 @@ export const fowardTrading = async ({
             await ctx.reply(notificationMessage, { parse_mode: "HTML" });
           }
         })
-    );
+      );
+    }
+    lastestCandles[BASE_SYMBOL] = [pendingCandle];
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
@@ -225,7 +253,6 @@ export const botAutoTrading = ({
   bot: Telegraf;
   intervals: Map<string, IntervalConfig>;
 }) => {
-  let lastestSignalTs: { [instId: string]: number } = {};
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
@@ -236,6 +263,8 @@ export const botAutoTrading = ({
       );
       return;
     }
+    let lastestCandles: { [key: string]: ICandles } = {};
+    let lastestSignalTs: { [instId: string]: number } = {};
 
     let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode);
     await ctx.reply(
@@ -245,39 +274,22 @@ export const botAutoTrading = ({
       ctx.replyWithHTML("🛑 No currency to trade.");
       return;
     }
-    const WS = wsCandles({
-      subscribeMessage: {
-        op: "subscribe",
-        args: [
-          {
-            channel: `mark-price-candle${config.bar}`,
-            instId: "BTC-USDT-SWAP",
-          },
-        ],
-      },
-      messageCallBack(wsCandles) {
-        fowardTrading({
-          ctx,
-          config: { ...config, WS },
-          tradeAbleCrypto,
-          wsCandles,
-          lastestSignalTs,
-          intervalId: id,
-        });
-      },
-      closeCallBack(code, reason) {
-        console.log("close:", code, reason.toString());
-      },
-      subcribedCallBack(param) {
-        console.log("subcribed:", param);
-      },
-    });
-  
-    intervals.set(id, { ...config, tradeAbleCrypto, WS });
+    const interval = setInterval(async () => {
+      await fowardTrading({
+        ctx,
+        config: { ...config, interval },
+        tradeAbleCrypto,
+        lastestCandles,
+        lastestSignalTs,
+        intervalId: id,
+      });
+    }, config.intervalDelay);
+
+    intervals.set(id, { ...config, tradeAbleCrypto, interval });
 
     const startReport = formatReportInterval(
       id,
-      { ...config, WS},
+      { ...config, interval },
       true,
       tradeAbleCrypto
     );
@@ -295,7 +307,7 @@ export const botAutoTrading = ({
     }
 
     const intervalConfig = intervals.get(id);
-    intervalConfig?.WS.close()
+    clearInterval(intervalConfig!.interval);
     intervals.delete(id);
 
     ctx.replyWithHTML(`🛑 Stopped trading interval <b><code>${id}</code>.</b>`);
@@ -323,10 +335,10 @@ export const botAutoTrading = ({
 
   bot.command("stops", (ctx) => {
     intervals.forEach((intervalConfig) => {
-      intervalConfig?.WS.close()
-
+      clearInterval(intervalConfig.interval);
     });
     intervals.clear();
+
     ctx.replyWithHTML("🛑 All trading intervals have been stopped.");
   });
 };

@@ -1,3 +1,5 @@
+import {WebSocket} from "ws"
+
 export type ICandle = {
   ts: number
   o: number
@@ -362,7 +364,7 @@ export type IntervalState = {
   positionsHistory: IPositionHistory[],
 }
 export type IntervalConfig = IIntervalData[keyof IIntervalData] & {
-  interval: NodeJS.Timeout;
+  WS: WebSocket;
 };
 
 export type IPendingAlgoOrder = {
