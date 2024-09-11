@@ -17,7 +17,6 @@ export const DEFAULT_BOT_CONFIG = {
   leve: 5,
   mgnMode: 'isolated',
   sz: 50,
-  intervalDelay: 30 * 1000,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,
@@ -33,7 +32,7 @@ export const USDT = "₮";
 
 export const parseConfigInterval = (configString: string) => {
   const configParts = configString.split(" ");
-  let {bar, leve, mgnMode, sz, intervalDelay, slopeThresholdUp, slopeThresholdUnder, slopeThreshAverageMode, variance, tokenTradingMode}: any = DEFAULT_BOT_CONFIG
+  let {bar, leve, mgnMode, sz, slopeThresholdUp, slopeThresholdUnder, slopeThreshAverageMode, variance, tokenTradingMode}: any = DEFAULT_BOT_CONFIG
   configParts.forEach((part) => {
     if (part.startsWith("bar-")) {
       bar = part.replace("bar-", "");
@@ -43,8 +42,6 @@ export const parseConfigInterval = (configString: string) => {
       mgnMode = part.replace("mgnMode-", "") as ImgnMode;
     } else if (part.startsWith("sz-")) {
       sz = parseFloat(part.replace("sz-", ""));
-    } else if (part.startsWith("delay-")) {
-      intervalDelay = parseInt(part.replace("delay-", ""));
     } else if (part.startsWith("slopeUp-")) {
       slopeThresholdUp = parseFloat(part.replace("slopeUp-", ""));
     } else if (part.startsWith("slopeUnder-")) {
@@ -65,7 +62,6 @@ export const parseConfigInterval = (configString: string) => {
     leve,
     mgnMode,
     sz,
-    intervalDelay,
     slopeThresholdUp,
     slopeThresholdUnder,
     slopeThreshAverageMode,

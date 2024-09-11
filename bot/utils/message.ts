@@ -11,7 +11,6 @@ import {CampaignConfig} from "../type";
     report += `• <b>Leve:</b> <code>${config.leve}</code>\n`;
     report += `• <b>Mgn mode:</b> <code>${config.mgnMode}</code>\n`;
     report += `• <b>Size:</b> <code>${config.sz}</code>\n`;
-    report += `• <b>Delay:</b> <code>${config.intervalDelay}ms</code>\n`;
     report += `• <b>Variance:</b> <code>${config.variance ? `${config.variance !== 'auto' ? Number(config.variance) * 100 + '%' : 'auto'}` : 'N/A'}</code>\n`;
     report += `• <b>Slope:</b> <code>${config.slopeThresholdUp || "N/A"}</code> | <code>${config.slopeThresholdUnder || "N/A"}</code>\n`;
     report += `• <b>Ccys:</b> <code>${currencies.length}</code> (${currencies.slice(0,15).map(ccy => ` <code>${ccy}</code> `)})`;

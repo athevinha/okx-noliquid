@@ -351,7 +351,6 @@ export type CampaignData = {[id: string]: {
   leve: number,
   mgnMode: ImgnMode,
   sz: number,
-  intervalDelay: number
   slopeThresholdUp?: number,
   slopeThresholdUnder?: number,
   slopeThreshAverageMode?: boolean,
