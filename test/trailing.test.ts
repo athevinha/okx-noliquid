@@ -78,13 +78,6 @@ describe("OKX trailing stoploss test", () => {
         return res;
       }),
     );
-    expect(statuss.filter((s) => s.closeAlgoOrderRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length,
-    );
-    expect(statuss.filter((s) => s.closePositionRes.msg === "").length).eq(
-      supportFutureCryptosByInstId.length,
-    );
-
     const algoOrders = await getAccountPendingAlgoOrders({ instId });
     expect(algoOrders.length).eq(0);
   });

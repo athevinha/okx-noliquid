@@ -1,6 +1,7 @@
 import { setTimeout } from "timers/promises";
 import { wsCandles } from "../bot/helper/okx.socket";
 import { decodeTimestampAgo } from "../bot/utils";
+import {expect} from "chai";
 
 describe("OKX socket test", () => {
   const { bar, instId } = {
@@ -8,6 +9,7 @@ describe("OKX socket test", () => {
     instId: "BTC-USDT-SWAP",
   };
   it("OKX new candles socket test", async () => {
+    let count = 0
     const ws = wsCandles({
       subscribeMessage: {
         op: "subscribe",
@@ -19,21 +21,12 @@ describe("OKX socket test", () => {
         ],
       },
       messageCallBack(candles) {
-        console.log(
-          "message 1m:",
-          decodeTimestampAgo(Number(candles.data[0].ts)),
-          candles.data[0].c,
-          candles.data[0].confirm,
-        );
-      },
-      closeCallBack(code, reason) {
-        console.log("close:", code, reason.toString());
-      },
-      subcribedCallBack(param) {
-        console.log("subcribed:", param);
+        count++
+        
       },
     });
     await setTimeout(10000);
     ws.close();
+    expect(count).greaterThanOrEqual(10)
   });
 });
