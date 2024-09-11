@@ -208,7 +208,7 @@ export const openFuturePosition = async ({
   size,
   posSide,
   ordType = "market",
-  intervalId = "",
+  campaignId = "",
   callbackRatio, // active trailing loss
 }: {
   instId: string;
@@ -217,7 +217,7 @@ export const openFuturePosition = async ({
   ordType?: string;
   leverage: number;
   size: number;
-  intervalId?: string;
+  campaignId?: string;
   callbackRatio?: string;
 }): Promise<{openPositionRes: OKXResponse, openAlgoOrderRes: OKXResponse}> => {
   const maxRetries = 3;
@@ -235,13 +235,13 @@ export const openFuturePosition = async ({
   const openPosition = async (): Promise<OKXResponse> => {
     try {
       const clOrdId = decodeClOrdId({
-        intervalId,
+        campaignId,
         instId,
         posSide,
         leverage,
         size,
       });
-      const tag = decodeTag({ intervalId, instId, posSide, leverage, size });
+      const tag = decodeTag({ campaignId, instId, posSide, leverage, size });
       const side: ISide = posSide === "long" ? "buy" : "sell";
       await setPositionMode("long_short_mode");
       await setLeveragePair(instId, leverage, mgnMode, posSide);

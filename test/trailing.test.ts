@@ -24,12 +24,12 @@ describe("OKX trailing stoploss test", () => {
     size: 100,
     mgnMode: "isolated" as ImgnMode,
     posSide: "long" as IPosSide,
-    intervalId: "test" + Math.random().toFixed(4).replaceAll(".", ""),
+    campaignId: "test" + Math.random().toFixed(4).replaceAll(".", ""),
     callbackRatioLoss: 0.3,
   };
   const {
     callbackRatioLoss,
-    intervalId,
+    campaignId,
     instId,
     mgnMode,
     size,
@@ -40,7 +40,7 @@ describe("OKX trailing stoploss test", () => {
     let statuss = await Promise.all(
       supportFutureCryptosByInstId.map(async (spCrypto) => {
         const res = await openFuturePosition({
-          intervalId,
+          campaignId,
           instId: spCrypto,
           size: size,
           mgnMode: mgnMode as ImgnMode,

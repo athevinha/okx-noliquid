@@ -131,12 +131,12 @@ export const generateTelegramTableReport = (data: Array<{ [key: string]: string 
   return `<pre>${headerRow}\n${separator}\n${rows}</pre>`;
 };
 
-export const decodeClOrdId = ({intervalId, instId, posSide, leverage, size}: {intervalId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
-  return `${intervalId}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,32).toLowerCase()
+export const decodeClOrdId = ({campaignId, instId, posSide, leverage, size}: {campaignId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
+  return `${campaignId}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,32).toLowerCase()
 }
 
-export const decodeTag = ({intervalId, instId, posSide, leverage, size}: {intervalId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
-  return `${intervalId}o${size}o${leverage}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,16).toLowerCase()
+export const decodeTag = ({campaignId, instId, posSide, leverage, size}: {campaignId: string, instId: string, posSide: IPosSide, leverage: number, size: number}) => {
+  return `${campaignId}o${size}o${leverage}`.replaceAll('-','o').replaceAll('_','o').replaceAll('/','o').slice(0,16).toLowerCase()
 }
 
 export const getTradeAbleCrypto = async (tokenTradingMode:string) => {

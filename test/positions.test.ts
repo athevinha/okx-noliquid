@@ -18,14 +18,14 @@ describe("OKX positions with test", () => {
     size: 100,
     mgnMode: "isolated",
     posSide: "long" as IPosSide,
-    intervalId: "test" + Math.random().toFixed(4).replaceAll(".", ""),
+    campaignId: "test" + Math.random().toFixed(4).replaceAll(".", ""),
   };
   let ordId = "";
-  const { intervalId, instId, mgnMode, size, posSide, leverage } = TEST_CONFIG;
-  const tag = decodeTag({ intervalId, instId, leverage, posSide, size });
+  const { campaignId, instId, mgnMode, size, posSide, leverage } = TEST_CONFIG;
+  const tag = decodeTag({ campaignId, instId, leverage, posSide, size });
   it("open position OKX", async () => {
     const {openAlgoOrderRes, openPositionRes} = await openFuturePosition({
-      intervalId,
+      campaignId,
       instId: instId,
       size: size,
       mgnMode: mgnMode as ImgnMode,

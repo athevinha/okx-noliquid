@@ -41,7 +41,7 @@ dotenv.config();
  *    Format: { [key: string]: ICandles[] } where `key` is the symbol (e.g., BTC-USDT) and `ICandles[]` represents the candles data.
  * @param {Object} lastestSignalTs - A record of the last confirmed signal bot make tx timestamps for each symbol.
  *    Format: { [instId: string]: number } where `instId` is the symbol and `number` is the timestamp of the last executed signal.
- * @param {string} [intervalId] - Optional ID of the trading interval for logging and tracking purposes.
+ * @param {string} [campaignId] - Optional ID of the trading interval for logging and tracking purposes.
  *
  * @returns {Promise<void>} - Sends trade signals via the Telegram bot if an EMA crossover occurs, and opens or closes positions based on the type of crossover (bullish or bearish).
  * Handles both opening and closing positions based on EMA crossovers and applies slope filtering if configured.
@@ -55,7 +55,7 @@ export const fowardTrading = async ({
   tradeAbleCrypto,
   lastestSignalTs,
   wsCandles,
-  intervalId,
+  campaignId,
 }: {
   ctx: NarrowedContext<
     Context<Update>,
@@ -70,7 +70,7 @@ export const fowardTrading = async ({
   config: CampaignConfig;
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
-  intervalId?: string;
+  campaignId?: string;
 }) => {
   const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder} =
     config;
@@ -149,7 +149,7 @@ export const fowardTrading = async ({
             let notificationMessage = "";
             notificationMessage += `🔔 <b>[${decodeSymbol(
               SYMBOL
-            )}]</b> | <code>${intervalId}</code> crossover Alert \n`;
+            )}]</b> | <code>${campaignId}</code> crossover Alert \n`;
             notificationMessage += `${
               lastestCross.type === "bullish" ? "📈" : "📉"
             } <b>Type:</b> <code>${
@@ -262,7 +262,7 @@ export const botAutoTrading = ({
           tradeAbleCrypto,
           wsCandles,
           lastestSignalTs,
-          intervalId: id,
+          campaignId: id,
         });
       },
       closeCallBack(code, reason) {
