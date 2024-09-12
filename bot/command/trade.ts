@@ -22,7 +22,7 @@ import {
 import { formatReportInterval } from "../utils/message";
 import { calculateATR } from "../signals/atr";
 import { wsCandles } from "../helper/okx.socket";
-import {setTimeout} from "timers/promises";
+import { setTimeout } from "timers/promises";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -48,7 +48,7 @@ dotenv.config();
  *
  * @throws {Error} - If any error occurs during the trading logic execution, it is logged, and an error message is sent to the user via the Telegram bot.
  */
-export const fowardTrading = async ({
+const _fowardTrading = async ({
   ctx,
   config,
   tradeAbleCrypto,
@@ -77,6 +77,7 @@ export const fowardTrading = async ({
   try {
     const wsCandle = wsCandles?.data?.[0];
     if (wsCandle.confirm !== "1") return;
+    console.log(`[${campaignId}] new epoch`)
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
         const candles = (
@@ -152,7 +153,7 @@ export const fowardTrading = async ({
 
           let notificationMessage = "";
           notificationMessage += `🔔 <b>[${decodeSymbol(
-            SYMBOL,
+            SYMBOL
           )}]</b> | <code>${campaignId}</code> crossover Alert \n`;
           notificationMessage += `${
             lastestCross.type === "bullish" ? "📈" : "📉"
@@ -163,17 +164,17 @@ export const fowardTrading = async ({
             zerofy(lastestCross.c) + USDT
           }</code>\n`;
           notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
-            Math.round(lastestCross.ts),
+            Math.round(lastestCross.ts)
           )}</code>\n`;
           notificationMessage += `⛓️ <b>Slope:</b> <code>${zerofy(
-            lastestCross.slopeThreshold,
+            lastestCross.slopeThreshold
           )}</code>\n`;
           notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
-            lastestCross.shortEMA,
+            lastestCross.shortEMA
           )}</code> | <code>${zerofy(lastestCross.longEMA)}</code>\n`;
           if (openPositionMsg === "") {
             notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
-              openPositionParams.size,
+              openPositionParams.size
             )}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
             if (isTrailingLossMode)
               notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
@@ -183,14 +184,14 @@ export const fowardTrading = async ({
           notificationMessage += `<code>${
             openPositionMsg === ""
               ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(
-                  openPositionParams.instId,
+                  openPositionParams.instId
                 )}`
               : "🔴 O: " + openPositionMsg
           }</code>\n`;
           notificationMessage += `<code>${
             closePositionRes.msg === ""
               ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
-                  closePositionParams.instId,
+                  closePositionParams.instId
                 )}`
               : "🔴 C: " + closePositionRes.msg
           }</code>\n`;
@@ -205,20 +206,91 @@ export const fowardTrading = async ({
             notificationMessage += `<code>${
               closeAlgoOrderRes.msg === ""
                 ? `🟢 C: Cancel trailing ${decodeSymbol(
-                    closePositionParams.instId,
+                    closePositionParams.instId
                   )}`
                 : "🔴 C: " + closeAlgoOrderRes.msg
             }</code>\n`;
           }
           await ctx.reply(notificationMessage, { parse_mode: "HTML" });
         }
-      }),
+      })
     );
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
 };
 
+function forwardTradingWithWs({
+  ctx,
+  id,
+  config,
+  tradeAbleCrypto,
+  lastestSignalTs,
+  campaigns,
+}: {
+  ctx: NarrowedContext<
+    Context<Update>,
+    {
+      message:
+        | (Update.New & Update.NonChannel & Message.AnimationMessage)
+        | (Update.New & Update.NonChannel & Message.TextMessage);
+      update_id: number;
+    }
+  >;
+  id: string;
+  config: CampaignConfig;
+  tradeAbleCrypto: string[];
+  lastestSignalTs: { [instId: string]: number };
+  campaigns: Map<string, CampaignConfig>;
+}) {
+  const WS = wsCandles({
+    subscribeMessage: {
+      op: "subscribe",
+      args: [
+        {
+          channel: `mark-price-candle${config.bar}`,
+          instId: "BTC-USDT-SWAP",
+        },
+      ],
+    },
+    messageCallBack(wsCandles) {
+      _fowardTrading({
+        ctx,
+        config: { ...config, WS },
+        tradeAbleCrypto,
+        wsCandles,
+        lastestSignalTs,
+        campaignId: id,
+      });
+    },
+    closeCallBack(code) {
+      console.error("WS closed with code: ", code);
+      if (code === 1005) {
+        ctx.replyWithHTML(
+          `🛑 Stopped trading interval <b><code>${id}</code>.</b>`
+        );
+        campaigns.delete(id);
+      } else {
+        forwardTradingWithWs({
+          ctx,
+          id,
+          config,
+          tradeAbleCrypto,
+          lastestSignalTs,
+          campaigns,
+        });
+        ctx.replyWithHTML(
+          `⛓️ [${code}] Socket disconnected for <b><code>${id}</code>.</b> Reconnected`
+        );
+      }
+    },
+    subcribedCallBack(param) {
+      console.log("Subscribed:", param);
+    },
+  });
+
+  campaigns.set(id, { ...config, tradeAbleCrypto, WS });
+}
 export const botAutoTrading = ({
   bot,
   campaigns,
@@ -233,63 +305,39 @@ export const botAutoTrading = ({
 
     if (campaigns.has(id)) {
       ctx.replyWithHTML(
-        `🚫 Trading interval with ID <code>${id}</code> is already active.`,
+        `🚫 Trading interval with ID <code>${id}</code> is already active.`
       );
       return;
     }
 
     let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode);
     await ctx.reply(
-      `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`,
+      `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`
     );
     if (tradeAbleCrypto.length === 0) {
       ctx.replyWithHTML("🛑 No currency to trade.");
       return;
     }
-    let WS = wsCandles({
-      subscribeMessage: {
-        op: "subscribe",
-        args: [
-          {
-            channel: `mark-price-candle${config.bar}`,
-            instId: "BTC-USDT-SWAP",
-          },
-        ],
-      },
-      messageCallBack(wsCandles) {
-        fowardTrading({
-          ctx,
-          config: { ...config, WS },
-          tradeAbleCrypto,
-          wsCandles,
-          lastestSignalTs,
-          campaignId: id,
-        });
-      },
-      closeCallBack(code, reason) {
-        console.log('WS close: ', code)
-        if(code === 1005)
-          ctx.replyWithHTML(`🛑 Stopped trading interval <b><code>${id}</code>.</b>`);
-        else {
-          ctx.replyWithHTML(`🚨🚨 Socket disconnected <b><code>${id}</code>.</b>`);
-        }
-      },
-      subcribedCallBack(param) {
-        console.log("subcribed:", param);
-      },
+    forwardTradingWithWs({
+      ctx,
+      id,
+      config,
+      tradeAbleCrypto,
+      lastestSignalTs,
+      campaigns,
     });
 
-    campaigns.set(id, { ...config, tradeAbleCrypto, WS });
+    // campaigns.set(id, { ...config, tradeAbleCrypto, WS });
 
     const startReport = formatReportInterval(
       id,
-      { ...config, WS },
+      { ...config },
       true,
-      tradeAbleCrypto,
+      tradeAbleCrypto
     );
     ctx.replyWithHTML(startReport);
-    await setTimeout(5000)
-    WS.close()
+    // await setTimeout(5000);
+    // WS?.close();
   });
 
   bot.command("stop", (ctx) => {
@@ -297,16 +345,14 @@ export const botAutoTrading = ({
 
     if (!campaigns.has(id)) {
       ctx.replyWithHTML(
-        `🚫 No active trading interval found with ID <code>${id}</code>.`,
+        `🚫 No active trading interval found with ID <code>${id}</code>.`
       );
       return;
     }
 
     const CampaignConfig = campaigns.get(id);
-    CampaignConfig?.WS.close();
+    CampaignConfig?.WS?.close();
     campaigns.delete(id);
-
-    ctx.replyWithHTML(`🛑 Stopped trading interval <b><code>${id}</code>.</b>`);
   });
 
   bot.command("tasks", (ctx) => {
@@ -322,7 +368,7 @@ export const botAutoTrading = ({
           id,
           CampaignConfig,
           false,
-          CampaignConfig?.tradeAbleCrypto,
+          CampaignConfig?.tradeAbleCrypto
         ) + "\n";
     });
 
@@ -331,7 +377,7 @@ export const botAutoTrading = ({
 
   bot.command("stops", (ctx) => {
     campaigns.forEach((CampaignConfig) => {
-      CampaignConfig?.WS.close();
+      CampaignConfig?.WS?.close();
     });
     campaigns.clear();
     ctx.replyWithHTML("🛑 All trading campaigns have been stopped.");

@@ -364,7 +364,7 @@ export type IntervalState = {
   positionsHistory: IPositionHistory[];
 };
 export type CampaignConfig = CampaignData[keyof CampaignData] & {
-  WS: WebSocket;
+  WS?: WebSocket;
 };
 
 export type IPendingAlgoOrder = {

@@ -192,7 +192,6 @@ export const placeOrder = async ({
     });
     return res?.data;
   } catch (error: any) {
-   ;
     return {
       code: error?.code,
       data: [],
