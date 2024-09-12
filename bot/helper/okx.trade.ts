@@ -192,11 +192,11 @@ export const placeOrder = async ({
     });
     return res?.data;
   } catch (error: any) {
-    axiosErrorDecode(error);
+   ;
     return {
       code: error?.code,
       data: [],
-      msg: `${error?.reason} ${error?.message}`,
+      msg: axiosErrorDecode(error),
     };
   }
 };
