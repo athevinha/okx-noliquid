@@ -11,19 +11,19 @@ import { USDT } from "../utils/config";
 
 export const botReportSymbolReport = ({
   bot,
-  intervals,
+  campaigns,
 }: {
   bot: Telegraf;
-  intervals: Map<string, CampaignConfig>;
+  campaigns: Map<string, CampaignConfig>;
 }) => {
   bot.command("symbols", async (ctx) => {
     try {
       const id = ctx.message.text.split(" ")[1];
       let tokensFilter: string[] = [];
-      const CampaignConfig = intervals.get(id);
+      const CampaignConfig = campaigns.get(id);
 
       if (
-        intervals.has(id) &&
+        campaigns.has(id) &&
         CampaignConfig &&
         CampaignConfig?.tokenTradingMode
       ) {

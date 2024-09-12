@@ -22,6 +22,7 @@ import {
 import { formatReportInterval } from "../utils/message";
 import { calculateATR } from "../signals/atr";
 import { wsCandles } from "../helper/okx.socket";
+import {setTimeout} from "timers/promises";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -220,17 +221,17 @@ export const fowardTrading = async ({
 
 export const botAutoTrading = ({
   bot,
-  intervals,
+  campaigns,
 }: {
   bot: Telegraf;
-  intervals: Map<string, CampaignConfig>;
+  campaigns: Map<string, CampaignConfig>;
 }) => {
   let lastestSignalTs: { [instId: string]: number } = {};
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
 
-    if (intervals.has(id)) {
+    if (campaigns.has(id)) {
       ctx.replyWithHTML(
         `🚫 Trading interval with ID <code>${id}</code> is already active.`,
       );
@@ -245,7 +246,7 @@ export const botAutoTrading = ({
       ctx.replyWithHTML("🛑 No currency to trade.");
       return;
     }
-    const WS = wsCandles({
+    let WS = wsCandles({
       subscribeMessage: {
         op: "subscribe",
         args: [
@@ -266,14 +267,19 @@ export const botAutoTrading = ({
         });
       },
       closeCallBack(code, reason) {
-        console.log("close:", code, reason.toString());
+        console.log('WS close: ', code)
+        if(code === 1005)
+          ctx.replyWithHTML(`🛑 Stopped trading interval <b><code>${id}</code>.</b>`);
+        else {
+          ctx.replyWithHTML(`🚨🚨 Socket disconnected <b><code>${id}</code>.</b>`);
+        }
       },
       subcribedCallBack(param) {
         console.log("subcribed:", param);
       },
     });
 
-    intervals.set(id, { ...config, tradeAbleCrypto, WS });
+    campaigns.set(id, { ...config, tradeAbleCrypto, WS });
 
     const startReport = formatReportInterval(
       id,
@@ -282,33 +288,35 @@ export const botAutoTrading = ({
       tradeAbleCrypto,
     );
     ctx.replyWithHTML(startReport);
+    await setTimeout(5000)
+    WS.close()
   });
 
   bot.command("stop", (ctx) => {
     const id = ctx.message.text.split(" ")[1];
 
-    if (!intervals.has(id)) {
+    if (!campaigns.has(id)) {
       ctx.replyWithHTML(
         `🚫 No active trading interval found with ID <code>${id}</code>.`,
       );
       return;
     }
 
-    const CampaignConfig = intervals.get(id);
+    const CampaignConfig = campaigns.get(id);
     CampaignConfig?.WS.close();
-    intervals.delete(id);
+    campaigns.delete(id);
 
     ctx.replyWithHTML(`🛑 Stopped trading interval <b><code>${id}</code>.</b>`);
   });
 
   bot.command("tasks", (ctx) => {
-    if (intervals.size === 0) {
-      ctx.replyWithHTML("📭 No trading intervals are currently active.");
+    if (campaigns.size === 0) {
+      ctx.replyWithHTML("📭 No trading campaigns are currently active.");
       return;
     }
 
-    let report = "<b>Current Trading Intervals:</b>\n";
-    intervals.forEach((CampaignConfig, id) => {
+    let report = "<b>Current Trading campaigns:</b>\n";
+    campaigns.forEach((CampaignConfig, id) => {
       report +=
         formatReportInterval(
           id,
@@ -322,10 +330,10 @@ export const botAutoTrading = ({
   });
 
   bot.command("stops", (ctx) => {
-    intervals.forEach((CampaignConfig) => {
+    campaigns.forEach((CampaignConfig) => {
       CampaignConfig?.WS.close();
     });
-    intervals.clear();
-    ctx.replyWithHTML("🛑 All trading intervals have been stopped.");
+    campaigns.clear();
+    ctx.replyWithHTML("🛑 All trading campaigns have been stopped.");
   });
 };

@@ -15,14 +15,14 @@ export async function bot(apiKey?: string) {
     const bot = new Telegraf(apiKey);
     const validUsername = "vicdvc";
     let authenticated = false;
-    const intervals = new Map<string, CampaignConfig>();
+    const campaigns = new Map<string, CampaignConfig>();
 
     botLoginCommand({ bot, authenticated, validUsername });
     botCatchError({ bot });
-    botReportPositions({ bot, intervals });
-    botReportPositionsHistory({ bot, intervals });
-    botReportSymbolReport({ bot, intervals });
-    botAutoTrading({ bot, intervals });
+    botReportPositions({ bot, campaigns });
+    botReportPositionsHistory({ bot, campaigns });
+    botReportSymbolReport({ bot, campaigns });
+    botAutoTrading({ bot, campaigns });
 
     bot.launch();
 

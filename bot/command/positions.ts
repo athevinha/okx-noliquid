@@ -14,20 +14,20 @@ import { CampaignConfig, IPosSide } from "../type";
 
 export const botReportPositions = ({
   bot,
-  intervals,
+  campaigns,
 }: {
   bot: Telegraf;
-  intervals: Map<string, CampaignConfig>;
+  campaigns: Map<string, CampaignConfig>;
 }) => {
   bot.command("positions", async (ctx) => {
     try {
       // Fetch open positions
       const id = ctx.message.text.split(" ")[1];
       let tokensFilter: string[] = [];
-      const CampaignConfig = intervals.get(id);
+      const CampaignConfig = campaigns.get(id);
 
       if (
-        intervals.has(id) &&
+        campaigns.has(id) &&
         CampaignConfig &&
         CampaignConfig?.tokenTradingMode
       ) {
