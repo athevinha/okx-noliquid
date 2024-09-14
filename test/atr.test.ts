@@ -25,7 +25,7 @@ describe("Candles ATR test", () => {
   before(async () => {
     candles = await getCandlesWithLimit({
       instID: TEST_CONFIG.SYMBOL,
-      bar: "1H",
+      bar: "2H",
       limit: TEST_CONFIG.LIMIT,
     });
   });
@@ -35,7 +35,7 @@ describe("Candles ATR test", () => {
       const tableData = atrs.slice(-30, TEST_CONFIG.LIMIT).map((atr) => ({
         ts: decodeTimestamp(atr.ts),
         atr: zerofy(atr.atr),
-        "Per. fluct": zerofy(atr.fluctuationsPercent) + "%",
+        "Per. fluct": zerofy(atr.fluctuationsPercent * 100) + "%",
         o: zerofy(atr.o),
         h: zerofy(atr.h),
         l: zerofy(atr.l),

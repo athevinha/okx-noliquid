@@ -8,7 +8,6 @@ export function calculateATR(
   method?: string,
 ): CandleWithATR[] {
   const trValues: number[] = [];
-
   // Calculate True Range (TR)
   for (let i = 1; i < candles.length; i++) {
     const prevClose = candles[i - 1].c;
@@ -68,17 +67,16 @@ export function calculateATR(
 
   // Calculate ATR values using RMA
   const atrValues = movingAverage(trValues, period, method || "RMA");
-
   // Attach ATR values to the corresponding candles (starting from period)
   const candlesWithATR: CandleWithATR[] = atrValues.map((atr, i) => {
-    const candle = candles[i];
+    const candle = candles[i + period];
     return {
       ...candle,
       atr: atr || 0,
       fluctuationsPercent:
-        (((candle.c + atr) * 100) / candle.c - 100 || 0) / 100,
+        Math.abs(atr / candle.c),
     };
   });
-
+  candlesWithATR.sort((a,b) => a.ts - b.ts)
   return candlesWithATR;
 }
