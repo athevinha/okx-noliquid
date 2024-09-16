@@ -65,30 +65,6 @@ export function calculateSlope(
  */
 
 /**
- * Find a good slope threshold based on historical data volatility.
- * @param candles - Array of candle data.
- * @returns A calculated slope threshold for detecting trends.
- */
-export function calculateGoodSlopeThreshold(candles: ICandles): number {
-  const priceChanges: number[] = [];
-
-  for (let i = 1; i < candles.length; i++) {
-    const priceChange = candles[i].c - candles[i - 1].c;
-    priceChanges.push(priceChange);
-  }
-
-  const mean = priceChanges.reduce((a, b) => a + b, 0) / priceChanges.length;
-  const variance =
-    priceChanges.reduce((a, b) => a + (b - mean) ** 2, 0) / priceChanges.length;
-  const stdDev = Math.sqrt(variance);
-
-  // Define the slope threshold as 1x standard deviation
-  const slopeThreshold = stdDev;
-
-  return slopeThreshold;
-}
-
-/**
  * Detect EMA crossovers and return crossover points while filtering based on slope.
  * @param candles - Array of candle data.
  * @param shortPeriods - Periods for the short-term EMA.
@@ -182,6 +158,7 @@ export function simulateTradesEmaCross(
   currentPrice: number,
   slopeThresholdUnder?: number,
   slopeThresholdUp?: number,
+  candles?: ICandles,
 ) {
   let positions: Position[] = [];
   let historyTrades: HistoryTrade[] = [];

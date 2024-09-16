@@ -16,13 +16,13 @@ import { WHITE_LIST_TOKENS_TRADE } from "../bot/utils/config";
 // 2H 9 21 undefined undefined
 const TEST_CONFIG = {
   FEE_PERCENTAGE: 0.18, // Open & Close Fee
-  BAR: "2H",
-  BAR_LIMIT: 500,
+  BAR: "1Dutc",
+  BAR_LIMIT: 300,
   SHORT_EMA: 9,
   LONG_EMA: 21,
   LEVERAGE: 5,
   SZ_USD: 300,
-  WHITE_LIST_TRADING: false,
+  WHITE_LIST_TRADING: true,
   SLOPE_THRESHOLD_UP: undefined,
   SLOPE_THRESHOLD_UNDER: undefined,
   SLOPE_AVERAGE_MODE: false,
