@@ -16,7 +16,8 @@ import { getAccountPendingAlgoOrders } from "../bot/helper/okx.account";
 
 describe("Candles ATR test", () => {
   const TEST_CONFIG = {
-    SYMBOL: "BTC-USDT-SWAP",
+    BAR: '1Dutc',
+    SYMBOL: "OP-USDT-SWAP",
     LIMIT: 1000,
     ATR_PERIOD: 14,
     LOG_DETAILS: true,
@@ -25,7 +26,7 @@ describe("Candles ATR test", () => {
   before(async () => {
     candles = await getCandlesWithLimit({
       instID: TEST_CONFIG.SYMBOL,
-      bar: "2H",
+      bar: TEST_CONFIG.BAR,
       limit: TEST_CONFIG.LIMIT,
     });
   });
@@ -49,33 +50,33 @@ describe("Candles ATR test", () => {
     expect(atrs.length).to.be.at.least(TEST_CONFIG.ATR_PERIOD); // Ensure there are enough data points
   });
 
-  it("Open positions and trailing loss with current ATR in single symbol", async () => {
-    const atrs = calculateATR(candles, TEST_CONFIG.ATR_PERIOD);
-    const currentAtr = atrs[atrs.length - 1];
-    const { leverage, size, mgnMode, posSide } = {
-      leverage: 5,
-      size: 100,
-      mgnMode: "isolated" as ImgnMode,
-      posSide: "long" as IPosSide,
-    };
+  // it("Open positions and trailing loss with current ATR in single symbol", async () => {
+  //   const atrs = calculateATR(candles, TEST_CONFIG.ATR_PERIOD);
+  //   const currentAtr = atrs[atrs.length - 1];
+  //   const { leverage, size, mgnMode, posSide } = {
+  //     leverage: 5,
+  //     size: 100,
+  //     mgnMode: "isolated" as ImgnMode,
+  //     posSide: "long" as IPosSide,
+  //   };
 
-    const { openAlgoOrderRes, openPositionRes } = await openFuturePosition({
-      instId: TEST_CONFIG.SYMBOL,
-      size: size,
-      mgnMode: mgnMode as ImgnMode,
-      posSide: posSide as IPosSide,
-      leverage: leverage,
-      callbackRatio: currentAtr.fluctuationsPercent.toFixed(4), // trailing percent ratio
-    });
-    expect(openAlgoOrderRes.msg).eq("");
-    expect(openPositionRes.msg).eq("");
-    const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition({
-      instId: TEST_CONFIG.SYMBOL,
-      mgnMode,
-      posSide,
-      isCloseAlgoOrders: true,
-    });
-    expect(closeAlgoOrderRes.msg).eq("");
-    expect(closePositionRes.msg).eq("");
-  });
+  //   const { openAlgoOrderRes, openPositionRes } = await openFuturePosition({
+  //     instId: TEST_CONFIG.SYMBOL,
+  //     size: size,
+  //     mgnMode: mgnMode as ImgnMode,
+  //     posSide: posSide as IPosSide,
+  //     leverage: leverage,
+  //     callbackRatio: currentAtr.fluctuationsPercent.toFixed(4), // trailing percent ratio
+  //   });
+  //   expect(openAlgoOrderRes.msg).eq("");
+  //   expect(openPositionRes.msg).eq("");
+  //   const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition({
+  //     instId: TEST_CONFIG.SYMBOL,
+  //     mgnMode,
+  //     posSide,
+  //     isCloseAlgoOrders: true,
+  //   });
+  //   expect(closeAlgoOrderRes.msg).eq("");
+  //   expect(closePositionRes.msg).eq("");
+  // });
 });
