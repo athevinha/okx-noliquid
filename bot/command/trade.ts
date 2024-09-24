@@ -77,7 +77,7 @@ const _fowardTrading = async ({
   try {
     const wsCandle = wsCandles?.data?.[0];
     if (wsCandle.confirm !== "1") return;
-    console.log(`[${campaignId}] new epoch`)
+    console.log(`[${campaignId}] new epoch`);
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
         const candles = (
@@ -92,7 +92,7 @@ const _fowardTrading = async ({
         const lastestCross = emaCross[emaCross.length - 1];
 
         if (lastestCross.ts === Number(wsCandle.ts)) {
-          console.log(SYMBOL, "cross");
+          // console.log(SYMBOL, "cross");
           lastestSignalTs[SYMBOL] = lastestCross.ts;
           const isTrailingLossMode =
             variance === "auto" || variance !== undefined;
@@ -108,9 +108,15 @@ const _fowardTrading = async ({
           let openPositionMsg = "",
             openAlgoOrderResMsg = "";
           if (variance && variance?.includes("auto")) {
-            const [leve, _variance] = variance === 'auto' ? [1, 'auto'] : variance.split(',')
+            const [leve, _variance] =
+              variance === "auto" ? [1, "auto"] : variance.split(",");
             const atrs = calculateATR(candles, 14);
-            variance = (atrs[atrs.length - 1]?.fluctuationsPercent * Number(leve)).toFixed(4);
+            variance = (
+              atrs[atrs.length - 1]?.fluctuationsPercent * Number(leve)
+            ).toFixed(4);
+            console.log("variance", SYMBOL,  atrs[atrs.length - 1]?.fluctuationsPercent);
+            console.table(atrs)
+            console.log("variance + lever",SYMBOL, variance);
             if (Number(variance) < 0.001) variance = "0.001";
             else if (Number(variance) > 1) variance = "1";
           }
