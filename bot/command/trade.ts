@@ -107,9 +107,10 @@ const _fowardTrading = async ({
             await closeFuturePosition(closePositionParams);
           let openPositionMsg = "",
             openAlgoOrderResMsg = "";
-          if (variance === "auto") {
+          if (variance && variance?.includes("auto")) {
+            const [leve, _variance] = variance === 'auto' ? [1, 'auto'] : variance.split(',')
             const atrs = calculateATR(candles, 14);
-            variance = atrs[atrs.length - 1]?.fluctuationsPercent.toFixed(4);
+            variance = (atrs[atrs.length - 1]?.fluctuationsPercent * Number(leve)).toFixed(4);
             if (Number(variance) < 0.001) variance = "0.001";
             else if (Number(variance) > 1) variance = "1";
           }
