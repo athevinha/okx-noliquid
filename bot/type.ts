@@ -443,3 +443,5 @@ export type IWsCandlesReponse = {
     confirm: string;
   }>;
 };
+
+export type CandleWithATR = ICandle & { atr: number; fluctuationsPercent: number };
