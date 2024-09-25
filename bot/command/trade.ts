@@ -87,13 +87,13 @@ const _fowardTrading = async ({
             bar,
             limit: 300,
           })
-        ).filter((can) => can.ts <= Number(wsCandle.ts));
+        ).filter((can) => can?.ts <= Number(wsCandle?.ts));
         const emaCross = findEMACrossovers(candles, 9, 21);
         const lastestCross = emaCross[emaCross.length - 1];
 
-        if (lastestCross.ts === Number(wsCandle.ts)) {
+        if (lastestCross?.ts === Number(wsCandle?.ts)) {
           console.log(SYMBOL, "cross");
-          lastestSignalTs[SYMBOL] = lastestCross.ts;
+          lastestSignalTs[SYMBOL] = lastestCross?.ts;
           const isTrailingLossMode =
             variance === "auto" || variance !== undefined;
           const closePositionParams = {
@@ -165,10 +165,10 @@ const _fowardTrading = async ({
             lastestCross.type === "bullish" ? "Bullish" : "Bearish"
           }</code>\n`;
           notificationMessage += `💰 <b>Price:</b> <code>${
-            zerofy(lastestCross.c) + USDT
+            zerofy(lastestCross?.c) + USDT
           }</code>\n`;
           notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
-            Math.round(lastestCross.ts)
+            Math.round(lastestCross?.ts)
           )}</code>\n`;
           notificationMessage += `⛓️ <b>Slope:</b> <code>${zerofy(
             lastestCross.slopeThreshold
