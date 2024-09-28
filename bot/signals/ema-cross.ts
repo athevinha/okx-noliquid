@@ -75,7 +75,8 @@ export function calculateSlope(
 export function findEMACrossovers(
   candles: ICandles,
   shortPeriods: number,
-  longPeriods: number
+  longPeriods: number,
+  anotherCandles?: ICandles
 ): ICandlesEMACrossovers {
   const longEMA = calculateEMA(candles, longPeriods);
   const shortEMA = calculateEMA(candles, shortPeriods).filter(
@@ -86,8 +87,10 @@ export function findEMACrossovers(
   for (let i = 2; i < shortEMA.length && i < longEMA.length; i++) {
     const prev2ShortEMA = shortEMA[i - 2]?.ema;
     const prev2LongEMA = longEMA[i - 2]?.ema;
+
     const prevShortEMA = shortEMA[i - 1].ema;
     const prevLongEMA = longEMA[i - 1].ema;
+
     const currentShortEMA = shortEMA[i].ema;
     const currentLongEMA = longEMA[i].ema;
 
@@ -129,8 +132,21 @@ export function findEMACrossovers(
       });
     }
   }
-
-  return crossovers;
+  if(!anotherCandles || anotherCandles?.length === 0) return crossovers;
+  const anotherLongEMAs = calculateEMA(anotherCandles, longPeriods);
+  const anotherShortEMAs = calculateEMA(anotherCandles, shortPeriods).filter(
+    (ema) => ema?.ts >= longEMA[0]?.ts
+  );
+  return crossovers.map((cross) => {
+    const condition = (aEma:any) => { return (decodeTimestamp(cross.ts,0).split('T')[0] === decodeTimestamp(aEma.ts,0).split('T')[0]) }
+    const anotherShortEma = anotherShortEMAs.filter(condition)[0]?.ema
+    const anotherLongEma = anotherLongEMAs.filter(condition)[0]?.ema
+    return {
+      ...cross,
+      anotherLongEma,
+      anotherShortEma
+    }
+  })
 }
 
 type Position = {
@@ -184,7 +200,6 @@ export function simulateTradesEmaCross({
     const { ts, c, type, calculatedSlope, slopeThreshold } = crossover;
     const atr = atrs?.filter(a => a.ts === ts)[0]
     const atrPerAver = atrs ? atrs?.slice(atrPeriodAver, atrs.length + 1)?.reduce((atr, atrP) => atr + (atrP?.fluctuationsPercent || 0),0) / atrPeriodAver : undefined
-    console.log(atrPerAver)
     if (type === "bullish") {
       positions = positions.filter((position) => {
         if (position.type === "short") {
@@ -222,7 +237,8 @@ export function simulateTradesEmaCross({
       if (
         (!slopeThresholdUnder || slopeThreshold <= slopeThresholdUnder) &&
         (!slopeThresholdUp || slopeThreshold >= slopeThresholdUp) && 
-        (!atrPerAver || (atr?.fluctuationsPercent || 0) <= atrPerAver)
+        (!atrPerAver || (atr?.fluctuationsPercent || 0) <= atrPerAver) &&
+        ((!crossover?.anotherLongEma || !crossover?.anotherShortEma) || crossover?.anotherShortEma > crossover?.anotherLongEma )
       ) {
         positions.push({
           type: "long",
@@ -283,7 +299,8 @@ export function simulateTradesEmaCross({
       if (
         (!slopeThresholdUnder || slopeThreshold <= slopeThresholdUnder) &&
         (!slopeThresholdUp || slopeThreshold >= slopeThresholdUp) &&
-        (!atrPerAver || (atr?.fluctuationsPercent || 0) <= atrPerAver)
+        (!atrPerAver || (atr?.fluctuationsPercent || 0) <= atrPerAver) &&
+        ((!crossover?.anotherLongEma || !crossover?.anotherShortEma) || crossover?.anotherShortEma < crossover?.anotherLongEma )
       ) {
         positions.push({
           type: "short",

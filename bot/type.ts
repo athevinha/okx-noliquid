@@ -27,6 +27,8 @@ export type ICandlesEMACrossovers = Array<{
   type: "bullish" | "bearish";
   shortEMA: number;
   longEMA: number;
+  anotherShortEma?: number;
+  anotherLongEma?: number;
 }>;
 
 export type IMethod = "GET" | "POST" | "PUT" | "DELETE";

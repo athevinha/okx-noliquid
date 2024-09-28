@@ -19,7 +19,7 @@ import { CandleWithATR } from "../bot/type";
 const TEST_CONFIG = {
   FEE_PERCENTAGE: 0.18, // Open & Close Fee
   BAR: "2H",
-  BAR_LIMIT: 300,
+  BAR_LIMIT: 1000,
   SHORT_EMA: 9,
   LONG_EMA: 21,
   LEVERAGE: 5,
@@ -30,8 +30,10 @@ const TEST_CONFIG = {
   SLOPE_AVERAGE_MODE: false,
   // ATR
   ATR_PERIOD: 14,
+  // ANOTHER_CANDLE
+  ANOTHER_CROSS_BAR_DIRECTION: false,
   // LOG
-  LOG_HISTORY_TRADE: true,
+  LOG_HISTORY_TRADE: false,
   LOG_PNL_DETAILS: true,
   LOG_PNL_SUMMARY: true,
 };
@@ -56,11 +58,30 @@ describe("OKX EMA Cross backtest", () => {
             bar: TEST_CONFIG.BAR,
             limit: TEST_CONFIG.BAR_LIMIT,
           });
+          let candles1D;
+          if(TEST_CONFIG.ANOTHER_CROSS_BAR_DIRECTION) {
+            candles1D = await getCandlesWithLimit({
+              instID: `${symbol}`,
+              bar: "1Dutc",
+              limit: 300,
+            });
+            expect(candles1D.length).greaterThan(0);
+          }
           const emaCrossovers = findEMACrossovers(
             candles,
             TEST_CONFIG.SHORT_EMA,
-            TEST_CONFIG.LONG_EMA
+            TEST_CONFIG.LONG_EMA,
+            candles1D
           );
+
+          // console.log(
+          //   emaCrossovers.map((ema) => {
+          //     return {
+          //       ...ema,
+          //       ts: decodeTimestamp(ema.ts),
+          //     };
+          //   })
+          // );
           let slopeThresholdUnder = undefined;
           let slopeThresholdUp = undefined;
           let atrs: CandleWithATR[] = [];
@@ -95,8 +116,8 @@ describe("OKX EMA Cross backtest", () => {
             slopeThresholdUp: TEST_CONFIG.SLOPE_AVERAGE_MODE
               ? slopeThresholdUp
               : TEST_CONFIG.SLOPE_THRESHOLD_UP,
-            atrs,
-            candles,
+            // atrs,
+            // candles,
           });
           if (TEST_CONFIG.LOG_HISTORY_TRADE)
             console.table(
@@ -105,7 +126,7 @@ describe("OKX EMA Cross backtest", () => {
                 "PnL ($)": zerofy(result.pnl),
                 Exit: zerofy(result.exitPrice || 0),
                 Entry: zerofy(result.entryPrice || 0),
-                "Atr": `${zerofy(result.atr || 0)} (${zerofy((result.atrPercent || 0) * 100)}%)`,
+                Atr: `${zerofy(result.atr || 0)} (${zerofy((result.atrPercent || 0) * 100)}%)`,
                 "Slope Diveder": zerofy(result.slopeThreshold || 0),
                 Type: result.positionType,
                 Action: result.action,
