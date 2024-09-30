@@ -13,7 +13,8 @@
     "test:trailing": "mocha --timeout 500000 -r ts-node/register 'test/trailing.test.ts'",
     "test:atr": "mocha --timeout 500000 -r ts-node/register 'test/atr.test.ts'",
     "test:convert": "mocha --timeout 500000 -r ts-node/register 'test/convert.test.ts'",
-    "test:listen": "mocha --timeout 500000 -r ts-node/register 'test/listen.candle.test.ts'",
+    "test:listen.candle": "mocha --timeout 500000 -r ts-node/register 'test/listen.candle.test.ts'",
+    "test:listen.tick": "mocha --timeout 500000 -r ts-node/register 'test/listen.tick.test.ts'",
     "format": "prettier --write \"bot/**/*.ts\" && prettier --write \"test/*.ts\""
   },
   "author": "",

@@ -443,3 +443,18 @@ export type IWsCandlesReponse = {
     confirm: string;
   }>;
 };
+
+export type IWsTickerReponse = {
+  arg: {
+    channel: string;
+    instId: string;
+  };
+  data: Array<{
+    instType: string,
+    ts: string,
+    instId: string,
+    markPx: string,
+  }>;
+};
+
+export type CandleWithATR = ICandle & { atr: number; fluctuationsPercent: number };

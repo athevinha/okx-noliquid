@@ -1,6 +1,5 @@
-import { ICandle } from "../type";
+import {CandleWithATR, ICandle} from "../type";
 
-type CandleWithATR = ICandle & { atr: number; fluctuationsPercent: number };
 
 export function calculateATR(
   candles: ICandle[],

@@ -9,6 +9,8 @@ import {
 } from "../bot/signals/ema-cross";
 import { decodeTimestamp, decodeTimestampAgo, zerofy } from "../bot/utils";
 import { WHITE_LIST_TOKENS_TRADE } from "../bot/utils/config";
+import { calculateATR } from "../bot/signals/atr";
+import { CandleWithATR } from "../bot/type";
 // 1D 9 21 undefined undefined
 // 12H 9 21 undefined undefined
 // 1H 9 21 undefined undefined
@@ -16,7 +18,7 @@ import { WHITE_LIST_TOKENS_TRADE } from "../bot/utils/config";
 // 2H 9 21 undefined undefined
 const TEST_CONFIG = {
   FEE_PERCENTAGE: 0.18, // Open & Close Fee
-  BAR: "1Dutc",
+  BAR: "2H",
   BAR_LIMIT: 300,
   SHORT_EMA: 9,
   LONG_EMA: 21,
@@ -26,8 +28,10 @@ const TEST_CONFIG = {
   SLOPE_THRESHOLD_UP: undefined,
   SLOPE_THRESHOLD_UNDER: undefined,
   SLOPE_AVERAGE_MODE: false,
+  // ATR
+  ATR_PERIOD: 14,
   // LOG
-  LOG_HISTORY_TRADE: false,
+  LOG_HISTORY_TRADE: true,
   LOG_PNL_DETAILS: true,
   LOG_PNL_SUMMARY: true,
 };
@@ -55,19 +59,20 @@ describe("OKX EMA Cross backtest", () => {
           const emaCrossovers = findEMACrossovers(
             candles,
             TEST_CONFIG.SHORT_EMA,
-            TEST_CONFIG.LONG_EMA,
+            TEST_CONFIG.LONG_EMA
           );
           let slopeThresholdUnder = undefined;
           let slopeThresholdUp = undefined;
+          let atrs: CandleWithATR[] = [];
           if (TEST_CONFIG.SLOPE_AVERAGE_MODE) {
             const { avgNegativeSlope, avgPositiveSlope } =
-              simulateTradesEmaCross(
+              simulateTradesEmaCross({
                 emaCrossovers,
-                TEST_CONFIG.SZ_USD,
-                candles[candles.length - 1].c,
-                undefined,
-                undefined,
-              );
+                usdVolume: TEST_CONFIG.SZ_USD,
+                currentPrice: candles[candles.length - 1].c,
+                slopeThresholdUnder: undefined,
+                slopeThresholdUp: undefined,
+              });
             slopeThresholdUnder =
               avgNegativeSlope > avgPositiveSlope
                 ? avgNegativeSlope
@@ -77,17 +82,22 @@ describe("OKX EMA Cross backtest", () => {
                 ? avgPositiveSlope
                 : undefined;
           }
-          const tradeResults = simulateTradesEmaCross(
-            emaCrossovers,
-            TEST_CONFIG.SZ_USD,
-            candles[candles.length - 1].c,
-            TEST_CONFIG.SLOPE_AVERAGE_MODE
+          if (TEST_CONFIG.ATR_PERIOD) {
+            atrs = calculateATR(candles, TEST_CONFIG.ATR_PERIOD);
+          }
+          const tradeResults = simulateTradesEmaCross({
+            emaCrossovers: emaCrossovers,
+            usdVolume: TEST_CONFIG.SZ_USD,
+            currentPrice: candles[candles.length - 1].c,
+            slopeThresholdUnder: TEST_CONFIG.SLOPE_AVERAGE_MODE
               ? slopeThresholdUnder
               : TEST_CONFIG.SLOPE_THRESHOLD_UNDER,
-            TEST_CONFIG.SLOPE_AVERAGE_MODE
+            slopeThresholdUp: TEST_CONFIG.SLOPE_AVERAGE_MODE
               ? slopeThresholdUp
               : TEST_CONFIG.SLOPE_THRESHOLD_UP,
-          );
+            atrs,
+            candles,
+          });
           if (TEST_CONFIG.LOG_HISTORY_TRADE)
             console.table(
               tradeResults.historyTrades.map((result, index) => ({
@@ -95,10 +105,11 @@ describe("OKX EMA Cross backtest", () => {
                 "PnL ($)": zerofy(result.pnl),
                 Exit: zerofy(result.exitPrice || 0),
                 Entry: zerofy(result.entryPrice || 0),
+                "Atr": `${zerofy(result.atr || 0)} (${zerofy((result.atrPercent || 0) * 100)}%)`,
                 "Slope Diveder": zerofy(result.slopeThreshold || 0),
                 Type: result.positionType,
                 Action: result.action,
-              })),
+              }))
             );
 
           totalPnL += tradeResults.totalPnL;
@@ -119,13 +130,13 @@ describe("OKX EMA Cross backtest", () => {
               tradeResults.historyTrades[tradeResults.historyTrades.length - 1]
                 ?.ts,
           };
-        }),
+        })
       )
     ).filter((res) => res);
 
     // Rank symbols by PnL
     const rankedResults = results.sort(
-      (a, b) => Number(a.totalPnL) - Number(b.totalPnL),
+      (a, b) => Number(a.totalPnL) - Number(b.totalPnL)
     );
 
     if (TEST_CONFIG.LOG_PNL_DETAILS)
@@ -137,11 +148,11 @@ describe("OKX EMA Cross backtest", () => {
           "Win rate": zerofy(result.winRate * 100) + "%",
           "PnL ($)": zerofy(result.totalPnL),
           "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime, true),
-        })),
+        }))
       );
     if (TEST_CONFIG.LOG_PNL_SUMMARY) {
       console.log(
-        `------------------------SUMMARY----------------------------`,
+        `------------------------SUMMARY----------------------------`
       );
       const Fee = (totalTradeVolume * TEST_CONFIG.FEE_PERCENTAGE) / 100;
       const PercentPnl =
@@ -152,11 +163,11 @@ describe("OKX EMA Cross backtest", () => {
       console.log(
         "Est. Lost/Win:",
         `${lostCount}/${winCount}`,
-        `(${zerofy((winCount / (winCount + lostCount)) * 100)}%)`,
+        `(${zerofy((winCount / (winCount + lostCount)) * 100)}%)`
       );
       console.log(
         "Est. Trade Time:",
-        decodeTimestampAgo(earliestTradeTimestamp),
+        decodeTimestampAgo(earliestTradeTimestamp)
       );
       console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
       console.log("Est. Total Fee ($):", zerofy(Fee));
