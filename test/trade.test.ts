@@ -29,7 +29,7 @@ const TEST_CONFIG = {
   SLOPE_THRESHOLD_UNDER: undefined,
   SLOPE_AVERAGE_MODE: false,
   // ATR
-  ATR_PERIOD: 14,
+  ATR_PERIOD: undefined,
   // LOG
   LOG_HISTORY_TRADE: true,
   LOG_PNL_DETAILS: true,
