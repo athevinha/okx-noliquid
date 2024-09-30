@@ -18,9 +18,22 @@ describe("OKX socket test", () => {
             channel: `mark-price-candle${bar}`,
             instId,
           },
+          {
+            channel: `mark-price-candle${bar}`,
+            instId: 'ETH-USDT-SWAP'
+          },
+          {
+            channel: `mark-price-candle${bar}`,
+            instId: 'PEPE-USDT-SWAP'
+          },
+          {
+            channel: `mark-price-candle${bar}`,
+            instId: 'LTC-USDT-SWAP'
+          },
         ],
       },
       messageCallBack(candles) {
+        console.log(candles)
         count++
         
       },

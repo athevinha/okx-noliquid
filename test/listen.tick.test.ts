@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { wsTicks } from "../bot/helper/okx.socket";
 import { getSymbolCandles } from "../bot/helper/okx.candles";
 import { calculateATR } from "../bot/signals/atr";
+import {ATR_PERIOD} from "../bot/utils/config";
 
 describe("OKX socket test ticker", () => {
   const { instID, bar } = {
@@ -17,7 +18,7 @@ describe("OKX socket test ticker", () => {
       before: 0,
       limit: 3000,
     });
-    const atrs = calculateATR(candles, 14);
+    const atrs = calculateATR(candles, ATR_PERIOD);
     let currentATR = atrs[atrs.length - 1].atr;
     const ws = wsTicks({
       subscribeMessage: {
@@ -38,7 +39,7 @@ describe("OKX socket test ticker", () => {
         // if(markPrice < candles[candles.length - 1].l) candles[candles.length - 1].l = markPrice
         // if(markPrice > candles[candles.length - 1].h) candles[candles.length - 1].h = markPrice
         // candles[candles.length - 1].c = markPrice
-        // currentATR =  calculateATR(candles, 14).slice(-1)[0].atr
+        // currentATR =  calculateATR(candles, ATR_PERIOD).slice(-1)[0].atr
       },
       errorCallBack(e) {
         console.log(e);

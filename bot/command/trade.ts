@@ -4,7 +4,13 @@ import { Message, Update } from "telegraf/typings/core/types/typegram";
 import { getSymbolCandles } from "../helper/okx.candles";
 import { closeFuturePosition, openFuturePosition } from "../helper/okx.trade";
 import { findEMACrossovers } from "../signals/ema-cross";
-import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse } from "../type";
+import {
+  ICandles,
+  CampaignConfig,
+  IPosSide,
+  IWsCandlesReponse,
+  CandleWithATR,
+} from "../type";
 import {
   axiosErrorDecode,
   decodeSymbol,
@@ -15,6 +21,7 @@ import {
   zerofy,
 } from "../utils";
 import {
+  ATR_PERIOD,
   parseConfigInterval,
   USDT,
   WHITE_LIST_TOKENS_TRADE,
@@ -23,6 +30,7 @@ import { formatReportInterval } from "../utils/message";
 import { calculateATR } from "../signals/atr";
 import { wsCandles } from "../helper/okx.socket";
 import { setTimeout } from "timers/promises";
+import {closeAllTrailingStopWithInstId, openTrailingStopOrder} from "../helper/okx.trade.algo";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -55,6 +63,8 @@ const _fowardTrading = async ({
   lastestSignalTs,
   wsCandles,
   campaignId,
+  tradeAbleCryptoCandles,
+  tradeAbleCryptoATRs,
 }: {
   ctx: NarrowedContext<
     Context<Update>,
@@ -70,161 +80,199 @@ const _fowardTrading = async ({
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   campaignId?: string;
+  tradeAbleCryptoCandles: { [instId: string]: ICandles };
+  tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] };
 }) => {
   const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder } =
     config;
   let variance = config.variance;
   try {
     const wsCandle = wsCandles?.data?.[0];
-    if (wsCandle.confirm !== "1") return;
-    console.log(`[${campaignId}] new epoch`)
-    await Promise.all(
-      tradeAbleCrypto.map(async (SYMBOL) => {
-        const candles = (
-          await getSymbolCandles({
-            instID: `${SYMBOL}`,
-            before: 0,
-            bar,
-            limit: 300,
-          })
-        ).filter((can) => can?.ts <= Number(wsCandle?.ts));
-        const emaCross = findEMACrossovers(candles, 9, 21);
-        const lastestCross = emaCross[emaCross.length - 1];
-
-        if (lastestCross?.ts === Number(wsCandle?.ts)) {
-          console.log(SYMBOL, "cross");
-          lastestSignalTs[SYMBOL] = lastestCross?.ts;
-          const isTrailingLossMode =
-            variance === "auto" || variance !== undefined;
-          const closePositionParams = {
-            instId: SYMBOL,
-            mgnMode,
-            posSide:
-              lastestCross.type === "bullish" ? "short" : ("long" as IPosSide),
-            isCloseAlgoOrders: isTrailingLossMode ? true : false,
-          };
-          const { closeAlgoOrderRes, closePositionRes } =
-            await closeFuturePosition(closePositionParams);
-          let openPositionMsg = "",
-            openAlgoOrderResMsg = "";
-          if (variance && variance?.includes("auto")) {
-            const [leve, _variance] =
-              variance === "auto" ? [1, "auto"] : variance.split(",");
-            const atrs = calculateATR(candles, 14);
-            variance = (
-              atrs[atrs.length - 1]?.fluctuationsPercent * Number(leve)
-            ).toFixed(4);
-            if (Number(variance) < 0.001) variance = "0.001";
-            else if (Number(variance) > 1) variance = "1";
-          }
-          const openPositionParams = {
-            instId: SYMBOL,
-            leverage: leve,
-            mgnMode,
-            posSide:
-              lastestCross.type === "bullish" ? "long" : ("short" as IPosSide),
-            size: sz,
-            callbackRatio: variance,
-          };
-          if (
-            (!slopeThresholdUnder ||
-              lastestCross.slopeThreshold <= slopeThresholdUnder) &&
-            (!slopeThresholdUp ||
-              lastestCross.slopeThreshold >= slopeThresholdUp)
-          ) {
-            const { openAlgoOrderRes, openPositionRes } =
-              await openFuturePosition(openPositionParams);
-            openPositionMsg = openPositionRes.msg;
-            openAlgoOrderResMsg = openAlgoOrderRes.msg;
-          } else {
-            openPositionMsg = "Slope out of range";
-          }
-          let estimateMoveTrigglePrice = 0;
-          if (openPositionParams?.posSide === "long" && variance)
-            estimateMoveTrigglePrice =
-              lastestCross.c - lastestCross.c * Number(variance);
-          else if (openPositionParams?.posSide === "short" && variance)
-            estimateMoveTrigglePrice =
-              lastestCross.c + lastestCross.c * Number(variance);
-
-          const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
-            estimatePnl({
-              posSide: openPositionParams.posSide as IPosSide,
-              sz,
-              e: lastestCross.c,
-              c: estimateMoveTrigglePrice,
-            });
-
-          let notificationMessage = "";
-          notificationMessage += `🔔 <b>[${decodeSymbol(
-            SYMBOL
-          )}]</b> | <code>${campaignId}</code> crossover Alert \n`;
-          notificationMessage += `${
-            lastestCross.type === "bullish" ? "📈" : "📉"
-          } <b>Type:</b> <code>${
-            lastestCross.type === "bullish" ? "Bullish" : "Bearish"
-          }</code>\n`;
-          notificationMessage += `💰 <b>Price:</b> <code>${
-            zerofy(lastestCross?.c) + USDT
-          }</code>\n`;
-          notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
-            Math.round(lastestCross?.ts)
-          )}</code>\n`;
-          notificationMessage += `⛓️ <b>Slope:</b> <code>${zerofy(
-            lastestCross.slopeThreshold
-          )}</code>\n`;
-          notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
-            lastestCross.shortEMA
-          )}</code> | <code>${zerofy(lastestCross.longEMA)}</code>\n`;
-          if (openPositionMsg === "") {
-            notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
-              openPositionParams.size
-            )}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
-            if (isTrailingLossMode)
-              notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
-          }
-          notificationMessage += `<code>------------ORDERS-------------</code>\n`;
-
-          notificationMessage += `<code>${
-            openPositionMsg === ""
-              ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(
-                  openPositionParams.instId
-                )}`
-              : "🔴 O: " + openPositionMsg
-          }</code>\n`;
-          notificationMessage += `<code>${
-            closePositionRes.msg === ""
-              ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
-                  closePositionParams.instId
-                )}`
-              : "🔴 C: " + closePositionRes.msg
-          }</code>\n`;
-
-          if (isTrailingLossMode) {
-            notificationMessage += `<code>------------ALGO---------------</code>\n`;
-            notificationMessage += `<code>${
-              openAlgoOrderResMsg === ""
-                ? `🟢 O: Trailing ${decodeSymbol(openPositionParams.instId)}`
-                : "🔴 O: " + openAlgoOrderResMsg
-            }</code>\n`;
-            notificationMessage += `<code>${
-              closeAlgoOrderRes.msg === ""
-                ? `🟢 C: Cancel trailing ${decodeSymbol(
-                    closePositionParams.instId
-                  )}`
-                : "🔴 C: " + closeAlgoOrderRes.msg
-            }</code>\n`;
-          }
-          await ctx.reply(notificationMessage, { parse_mode: "HTML" });
-        }
-      })
+    const SYMBOL = wsCandles?.arg?.instId;
+    const previousATR = calculateATR(
+      tradeAbleCryptoCandles[SYMBOL],
+      ATR_PERIOD
+    ).slice(-1)[0];
+    tradeAbleCryptoCandles[SYMBOL][tradeAbleCryptoCandles[SYMBOL].length - 1] =
+      {
+        ...tradeAbleCryptoCandles[SYMBOL].slice(-1)[0],
+        o: Number(wsCandle.o),
+        h: Number(wsCandle.h),
+        l: Number(wsCandle.l),
+        c: Number(wsCandle.c),
+      };
+    tradeAbleCryptoATRs[SYMBOL] = calculateATR(
+      tradeAbleCryptoCandles[SYMBOL],
+      ATR_PERIOD
     );
+    const currentATR = tradeAbleCryptoATRs[SYMBOL].slice(-1)[0];
+    if (previousATR.atr !== currentATR.atr) {
+      try {
+        console.log((await openTrailingStopOrder({
+          instId: SYMBOL,
+          mgnMode: 'isolated',
+          posSide: 'long',
+          callbackRatio: '0.3',
+          size: 100
+        })).code)
+        console.log((await closeAllTrailingStopWithInstId({instId: SYMBOL})).code)
+      } catch (error) {
+        console.log(error)
+      }
+    
+      // const algoPosition
+      // find algo
+      // cancle algo
+      // create algo
+      console.log(`[${SYMBOL}] ${previousATR.atr} -> ${currentATR.atr} (${currentATR.fluctuationsPercent * 100}%)`);
+    }
+    if (wsCandle.confirm !== "1") return;
+    console.log(`[${SYMBOL}]-[${campaignId}] new epoch`);
+    // ======================= CROSSOVER & CROSSUNDER LOGIC============================================
+    let candles = (
+      await getSymbolCandles({
+        instID: `${SYMBOL}`,
+        before: 0,
+        bar,
+        limit: 300,
+      })
+    )
+    tradeAbleCryptoCandles[SYMBOL] = candles
+    candles = candles.filter((can) => can?.ts <= Number(wsCandle?.ts));
+
+
+    const emaCross = findEMACrossovers(candles, 9, 21);
+    const lastestCross = emaCross[emaCross.length - 1];
+    // if (lastestCross?.ts === Number(wsCandle?.ts)) {
+    //   console.log(SYMBOL, "cross");
+    //   lastestSignalTs[SYMBOL] = lastestCross?.ts;
+    //   const isTrailingLossMode = variance === "auto" || variance !== undefined;
+    //   const closePositionParams = {
+    //     instId: SYMBOL,
+    //     mgnMode,
+    //     posSide:
+    //       lastestCross.type === "bullish" ? "short" : ("long" as IPosSide),
+    //     isCloseAlgoOrders: isTrailingLossMode ? true : false,
+    //   };
+    //   const { closeAlgoOrderRes, closePositionRes } =
+    //     await closeFuturePosition(closePositionParams);
+    //   let openPositionMsg = "",
+    //     openAlgoOrderResMsg = "";
+    //   if (variance && variance?.includes("auto")) {
+    //     const [leve, _variance] =
+    //       variance === "auto" ? [1, "auto"] : variance.split(",");
+    //     const atrs = calculateATR(candles, ATR_PERIOD);
+    //     variance = (
+    //       atrs[atrs.length - 1]?.fluctuationsPercent * Number(leve)
+    //     ).toFixed(4);
+    //     if (Number(variance) < 0.001) variance = "0.001";
+    //     else if (Number(variance) > 1) variance = "1";
+    //   }
+    //   const openPositionParams = {
+    //     instId: SYMBOL,
+    //     leverage: leve,
+    //     mgnMode,
+    //     posSide:
+    //       lastestCross.type === "bullish" ? "long" : ("short" as IPosSide),
+    //     size: sz,
+    //     callbackRatio: variance,
+    //   };
+    //   if (
+    //     (!slopeThresholdUnder ||
+    //       lastestCross.slopeThreshold <= slopeThresholdUnder) &&
+    //     (!slopeThresholdUp || lastestCross.slopeThreshold >= slopeThresholdUp)
+    //   ) {
+    //     const { openAlgoOrderRes, openPositionRes } =
+    //       await openFuturePosition(openPositionParams);
+    //     openPositionMsg = openPositionRes.msg;
+    //     openAlgoOrderResMsg = openAlgoOrderRes.msg;
+    //   } else {
+    //     openPositionMsg = "Slope out of range";
+    //   }
+    //   let estimateMoveTrigglePrice = 0;
+    //   if (openPositionParams?.posSide === "long" && variance)
+    //     estimateMoveTrigglePrice =
+    //       lastestCross.c - lastestCross.c * Number(variance);
+    //   else if (openPositionParams?.posSide === "short" && variance)
+    //     estimateMoveTrigglePrice =
+    //       lastestCross.c + lastestCross.c * Number(variance);
+
+    //   const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
+    //     estimatePnl({
+    //       posSide: openPositionParams.posSide as IPosSide,
+    //       sz,
+    //       e: lastestCross.c,
+    //       c: estimateMoveTrigglePrice,
+    //     });
+
+    //   let notificationMessage = "";
+    //   notificationMessage += `🔔 <b>[${decodeSymbol(
+    //     SYMBOL
+    //   )}]</b> | <code>${campaignId}</code> crossover Alert \n`;
+    //   notificationMessage += `${
+    //     lastestCross.type === "bullish" ? "📈" : "📉"
+    //   } <b>Type:</b> <code>${
+    //     lastestCross.type === "bullish" ? "Bullish" : "Bearish"
+    //   }</code>\n`;
+    //   notificationMessage += `💰 <b>Price:</b> <code>${
+    //     zerofy(lastestCross?.c) + USDT
+    //   }</code>\n`;
+    //   notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
+    //     Math.round(lastestCross?.ts)
+    //   )}</code>\n`;
+    //   notificationMessage += `⛓️ <b>Slope:</b> <code>${zerofy(
+    //     lastestCross.slopeThreshold
+    //   )}</code>\n`;
+    //   notificationMessage += `📊 <b>Short | Long EMA:</b> <code>${zerofy(
+    //     lastestCross.shortEMA
+    //   )}</code> | <code>${zerofy(lastestCross.longEMA)}</code>\n`;
+    //   if (openPositionMsg === "") {
+    //     notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
+    //       openPositionParams.size
+    //     )}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
+    //     if (isTrailingLossMode)
+    //       notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
+    //   }
+    //   notificationMessage += `<code>------------ORDERS-------------</code>\n`;
+
+    //   notificationMessage += `<code>${
+    //     openPositionMsg === ""
+    //       ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(
+    //           openPositionParams.instId
+    //         )}`
+    //       : "🔴 O: " + openPositionMsg
+    //   }</code>\n`;
+    //   notificationMessage += `<code>${
+    //     closePositionRes.msg === ""
+    //       ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
+    //           closePositionParams.instId
+    //         )}`
+    //       : "🔴 C: " + closePositionRes.msg
+    //   }</code>\n`;
+
+    //   if (isTrailingLossMode) {
+    //     notificationMessage += `<code>------------ALGO---------------</code>\n`;
+    //     notificationMessage += `<code>${
+    //       openAlgoOrderResMsg === ""
+    //         ? `🟢 O: Trailing ${decodeSymbol(openPositionParams.instId)}`
+    //         : "🔴 O: " + openAlgoOrderResMsg
+    //     }</code>\n`;
+    //     notificationMessage += `<code>${
+    //       closeAlgoOrderRes.msg === ""
+    //         ? `🟢 C: Cancel trailing ${decodeSymbol(
+    //             closePositionParams.instId
+    //           )}`
+    //         : "🔴 C: " + closeAlgoOrderRes.msg
+    //     }</code>\n`;
+    //   }
+    //   await ctx.reply(notificationMessage, { parse_mode: "HTML" });
+    // }
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
 };
 
-function forwardTradingWithWs({
+async function forwardTradingWithWs({
   ctx,
   id,
   config,
@@ -247,15 +295,33 @@ function forwardTradingWithWs({
   lastestSignalTs: { [instId: string]: number };
   campaigns: Map<string, CampaignConfig>;
 }) {
+  let tradeAbleCryptoCandles: { [instId: string]: ICandles } = {};
+  let tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] } = {};
+
+  await Promise.all(
+    tradeAbleCrypto.map(async (instId) => {
+      tradeAbleCryptoCandles[instId] = await getSymbolCandles({
+        instID: instId,
+        bar: config.bar,
+        before: 0,
+        limit: 300,
+      });
+      tradeAbleCryptoATRs[instId] = calculateATR(
+        tradeAbleCryptoCandles[instId],
+        ATR_PERIOD
+      );
+    })
+  );
+  console.log(Object.keys(tradeAbleCryptoATRs));
   const WS = wsCandles({
     subscribeMessage: {
       op: "subscribe",
-      args: [
-        {
+      args: tradeAbleCrypto.map((instId) => {
+        return {
           channel: `mark-price-candle${config.bar}`,
-          instId: "BTC-USDT-SWAP",
-        },
-      ],
+          instId: instId,
+        };
+      }),
     },
     messageCallBack(wsCandles) {
       _fowardTrading({
@@ -265,6 +331,8 @@ function forwardTradingWithWs({
         wsCandles,
         lastestSignalTs,
         campaignId: id,
+        tradeAbleCryptoCandles,
+        tradeAbleCryptoATRs,
       });
     },
     closeCallBack(code) {
