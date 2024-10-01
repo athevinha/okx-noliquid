@@ -4,6 +4,7 @@ import { USE_PROXY, WHITE_LIST_TOKENS_TRADE } from "./config";
 import { getSupportCrypto } from "../helper/okx.candles";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import proxys from "../../proxys.json";
+import WebSocket from "ws";
 export function decodeTimestamp(
   ts?: number,
   UTC: number = 7 * 60 * 60 * 1000,

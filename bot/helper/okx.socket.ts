@@ -151,3 +151,17 @@ export const wsPositions = ({
   return ws;
 };
 
+
+
+
+export const sendOKXWsMessage = ({ws, op, channel, instIds, callback}: {ws?: WebSocket, op: 'subscribe' | 'unsubscribe' | 'login', channel: string, instIds: string[], callback?: (e:any) => void}) => {
+  if(!ws || ws?.readyState !== WebSocket.OPEN) return;
+  const params =  {
+    op,
+    args: instIds.map(instId => ({
+      channel,
+      instId,
+    }))
+  }
+  ws.send(JSON.stringify(params), callback)
+}

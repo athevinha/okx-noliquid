@@ -2,7 +2,10 @@ import dotenv from "dotenv";
 import { Context, NarrowedContext, Telegraf } from "telegraf";
 import { Message, Update } from "telegraf/typings/core/types/typegram";
 import { getSymbolCandles } from "../../helper/okx.candles";
-import { closeFuturePosition, openFuturePosition } from "../../helper/okx.trade";
+import {
+  closeFuturePosition,
+  openFuturePosition,
+} from "../../helper/okx.trade";
 import { findEMACrossovers } from "../../signals/ema-cross";
 import {
   ICandles,
@@ -22,17 +25,23 @@ import {
   zerofy,
 } from "../../utils";
 import {
-    ATR_PERIOD,
+  ATR_PERIOD,
   parseConfigInterval,
   USDT,
   WHITE_LIST_TOKENS_TRADE,
 } from "../../utils/config";
 import { formatReportInterval } from "../../utils/message";
 import { calculateATR } from "../../signals/atr";
-import { wsCandles, wsPositions, wsTicks } from "../../helper/okx.socket";
+import {
+  sendOKXWsMessage,
+  wsCandles,
+  wsPositions,
+  wsTicks,
+} from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
 import { getAccountPendingAlgoOrders } from "../../helper/okx.account";
-import {fowardTickerATRWithWs} from "./ticker";
+import { fowardTickerATRWithWs } from "./ticker";
+import WebSocket from "ws";
 dotenv.config();
 
 const _fowardTrailing = async ({
@@ -42,8 +51,9 @@ const _fowardTrailing = async ({
   wsPositions,
   tradeAbleCryptoATRs,
   tradeAbleCryptoCandles,
+  trablePositions,
   id,
-  campaigns
+  campaigns,
 }: {
   ctx: NarrowedContext<
     Context<Update>,
@@ -61,10 +71,11 @@ const _fowardTrailing = async ({
   tradeAbleCrypto: string[];
   tradeAbleCryptoCandles: { [instId: string]: ICandles };
   tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] };
+  trablePositions: { [instId: string]: IPositionOpen | undefined };
 }) => {
   try {
+    if (!wsPositions[0].avgPx || wsPositions.length === 1) return; // Close and open pos message
     const algoOrders = await getAccountPendingAlgoOrders({});
-
     const WSPositions = wsPositions.filter((pos) => {
       if (!tradeAbleCrypto.includes(pos.instId)) return false;
       const algoOrder = algoOrders.filter(
@@ -73,18 +84,49 @@ const _fowardTrailing = async ({
       if (algoOrder?.moveTriggerPx || algoOrder?.callbackRatio) return false; // Already set a trailing loss orders
       return true;
     });
-    console.log(WSPositions.map(i => i.instId))
-    fowardTickerATRWithWs({
-      ctx,
-      id,
-      config,
-      wsPositions: WSPositions,
-      campaigns,
-      tradeAbleCryptoATRs,
-      tradeAbleCryptoCandles
-    })
+    const wsInstIds = WSPositions.map((pos) => pos.instId);
+    const outdated =
+      (Object.keys(trablePositions).filter((crypto) => wsInstIds.includes(crypto)).length !==
+      WSPositions.length) || WSPositions.length !== Object.keys(trablePositions).length;
+
+    if (outdated) {
+      WSPositions.forEach((pos) => {
+        trablePositions[pos.instId] = pos; // Add or update the position
+      });
+      Object.keys(trablePositions).forEach((instId) => {
+        if (!WSPositions.some((pos) => pos.instId === instId)) {
+          delete trablePositions[instId]; // Remove the position if it no longer exists in WSPositions
+        }
+      });
+      await Promise.all(
+        WSPositions.map(async ({ instId }) => {
+          tradeAbleCryptoCandles[instId] = await getSymbolCandles({
+            instID: instId,
+            bar: config.bar,
+            before: 0,
+            limit: 300,
+          });
+          tradeAbleCryptoATRs[instId] = calculateATR(
+            tradeAbleCryptoCandles[instId],
+            ATR_PERIOD
+          );
+        })
+      );
+      fowardTickerATRWithWs({
+        ctx,
+        id,
+        config,
+        wsPositions: WSPositions,
+        campaigns,
+        tradeAbleCryptoATRs,
+        tradeAbleCryptoCandles,
+        trablePositions,
+      });
+    }
   } catch (err: any) {
-    await ctx.replyWithHTML(`[TRAILING] Error: <code>${axiosErrorDecode(err)}</code>`);
+    await ctx.replyWithHTML(
+      `[TRAILING] Error: <code>${axiosErrorDecode(err)}</code>`
+    );
   }
 };
 async function forwardTrailingWithWs({
@@ -110,20 +152,8 @@ async function forwardTrailingWithWs({
 }) {
   let tradeAbleCryptoCandles: { [instId: string]: ICandles } = {};
   let tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] } = {};
-  await Promise.all(
-    tradeAbleCrypto.map(async (instId) => {
-      tradeAbleCryptoCandles[instId] = await getSymbolCandles({
-        instID: instId,
-        bar: config.bar,
-        before: 0,
-        limit: 300,
-      });
-      tradeAbleCryptoATRs[instId] = calculateATR(
-        tradeAbleCryptoCandles[instId],
-        ATR_PERIOD
-      );
-    })
-  );
+  let trablePositions: { [instId: string]: IPositionOpen | undefined } = {};
+
   const WSTrailing = wsPositions({
     authCallBack(config) {
       console.log(config);
@@ -139,8 +169,9 @@ async function forwardTrailingWithWs({
         tradeAbleCrypto,
         tradeAbleCryptoATRs,
         tradeAbleCryptoCandles,
+        trablePositions,
         id,
-        campaigns
+        campaigns,
       });
     },
     errorCallBack(e) {

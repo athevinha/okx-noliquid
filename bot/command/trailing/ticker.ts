@@ -23,7 +23,8 @@ const _fowardTickerATRWithWs = async ({
     unFillTrailingLossPosition,
     campaigns,
     tradeAbleCryptoATRs,
-    tradeAbleCryptoCandles
+    tradeAbleCryptoCandles,
+    trablePositions
   }: {
     ctx: NarrowedContext<
       Context<Update>,
@@ -41,9 +42,12 @@ const _fowardTickerATRWithWs = async ({
     config: CampaignConfig;
     tradeAbleCryptoCandles: { [instId: string]: ICandles };
     tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] };
+    trablePositions: {[instId: string]: IPositionOpen | undefined};
   }) => {
     try {
-        // console.log(tick.data[0].instId,tick.data[0].markPx)
+      const tickData = tick.data[0]
+      // console.log(tickData.instId, tradeAbleCryptoATRs[tickData.instId].slice(-1)[0].atr)
+      // console.log(tickData.instId, tradeAbleCryptoCandles[tickData.instId].slice(-1)[0].c)
     } catch (err: any) {
       await ctx.replyWithHTML(`[TICK] Error: <code>${axiosErrorDecode(err)}</code>`);
     }
@@ -56,6 +60,7 @@ export async function fowardTickerATRWithWs({
     campaigns,
     tradeAbleCryptoCandles,
     tradeAbleCryptoATRs,
+    trablePositions,
   }: {
     ctx: NarrowedContext<
       Context<Update>,
@@ -72,6 +77,7 @@ export async function fowardTickerATRWithWs({
     campaigns: Map<string, CampaignConfig>;
     tradeAbleCryptoCandles: { [instId: string]: ICandles };
     tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] };
+    trablePositions: {[instId: string]: IPositionOpen | undefined};
   }) {
     if(campaigns.get(id)?.WSTicker?.readyState === WebSocket.OPEN) return;
     if(!campaigns.has(id) || campaigns.get(id)?.WSTrailing?.readyState === WebSocket.CLOSED || campaigns.get(id)?.WS?.readyState === WebSocket.CLOSED) {
@@ -100,6 +106,7 @@ export async function fowardTickerATRWithWs({
           unFillTrailingLossPosition: wsPositions,
           id,
           campaigns,
+          trablePositions,
         });
       },
       errorCallBack(e) {
@@ -121,6 +128,7 @@ export async function fowardTickerATRWithWs({
             tradeAbleCryptoATRs,
             wsPositions,
             campaigns,
+            trablePositions
           });
           ctx.replyWithHTML(
             `⛓️ [TICK] [${code}] Trailing socket disconnected for <b><code>${id}</code>.</b> Reconnected`
