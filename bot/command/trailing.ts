@@ -4,7 +4,7 @@ import { Message, Update } from "telegraf/typings/core/types/typegram";
 import { getSymbolCandles } from "../helper/okx.candles";
 import { closeFuturePosition, openFuturePosition } from "../helper/okx.trade";
 import { findEMACrossovers } from "../signals/ema-cross";
-import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse, IPositionOpen } from "../type";
+import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse, IPositionOpen, CandleWithATR } from "../type";
 import {
   axiosErrorDecode,
   decodeSymbol,
@@ -80,6 +80,7 @@ const _fowardTrailing = async ({
       return true
     });
     // console.log(_wsPositions.map(i => i.instId))
+
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
@@ -106,6 +107,9 @@ function forwardTrailingWithWs({
   tradeAbleCrypto: string[];
   campaigns: Map<string, CampaignConfig>;
 }) {
+    let tradeAbleCryptoCandles: { [instId: string]: ICandles } = {};
+    let tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] } = {};
+  
   const WSTrailing = wsPositions({
     authCallBack(config) {console.log(config)},
     subcribedCallBack(param) {console.log(param)},
