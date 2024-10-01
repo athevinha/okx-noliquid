@@ -23,7 +23,7 @@ import { formatReportInterval } from "../utils/message";
 import { calculateATR } from "../signals/atr";
 import { wsCandles } from "../helper/okx.socket";
 import { setTimeout } from "timers/promises";
-import {botTrailingLossByATR} from "./trailing";
+import {botTrailingLossByATR} from "./trailing/trailing";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -269,10 +269,10 @@ function forwardTradingWithWs({
       });
     },
     closeCallBack(code) {
-      console.error("WS closed with code: ", code);
+      console.error("[TRADING] WS closed with code: ", code);
       if (code === 1005) {
         ctx.replyWithHTML(
-          `🛑 Stopped trading interval <b><code>${id}</code>.</b>`
+          `🛑 [TRADING] Stopped WS <b><code>${id}</code>.</b>`
         );
         campaigns.delete(id);
       } else {
@@ -285,7 +285,7 @@ function forwardTradingWithWs({
           campaigns,
         });
         ctx.replyWithHTML(
-          `⛓️ [${code}] Socket disconnected for <b><code>${id}</code>.</b> Reconnected`
+          `⛓️ [TRADING] [${code}] Socket disconnected for <b><code>${id}</code>.</b> Reconnected`
         );
       }
     },
@@ -294,7 +294,7 @@ function forwardTradingWithWs({
     },
   });
 
-  campaigns.set(id, { ...config, tradeAbleCrypto, WS });
+  campaigns.set(id, { ...(campaigns.get(id) || config), tradeAbleCrypto, WS });
 }
 export const botAutoTrading = ({
   bot,
@@ -364,6 +364,8 @@ export const botAutoTrading = ({
 
     const CampaignConfig = campaigns.get(id);
     CampaignConfig?.WS?.close();
+    // CampaignConfig?.WSTicker?.close();
+    CampaignConfig?.WSTrailing?.close();
     campaigns.delete(id);
   });
 
@@ -389,7 +391,13 @@ export const botAutoTrading = ({
 
   bot.command("stops", (ctx) => {
     campaigns.forEach((CampaignConfig) => {
-      CampaignConfig?.WS?.close();
+      try {
+        CampaignConfig?.WS?.close();
+        CampaignConfig?.WSTicker?.close();
+        CampaignConfig?.WSTrailing?.close();
+      } catch (error) {
+        console.log(error)
+      }
     });
     campaigns.clear();
     ctx.replyWithHTML("🛑 All trading campaigns have been stopped.");

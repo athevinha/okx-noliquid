@@ -28,6 +28,7 @@ export const DEFAULT_BOT_CONFIG = {
 };
 export const USE_PROXY = true;
 export const MC_ALLOW_TO_TRADING = 1_500_000_000;
+export const ATR_PERIOD = 14
 export const OKX_BASE_FETCH_API_URL = "https://www.okx.com/priapi/v5";
 export const OKX_BASE_WS_URL =  Number(process.env.DEMO_TRADING) === 1 ? "wss://wspap.okx.com:8443" : "wss://ws.okx.com:8443";
 export const OKX_BASE_API_URL = "https://www.okx.com";
