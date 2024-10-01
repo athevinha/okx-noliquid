@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import { OKX_BASE_WS_URL } from "../utils/config";
-import { IWsCandlesReponse, IWsRequestParams, IWsTickerReponse } from "../type";
+import { IWsCandlesReponse, IWsPositionReponse, IWsRequestParams, IWsTickerReponse } from "../type";
+import { makeWsAuth } from "./auth";
 
 export const wsCandles = ({
   path = "/ws/v5/business",
@@ -50,7 +51,6 @@ export const wsCandles = ({
   return ws;
 };
 
-
 export const wsTicks = ({
   path = "/ws/v5/public",
   subscribeMessage,
@@ -90,3 +90,64 @@ export const wsTicks = ({
   });
   return ws;
 };
+
+export const wsPositions = ({
+  path = "/ws/v5/private",
+  subscribeMessage= {
+    op: "subscribe",
+    args: [
+      {
+        channel: `positions`,
+        instType: 'SWAP',
+      },
+    ],
+  },
+  authCallBack,
+  messageCallBack,
+  subcribedCallBack,
+  closeCallBack,
+  errorCallBack,
+}: {
+  path?: string;
+  subscribeMessage?: IWsRequestParams;
+  authCallBack?: (authConfig: any) => void;
+  messageCallBack?: (candles: IWsPositionReponse) => void;
+  subcribedCallBack?: (param: IWsRequestParams) => void;
+  closeCallBack?: (code: number, reason: Buffer) => void;
+  errorCallBack?: (res: Error) => void;
+}): WebSocket => {
+  const ws = new WebSocket(`${OKX_BASE_WS_URL}${path}`);
+  const wsAuth = makeWsAuth();
+  ws.on("open", () => {
+    ws.send(JSON.stringify(wsAuth));
+    if(authCallBack) authCallBack(wsAuth)
+  });
+
+  ws.on("message", (message: Buffer) => {
+    const response = JSON.parse(message.toString());
+    if (
+      response.event === "login" &&
+      response.msg === "" &&
+      response.code === "0"
+    ) {
+      ws.send(JSON.stringify(subscribeMessage));
+      if (subcribedCallBack) subcribedCallBack(subscribeMessage);
+    } else {
+      if (messageCallBack) {
+        const response = JSON.parse(message.toString());
+        if (!response?.data) return;
+        messageCallBack(response as IWsPositionReponse);
+      }
+    }
+  });
+
+  ws.on("close", (code, reason) => {
+    if (closeCallBack) closeCallBack(code, reason);
+  });
+
+  ws.on("error", (error: Error) => {
+    if (errorCallBack) errorCallBack(error);
+  });
+  return ws;
+};
+

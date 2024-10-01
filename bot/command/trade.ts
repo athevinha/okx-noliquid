@@ -23,6 +23,7 @@ import { formatReportInterval } from "../utils/message";
 import { calculateATR } from "../signals/atr";
 import { wsCandles } from "../helper/okx.socket";
 import { setTimeout } from "timers/promises";
+import {botTrailingLossByATR} from "./trailing";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -330,6 +331,13 @@ export const botAutoTrading = ({
       lastestSignalTs,
       campaigns,
     });
+    botTrailingLossByATR({
+      ctx,
+      id,
+      config,
+      tradeAbleCrypto,
+      campaigns,
+    })
 
     // campaigns.set(id, { ...config, tradeAbleCrypto, WS });
 

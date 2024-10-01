@@ -365,6 +365,7 @@ export type IntervalState = {
 };
 export type CampaignConfig = CampaignData[keyof CampaignData] & {
   WS?: WebSocket;
+  WSTrailing?: WebSocket;
 };
 
 export type IPendingAlgoOrder = {
@@ -426,7 +427,7 @@ export type ImgnMode = "isolated" | "cross";
 
 export type IWsRequestParams = {
   op: string;
-  args: { channel: string; instId: string }[];
+  args: { channel: string;instType?: string, instId?: string }[];
 };
 
 export type IWsCandlesReponse = {
@@ -443,6 +444,16 @@ export type IWsCandlesReponse = {
     confirm: string;
   }>;
 };
+
+export type IWsPositionReponse = {
+  arg: {
+    channel: string;
+    uid: string;
+    instType: string;
+  };
+  data: Array<IPositionOpen>;
+};
+
 
 export type IWsTickerReponse = {
   arg: {

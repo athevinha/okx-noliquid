@@ -15,6 +15,7 @@
     "test:convert": "mocha --timeout 500000 -r ts-node/register 'test/convert.test.ts'",
     "test:listen.candle": "mocha --timeout 500000 -r ts-node/register 'test/listen.candle.test.ts'",
     "test:listen.tick": "mocha --timeout 500000 -r ts-node/register 'test/listen.tick.test.ts'",
+    "test:listen.position": "mocha --timeout 500000 -r ts-node/register 'test/listen.position.test.ts'",
     "format": "prettier --write \"bot/**/*.ts\" && prettier --write \"test/*.ts\""
   },
   "author": "",
