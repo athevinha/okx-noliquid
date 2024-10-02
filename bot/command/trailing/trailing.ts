@@ -76,7 +76,12 @@ const _fowardTrailing = async ({
   alreadyOpenTrailingPositions: { [instId: string]:  boolean } ;
 }) => {
   try {
-    if (!wsPositions[0]?.avgPx || wsPositions.length === 0) return; // Close and open pos message
+    if (!wsPositions[0]?.avgPx || wsPositions.length === 0) {
+      if(wsPositions[0] && !wsPositions[0]?.avgPx) {
+        delete alreadyOpenTrailingPositions[wsPositions[0].instId];
+      }
+      return
+    }; // Close and open pos message
     const algoOrders = await getAccountPendingAlgoOrders({});
     const WSPositions = wsPositions.filter((pos) => {
       if (!tradeAbleCrypto.includes(pos.instId)) return false;
