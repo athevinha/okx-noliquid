@@ -136,7 +136,7 @@ const _fowardTrading = async ({
             posSide:
               lastestCross.type === "bullish" ? "long" : ("short" as IPosSide),
             size: sz,
-            callbackRatio: variance,
+            // callbackRatio: variance,
           };
           // Postion already have
           if(tradeDirection !== 'both' && openPositionParams.posSide.toLowerCase() !== tradeDirection) return;
@@ -168,21 +168,21 @@ const _fowardTrading = async ({
           } else {
             openPositionMsg = "Slope out of range";
           }
-          let estimateMoveTrigglePrice = 0;
-          if (openPositionParams?.posSide === "long" && variance)
-            estimateMoveTrigglePrice =
-              lastestCross.c - lastestCross.c * Number(variance);
-          else if (openPositionParams?.posSide === "short" && variance)
-            estimateMoveTrigglePrice =
-              lastestCross.c + lastestCross.c * Number(variance);
+          // let estimateMoveTrigglePrice = 0;
+          // if (openPositionParams?.posSide === "long" && variance)
+          //   estimateMoveTrigglePrice =
+          //     lastestCross.c - lastestCross.c * Number(variance);
+          // else if (openPositionParams?.posSide === "short" && variance)
+          //   estimateMoveTrigglePrice =
+          //     lastestCross.c + lastestCross.c * Number(variance);
 
-          const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
-            estimatePnl({
-              posSide: openPositionParams.posSide as IPosSide,
-              sz,
-              e: lastestCross.c,
-              c: estimateMoveTrigglePrice,
-            });
+          // const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
+          //   estimatePnl({
+          //     posSide: openPositionParams.posSide as IPosSide,
+          //     sz,
+          //     e: lastestCross.c,
+          //     c: estimateMoveTrigglePrice,
+          //   });
 
           let notificationMessage = "";
           notificationMessage += `🔔 <b>[${decodeSymbol(
@@ -209,8 +209,8 @@ const _fowardTrading = async ({
             notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
               openPositionParams.size
             )}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
-            if (isTrailingLossMode)
-              notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
+            // if (isTrailingLossMode)
+            //   notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
           }
           notificationMessage += `<code>------------ORDERS-------------</code>\n`;
 
