@@ -5,7 +5,7 @@ import {botCatchError} from "./command/catch";
 import {botReportPositionsHistory} from "./command/history";
 import {botReportPositions} from "./command/positions";
 import {botReportSymbolReport} from "./command/symbols-report";
-import {botAutoTrading} from "./command/trade";
+import {botAutoTrading} from "./command/wstrade/trade";
 import {CampaignConfig} from "./type";
 dotenv.config();
 

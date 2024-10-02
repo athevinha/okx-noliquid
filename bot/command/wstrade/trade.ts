@@ -1,10 +1,10 @@
 import dotenv from "dotenv";
 import { Context, NarrowedContext, Telegraf } from "telegraf";
 import { Message, Update } from "telegraf/typings/core/types/typegram";
-import { getSymbolCandles } from "../helper/okx.candles";
-import { closeFuturePosition, openFuturePosition } from "../helper/okx.trade";
-import { findEMACrossovers } from "../signals/ema-cross";
-import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse } from "../type";
+import { getSymbolCandles } from "../../helper/okx.candles";
+import { closeFuturePosition, openFuturePosition } from "../../helper/okx.trade";
+import { findEMACrossovers } from "../../signals/ema-cross";
+import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse } from "../../type";
 import {
   axiosErrorDecode,
   decodeSymbol,
@@ -13,17 +13,17 @@ import {
   estimatePnl,
   getTradeAbleCrypto,
   zerofy,
-} from "../utils";
+} from "../../utils";
 import {
   parseConfigInterval,
   USDT,
   WHITE_LIST_TOKENS_TRADE,
-} from "../utils/config";
-import { formatReportInterval } from "../utils/message";
-import { calculateATR } from "../signals/atr";
-import { wsCandles } from "../helper/okx.socket";
+} from "../../utils/config";
+import { formatReportInterval } from "../../utils/message";
+import { calculateATR } from "../../signals/atr";
+import { wsCandles } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
-import {botTrailingLossByATR} from "./trailing/trailing";
+import {botTrailingLossByATR} from "./trailing";
 import WebSocket from "ws";
 dotenv.config();
 /**
