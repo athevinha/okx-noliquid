@@ -7,6 +7,7 @@ import {botReportPositions} from "./command/positions";
 import {botReportSymbolReport} from "./command/symbols-report";
 import {botAutoTrading} from "./command/wstrade/trade";
 import {CampaignConfig} from "./type";
+import {botWSManagement} from "./command/ws";
 dotenv.config();
 
 export async function bot(apiKey?: string) {
@@ -21,7 +22,7 @@ export async function bot(apiKey?: string) {
     botReportPositionsHistory({ bot, campaigns });
     botReportSymbolReport({ bot, campaigns });
     botAutoTrading({ bot, campaigns });
-
+    botWSManagement({bot, campaigns})
     bot.launch();
 
     process.once("SIGINT", () => bot.stop("SIGINT"));
