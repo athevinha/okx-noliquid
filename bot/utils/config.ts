@@ -16,15 +16,16 @@ export const WHITE_LIST_TOKENS_TRADE = [
   "STRK-USDT-SWAP",
 ];
 export const DEFAULT_BOT_CONFIG = {
-  bar: "1Dutc",
-  leve: 5,
+  bar: "1H",
+  leve: 3,
   mgnMode: "isolated",
   sz: 50,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,
   variance: undefined,
-  tradeDirection: 'both',
+  scapeMode: true,
+  tradeDirection: 'long',
   tokenTradingMode: "whitelist",
 };
 export const USE_PROXY = true;
@@ -47,6 +48,7 @@ export const parseConfigInterval = (configString: string) => {
     slopeThreshAverageMode,
     variance,
     tradeDirection,
+    scapeMode,
     tokenTradingMode,
   }: any = DEFAULT_BOT_CONFIG;
   configParts.forEach((part) => {
@@ -84,6 +86,7 @@ export const parseConfigInterval = (configString: string) => {
     mgnMode,
     sz,
     tradeDirection,
+    scapeMode,
     slopeThresholdUp,
     slopeThresholdUnder,
     slopeThreshAverageMode,

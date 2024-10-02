@@ -355,6 +355,7 @@ export type CampaignData = {
     slopeThresholdUnder?: number;
     slopeThreshAverageMode?: boolean;
     tradeDirection: string;
+    scapeMode: boolean;
     tokenTradingMode?: "all" | "whitelist" | string;
     tradeAbleCrypto?: string[];
     variance?: string;

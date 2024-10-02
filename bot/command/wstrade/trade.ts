@@ -25,6 +25,7 @@ import { wsCandles } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
 import {botTrailingLossByATR} from "./trailing";
 import WebSocket from "ws";
+import {getAccountPositions} from "../../helper/okx.account";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -82,6 +83,8 @@ const _fowardTrading = async ({
     const wsCandle = wsCandles?.data?.[0];
     if (wsCandle.confirm !== "1") return;
     console.log(`[${campaignId}] new epoch`)
+    const positions = await getAccountPositions('SWAP')
+
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
         const candles = (
@@ -100,17 +103,22 @@ const _fowardTrading = async ({
           lastestSignalTs[SYMBOL] = lastestCross?.ts;
           const isTrailingLossMode =
             variance === "auto" || variance !== undefined;
-          const closePositionParams = {
-            instId: SYMBOL,
-            mgnMode,
-            posSide:
-              lastestCross.type === "bullish" ? "short" : ("long" as IPosSide),
-            isCloseAlgoOrders: isTrailingLossMode ? true : false,
-          };
-          const { closeAlgoOrderRes, closePositionRes } =
-            await closeFuturePosition(closePositionParams);
-          let openPositionMsg = "",
-            openAlgoOrderResMsg = "";
+     
+          const instPosition = positions.filter(pos => pos.instId === SYMBOL)?.[0]
+          if(instPosition && Number(instPosition.notionalUsd) <= 1) {
+              const closePositionParams = {
+                instId: SYMBOL,
+                mgnMode,
+                posSide:
+                  lastestCross.type === "bullish" ? "short" : ("long" as IPosSide),
+                isCloseAlgoOrders: isTrailingLossMode ? true : false,
+              };
+              const { closeAlgoOrderRes, closePositionRes } =
+                await closeFuturePosition(closePositionParams);
+              console.log('#clean position', closePositionRes)
+          } 
+          // Postion already have
+          let openPositionMsg = "", openAlgoOrderResMsg= ""
           if (variance && variance?.includes("auto")) {
             const [leve, _variance] =
               variance === "auto" ? [1, "auto"] : variance.split(",");
@@ -130,6 +138,7 @@ const _fowardTrading = async ({
             size: sz,
             callbackRatio: variance,
           };
+          // Postion already have
           if(tradeDirection !== 'both' && openPositionParams.posSide.toLowerCase() !== tradeDirection) return;
 
           if (
@@ -138,6 +147,7 @@ const _fowardTrading = async ({
             (!slopeThresholdUp ||
               lastestCross.slopeThreshold >= slopeThresholdUp)
           ) {
+            if(!instPosition || Number(instPosition.notionalUsd) > 1) {
               const { openAlgoOrderRes, openPositionRes } =
                 await openFuturePosition(openPositionParams);
               openPositionMsg = openPositionRes.msg;
@@ -150,7 +160,11 @@ const _fowardTrading = async ({
                   tradeAbleCrypto,
                   campaigns
                 })
+            } else {
+              openPositionMsg = "Already have open position";
+
             }
+          }
           } else {
             openPositionMsg = "Slope out of range";
           }
@@ -207,29 +221,29 @@ const _fowardTrading = async ({
                 )}`
               : "🔴 O: " + openPositionMsg
           }</code>\n`;
-          notificationMessage += `<code>${
-            closePositionRes.msg === ""
-              ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
-                  closePositionParams.instId
-                )}`
-              : "🔴 C: " + closePositionRes.msg
-          }</code>\n`;
+          // notificationMessage += `<code>${
+          //   closePositionRes.msg === ""
+          //     ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
+          //         closePositionParams.instId
+          //       )}`
+          //     : "🔴 C: " + closePositionRes.msg
+          // }</code>\n`;
 
-          if (isTrailingLossMode) {
-            notificationMessage += `<code>------------ALGO---------------</code>\n`;
-            notificationMessage += `<code>${
-              openAlgoOrderResMsg === ""
-                ? `🟢 O: Trailing ${decodeSymbol(openPositionParams.instId)}`
-                : "🔴 O: " + openAlgoOrderResMsg
-            }</code>\n`;
-            notificationMessage += `<code>${
-              closeAlgoOrderRes.msg === ""
-                ? `🟢 C: Cancel trailing ${decodeSymbol(
-                    closePositionParams.instId
-                  )}`
-                : "🔴 C: " + closeAlgoOrderRes.msg
-            }</code>\n`;
-          }
+          // if (isTrailingLossMode) {
+          //   notificationMessage += `<code>------------ALGO---------------</code>\n`;
+          //   notificationMessage += `<code>${
+          //     openAlgoOrderResMsg === ""
+          //       ? `🟢 O: Trailing ${decodeSymbol(openPositionParams.instId)}`
+          //       : "🔴 O: " + openAlgoOrderResMsg
+          //   }</code>\n`;
+          //   notificationMessage += `<code>${
+          //     closeAlgoOrderRes.msg === ""
+          //       ? `🟢 C: Cancel trailing ${decodeSymbol(
+          //           closePositionParams.instId
+          //         )}`
+          //       : "🔴 C: " + closeAlgoOrderRes.msg
+          //   }</code>\n`;
+          // }
           await ctx.reply(notificationMessage, { parse_mode: "HTML" });
         }
       })
