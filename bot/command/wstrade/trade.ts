@@ -345,13 +345,13 @@ export const botAutoTrading = ({
       lastestSignalTs,
       campaigns,
     });
-    // botTrailingLossByATR({
-    //   ctx,
-    //   id,
-    //   config,
-    //   tradeAbleCrypto,
-    //   campaigns,
-    // })
+    botTrailingLossByATR({
+      ctx,
+      id,
+      config,
+      tradeAbleCrypto,
+      campaigns,
+    })
 
     // campaigns.set(id, { ...config, tradeAbleCrypto, WS });
 
