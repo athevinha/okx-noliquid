@@ -24,6 +24,7 @@ import { calculateATR } from "../signals/atr";
 import { wsCandles } from "../helper/okx.socket";
 import { setTimeout } from "timers/promises";
 import {botTrailingLossByATR} from "./trailing/trailing";
+import WebSocket from "ws";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -56,6 +57,7 @@ const _fowardTrading = async ({
   lastestSignalTs,
   wsCandles,
   campaignId,
+  campaigns,
 }: {
   ctx: NarrowedContext<
     Context<Update>,
@@ -71,6 +73,7 @@ const _fowardTrading = async ({
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
   campaignId?: string;
+  campaigns: Map<string, CampaignConfig>;
 }) => {
   const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder } =
     config;
@@ -137,6 +140,15 @@ const _fowardTrading = async ({
               await openFuturePosition(openPositionParams);
             openPositionMsg = openPositionRes.msg;
             openAlgoOrderResMsg = openAlgoOrderRes.msg;
+            if(campaignId && campaigns.get(campaignId)?.WSTrailing?.readyState === WebSocket.CLOSED) {
+              botTrailingLossByATR({
+                ctx,
+                id: campaignId,
+                config,
+                tradeAbleCrypto,
+                campaigns
+              })
+            }
           } else {
             openPositionMsg = "Slope out of range";
           }
@@ -266,6 +278,7 @@ function forwardTradingWithWs({
         wsCandles,
         lastestSignalTs,
         campaignId: id,
+        campaigns,
       });
     },
     closeCallBack(code) {

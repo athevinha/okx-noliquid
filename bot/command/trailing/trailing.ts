@@ -52,6 +52,7 @@ const _fowardTrailing = async ({
   tradeAbleCryptoATRs,
   tradeAbleCryptoCandles,
   trablePositions,
+  alreadyOpenTrailingPositions,
   id,
   campaigns,
 }: {
@@ -72,9 +73,10 @@ const _fowardTrailing = async ({
   tradeAbleCryptoCandles: { [instId: string]: ICandles };
   tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] };
   trablePositions: { [instId: string]: IPositionOpen | undefined };
+  alreadyOpenTrailingPositions: { [instId: string]:  boolean } ;
 }) => {
   try {
-    if (!wsPositions[0].avgPx || wsPositions.length === 1) return; // Close and open pos message
+    if (!wsPositions[0]?.avgPx || wsPositions.length === 0) return; // Close and open pos message
     const algoOrders = await getAccountPendingAlgoOrders({});
     const WSPositions = wsPositions.filter((pos) => {
       if (!tradeAbleCrypto.includes(pos.instId)) return false;
@@ -88,6 +90,7 @@ const _fowardTrailing = async ({
     const outdated =
       (Object.keys(trablePositions).filter((crypto) => wsInstIds.includes(crypto)).length !==
       WSPositions.length) || WSPositions.length !== Object.keys(trablePositions).length;
+    console.log("trablePositions", Object.keys(trablePositions).length,"| WSPositions",WSPositions.map((ws) => ws.instId).length, "| outdated", outdated, "| Already", Object.keys(alreadyOpenTrailingPositions).filter(key => alreadyOpenTrailingPositions[key]).length);
 
     if (outdated) {
       WSPositions.forEach((pos) => {
@@ -118,9 +121,11 @@ const _fowardTrailing = async ({
         config,
         wsPositions: WSPositions,
         campaigns,
+        tradeAbleCrypto,
         tradeAbleCryptoATRs,
         tradeAbleCryptoCandles,
         trablePositions,
+        alreadyOpenTrailingPositions,
       });
     }
   } catch (err: any) {
@@ -153,7 +158,7 @@ async function forwardTrailingWithWs({
   let tradeAbleCryptoCandles: { [instId: string]: ICandles } = {};
   let tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] } = {};
   let trablePositions: { [instId: string]: IPositionOpen | undefined } = {};
-
+  let alreadyOpenTrailingPositions: { [instId: string]:  boolean } = {};
   const WSTrailing = wsPositions({
     authCallBack(config) {
       console.log(config);
@@ -170,6 +175,7 @@ async function forwardTrailingWithWs({
         tradeAbleCryptoATRs,
         tradeAbleCryptoCandles,
         trablePositions,
+        alreadyOpenTrailingPositions,
         id,
         campaigns,
       });
@@ -179,12 +185,24 @@ async function forwardTrailingWithWs({
     },
     closeCallBack(code, reason) {
       console.error("[TRAILING] WS closed with code: ", code);
+      
       if (code === 1005) {
+        Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
+          delete alreadyOpenTrailingPositions[instId];
+        });
         ctx.replyWithHTML(
           `🛑 [TRAILING] Stopped WS <b><code>${id}</code>.</b>`
         );
         campaigns.delete(id);
-      } else {
+      } else if  (code === 4004) {
+        Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
+          delete alreadyOpenTrailingPositions[instId];
+        });
+        ctx.replyWithHTML(
+          `🛑 [TRAILING] Stopped WS <b><code>${id}</code>.</b>`
+        );
+      }
+      else {
         forwardTrailingWithWs({
           ctx,
           id,
