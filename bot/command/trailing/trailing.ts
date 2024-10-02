@@ -198,6 +198,8 @@ async function forwardTrailingWithWs({
         Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
           delete alreadyOpenTrailingPositions[instId];
         });
+        if( campaigns.get(id)?.WSTicker)
+          campaigns.get(id)?.WSTicker?.close()
         console.log(
           `🛑 [TRAILING] Stopped WS <b><code>${id} [${code}]</code>.</b>`
         );
