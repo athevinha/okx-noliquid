@@ -198,8 +198,8 @@ async function forwardTrailingWithWs({
         Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
           delete alreadyOpenTrailingPositions[instId];
         });
-        ctx.replyWithHTML(
-          `🛑 [TRAILING] Stopped WS <b><code>${id}</code>.</b>`
+        console.log(
+          `🛑 [TRAILING] Stopped WS <b><code>${id} [${code}]</code>.</b>`
         );
       }
       else {
