@@ -22,6 +22,7 @@ export const formatReportInterval = (
   report += `• <b>Mgn mode:</b> <code>${config.mgnMode}</code>\n`;
   report += `• <b>Size:</b> <code>${config.sz}</code>\n`;
   report += `• <b>Variance:</b> <code>${config.variance ? `${!config.variance.includes("auto") ? Number(config.variance) * 100 + "%" : config.variance}` : "N/A"}</code>\n`;
+  report += `• <b>Trade direction:</b> <code>${config.tradeDirection}</code>\n`;
   report += `• <b>Slope:</b> <code>${config.slopeThresholdUp || "N/A"}</code> | <code>${config.slopeThresholdUnder || "N/A"}</code>\n`;
   report += `• <b>Ccys:</b> <code>${currencies.length}</code> (${currencies.slice(0, 15).map((ccy) => ` <code>${ccy}</code> `)})`;
 

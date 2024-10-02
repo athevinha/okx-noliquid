@@ -75,7 +75,7 @@ const _fowardTrading = async ({
   campaignId?: string;
   campaigns: Map<string, CampaignConfig>;
 }) => {
-  const { bar, mgnMode, leve, sz, slopeThresholdUp, slopeThresholdUnder } =
+  const { bar, mgnMode, leve, sz, slopeThresholdUp, tradeDirection, slopeThresholdUnder } =
     config;
   let variance = config.variance;
   try {
@@ -130,24 +130,26 @@ const _fowardTrading = async ({
             size: sz,
             callbackRatio: variance,
           };
+          if(tradeDirection !== 'both' && openPositionParams.posSide.toLowerCase() !== tradeDirection) return;
+
           if (
             (!slopeThresholdUnder ||
               lastestCross.slopeThreshold <= slopeThresholdUnder) &&
             (!slopeThresholdUp ||
               lastestCross.slopeThreshold >= slopeThresholdUp)
           ) {
-            const { openAlgoOrderRes, openPositionRes } =
-              await openFuturePosition(openPositionParams);
-            openPositionMsg = openPositionRes.msg;
-            openAlgoOrderResMsg = openAlgoOrderRes.msg;
-            if(campaignId && campaigns.get(campaignId)?.WSTrailing?.readyState === WebSocket.CLOSED) {
-              botTrailingLossByATR({
-                ctx,
-                id: campaignId,
-                config,
-                tradeAbleCrypto,
-                campaigns
-              })
+              const { openAlgoOrderRes, openPositionRes } =
+                await openFuturePosition(openPositionParams);
+              openPositionMsg = openPositionRes.msg;
+              openAlgoOrderResMsg = openAlgoOrderRes.msg;
+              if(campaignId && campaigns.get(campaignId)?.WSTrailing?.readyState === WebSocket.CLOSED) {
+                botTrailingLossByATR({
+                  ctx,
+                  id: campaignId,
+                  config,
+                  tradeAbleCrypto,
+                  campaigns
+                })
             }
           } else {
             openPositionMsg = "Slope out of range";

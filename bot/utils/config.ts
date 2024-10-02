@@ -24,6 +24,7 @@ export const DEFAULT_BOT_CONFIG = {
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,
   variance: undefined,
+  tradeDirection: 'both',
   tokenTradingMode: "whitelist",
 };
 export const USE_PROXY = true;
@@ -45,6 +46,7 @@ export const parseConfigInterval = (configString: string) => {
     slopeThresholdUnder,
     slopeThreshAverageMode,
     variance,
+    tradeDirection,
     tokenTradingMode,
   }: any = DEFAULT_BOT_CONFIG;
   configParts.forEach((part) => {
@@ -62,6 +64,8 @@ export const parseConfigInterval = (configString: string) => {
       slopeThresholdUnder = parseFloat(part.replace("slopeUnder-", ""));
     } else if (part.startsWith("avgMode-")) {
       slopeThreshAverageMode = part.replace("avgMode-", "") === "true";
+    } else if (part.startsWith("tradeDirection-")) {
+      tradeDirection = part.replace("tradeDirection-", "");
     } else if (part.startsWith("tokenMode-")) {
       tokenTradingMode = part.replace("tokenMode-", "") as
         | "all"
@@ -79,6 +83,7 @@ export const parseConfigInterval = (configString: string) => {
     leve,
     mgnMode,
     sz,
+    tradeDirection,
     slopeThresholdUp,
     slopeThresholdUnder,
     slopeThreshAverageMode,

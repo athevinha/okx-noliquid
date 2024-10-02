@@ -354,6 +354,7 @@ export type CampaignData = {
     slopeThresholdUp?: number;
     slopeThresholdUnder?: number;
     slopeThreshAverageMode?: boolean;
+    tradeDirection: string;
     tokenTradingMode?: "all" | "whitelist" | string;
     tradeAbleCrypto?: string[];
     variance?: string;
@@ -425,7 +426,7 @@ export type IPendingAlgoOrder = {
 export type IPosSide = "long" | "short";
 export type ISide = "buy" | "sell";
 export type ImgnMode = "isolated" | "cross";
-
+export type ITradeDirection = "long" | "short" | "both"
 export type IWsRequestParams = {
   op: string;
   args: { channel: string;instType?: string, instId?: string }[];
