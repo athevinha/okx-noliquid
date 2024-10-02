@@ -12,10 +12,11 @@ import {
   IPosSide,
   IWsTickerReponse,
 } from "../../type";
-import { axiosErrorDecode, decodeSymbol, okxReponseDecode } from "../../utils";
+import { axiosErrorDecode, decodeSymbol, decodeTimestamp, okxReponseDecode, zerofy } from "../../utils";
 import WebSocket from "ws";
 import { calculateATR } from "../../signals/atr";
 import { openTrailingStopOrder } from "../../helper/okx.trade.algo";
+import {USDT} from "../../utils/config";
 dotenv.config();
 let a = 0;
 const _fowardTickerATRWithWs = async ({
@@ -72,8 +73,6 @@ const _fowardTickerATRWithWs = async ({
         candles[candles.length - 1].h = markPrice;
       candles[candles.length - 1].c = markPrice;
       const currentAtr = calculateATR(candles, 14).slice(-1)[0];
-      console.log(instId, markPrice, Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple)
-
       if (
         markPrice >
         Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
@@ -84,13 +83,6 @@ const _fowardTickerATRWithWs = async ({
             : currentAtr.fluctuationsPercent * multiple;
 
         if (!alreadyOpenTrailingPositions[instId]) {
-          console.log(
-            "Add trailing orders",
-            (callbackRatio * 100).toFixed(3) + "%",
-            markPrice,
-            ">",
-            Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
-          );
           alreadyOpenTrailingPositions[instId] = true;
           const param = {
             instId,
@@ -100,11 +92,26 @@ const _fowardTickerATRWithWs = async ({
             callbackRatio: callbackRatio.toFixed(4),
           };
           const closeAlgoOrderRes = await openTrailingStopOrder(param);
-          console.log(closeAlgoOrderRes);
-          const noti = closeAlgoOrderRes.msg === ""
-              ? `🟢 Auto trailing trigger: <code>${decodeSymbol(instId)} (${(callbackRatio * 100).toFixed(2)}%)</code>`
-              : `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`;
-          ctx.reply(noti, { parse_mode: "HTML" })
+          let notificationMessage = ''
+          if(closeAlgoOrderRes.msg === '') { // success
+            const algoOrders = await getAccountPendingAlgoOrders({})
+            const algoOrder = algoOrders.filter(aOrder => aOrder.instId === instId)[0]
+            const realActivePrice = Number(algoOrder.moveTriggerPx || algoOrder.triggerPx || algoOrder.last)
+            console.log(algoOrder)
+            const estActivePrice = Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
+            const slippage = ((realActivePrice - estActivePrice) / estActivePrice) * 100;
+            
+            notificationMessage += `💎 <b>[${decodeSymbol(instId)}]</b> <code>${id}</code> trailing trigger\n`;
+            notificationMessage += `⏰ <b>Time:</b> <code>${decodeTimestamp(
+              Math.round(Number(algoOrder?.uTime))
+            )}</code>\n`;
+            notificationMessage += `💰 <b>Est. / Real. price:</b> <code>$${zerofy(estActivePrice)}</code> / <code>$${zerofy(realActivePrice)}</code>\n`;
+            notificationMessage += `📉 <b>Est. / Real. variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> / <code>${(Number(algoOrder.callbackRatio) * 100)}%</code>\n`;
+            notificationMessage += `⚖️ <b>Slippage:</b> ${slippage <= 0 ? '🟢' : '🔴'} <code>${zerofy(slippage)}%</code>\n`;
+          } else {
+            notificationMessage = `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`
+          }
+          ctx.reply(notificationMessage, { parse_mode: "HTML" })
         }
       }
     }
