@@ -282,10 +282,10 @@ function forwardTradingWithWs({
       });
     },
     closeCallBack(code) {
-      console.error("[TRADING] WS closed with code: ", code);
+      console.error(`[TRADING] WebSocket closed with code: ${code}`);
       if (code === 1005) {
         ctx.replyWithHTML(
-          `🛑 [TRADING] Stopped WS <b><code>${id}</code>.</b>`
+          `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
         campaigns.delete(id);
       } else {
@@ -297,8 +297,9 @@ function forwardTradingWithWs({
           lastestSignalTs,
           campaigns,
         });
+        
         ctx.replyWithHTML(
-          `⛓️ [TRADING] [${code}] Socket disconnected for <b><code>${id}</code>.</b> Reconnected`
+          `⛓️ [TRADING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
         );
       }
     },

@@ -192,7 +192,7 @@ export async function fowardTickerATRWithWs({
     closeCallBack(code, reason) {
       console.error("[TICK] WS closed with code: ", code);
       if (code === 1005) {
-        ctx.replyWithHTML(`🛑 [TICK] Stopped WS <b><code>${id}</code>.</b>`);
+        ctx.replyWithHTML(`🔗 [TICK] WebSocket connection terminated for <b><code>${id}</code>.</b>`);
         campaigns.delete(id);
       } else {
         fowardTickerATRWithWs({

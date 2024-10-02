@@ -189,27 +189,27 @@ async function forwardTrailingWithWs({
       console.log(e);
     },
     closeCallBack(code, reason) {
-      console.error("[TRAILING] WS closed with code: ", code);
-      
+      console.error(`[TRAILING] WebSocket closed with code: ${code}`);
       if (code === 1005) {
         Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
           delete alreadyOpenTrailingPositions[instId];
         });
         ctx.replyWithHTML(
-          `🛑 [TRAILING] Stopped WS <b><code>${id}</code>.</b>`
+          `🔗 [TRAILING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
         campaigns.delete(id);
-      } else if  (code === 4004) {
+      } else if (code === 4004) {
+        // 4004 code indicates no data received within 30 seconds
         Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
           delete alreadyOpenTrailingPositions[instId];
         });
-        if( campaigns.get(id)?.WSTicker)
-          campaigns.get(id)?.WSTicker?.close()
+        if (campaigns.get(id)?.WSTicker) {
+          campaigns.get(id)?.WSTicker?.close();
+        }
         console.log(
-          `🛑 [TRAILING] Stopped WS <b><code>${id} [${code}]</code>.</b>`
+          `🛑 [TRAILING] WebSocket connection stopped for <b><code>${id} [${code}]</code>.</b>`
         );
-      }
-      else {
+      } else {
         forwardTrailingWithWs({
           ctx,
           id,
@@ -218,10 +218,11 @@ async function forwardTrailingWithWs({
           campaigns,
         });
         ctx.replyWithHTML(
-          `⛓️ [TRAILING] [${code}] socket disconnected for <b><code>${id}</code>.</b> Reconnected`
+          `⛓️ [TRAILING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
         );
       }
-    },
+    }
+    
   });
 
   campaigns.set(id, { ...(campaigns.get(id) || config), WSTrailing });
