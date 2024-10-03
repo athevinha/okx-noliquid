@@ -16,6 +16,7 @@
     "test:listen.candle": "mocha --timeout 500000 -r ts-node/register 'test/listen.candle.test.ts'",
     "test:listen.tick": "mocha --timeout 500000 -r ts-node/register 'test/listen.tick.test.ts'",
     "test:listen.position": "mocha --timeout 500000 -r ts-node/register 'test/listen.position.test.ts'",
+    "test:balance": "mocha --timeout 500000 -r ts-node/register 'test/balance.test.ts'",
     "format": "prettier --write \"bot/**/*.ts\" && prettier --write \"test/*.ts\""
   },
   "author": "",

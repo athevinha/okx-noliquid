@@ -19,6 +19,7 @@ export const DEFAULT_BOT_CONFIG = {
   bar: "1H",
   leve: 3,
   mgnMode: "isolated",
+  equityPercent: 90,
   sz: 50,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
@@ -42,6 +43,7 @@ export const parseConfigInterval = (configString: string) => {
     bar,
     leve,
     mgnMode,
+    equityPercent,
     sz,
     slopeThresholdUp,
     slopeThresholdUnder,
@@ -58,6 +60,8 @@ export const parseConfigInterval = (configString: string) => {
       leve = parseInt(part.replace("leve-", ""));
     } else if (part.startsWith("mgnMode-")) {
       mgnMode = part.replace("mgnMode-", "") as ImgnMode;
+    } else if (part.startsWith("equityPercent-")) {
+      equityPercent = parseFloat(part.replace("equityPercent-", ""));
     } else if (part.startsWith("sz-")) {
       sz = parseFloat(part.replace("sz-", ""));
     } else if (part.startsWith("slopeUp-")) {
@@ -84,6 +88,7 @@ export const parseConfigInterval = (configString: string) => {
     bar,
     leve,
     mgnMode,
+    equityPercent,
     sz,
     tradeDirection,
     scapeMode,

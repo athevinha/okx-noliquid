@@ -350,6 +350,7 @@ export type CampaignData = {
     bar: string;
     leve: number;
     mgnMode: ImgnMode;
+    equityPercent: number; 
     sz: number;
     slopeThresholdUp?: number;
     slopeThresholdUnder?: number;

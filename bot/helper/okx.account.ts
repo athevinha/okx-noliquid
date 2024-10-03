@@ -12,17 +12,35 @@ import { axiosErrorDecode } from "../utils";
 import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 
-export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
-  try {
-    const path = "/api/v5/account/balance";
-    const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
-      headers: makeHeaderAuthenticationOKX("GET", path, ""),
-    });
-    return res?.data?.data as IAccountBalance[];
-  } catch (error: any) {
-    axiosErrorDecode(error);
-    return [];
+export const getAccountBalance = async (
+  maxRetries: number = 3, // default retry count
+  retryDelay: number = 1000 // delay between retries in ms
+): Promise<IAccountBalance[]> => {
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
+    try {
+      const path = "/api/v5/account/balance";
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      });
+
+      return res?.data?.data as IAccountBalance[];
+
+    } catch (error: any) {
+      axiosErrorDecode(error, false);
+
+      attempts += 1;
+      if (attempts >= maxRetries) {
+        return [];
+      }
+
+      console.log(`[BALANCE] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
+    }
   }
+
+  return [];
 };
 
 export const getAccountPositions = async (
