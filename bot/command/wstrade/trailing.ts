@@ -95,7 +95,7 @@ const _fowardTrailing = async ({
     const outdated =
       (Object.keys(trablePositions).filter((crypto) => wsInstIds.includes(crypto)).length !==
       WSPositions.length) || WSPositions.length !== Object.keys(trablePositions).length;
-    console.log("trablePositions", Object.keys(trablePositions).length,"| WSPositions",WSPositions.map((ws) => ws.instId).length, "| outdated", outdated, "| Already", Object.keys(alreadyOpenTrailingPositions).filter(key => alreadyOpenTrailingPositions[key]).length);
+    // console.log("trablePositions", Object.keys(trablePositions).length,"| WSPositions",WSPositions.map((ws) => ws.instId).length, "| outdated", outdated, "| Already", Object.keys(alreadyOpenTrailingPositions).filter(key => alreadyOpenTrailingPositions[key]).length);
 
     if (outdated) {
       WSPositions.forEach((pos) => {

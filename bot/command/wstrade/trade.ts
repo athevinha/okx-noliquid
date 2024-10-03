@@ -84,7 +84,7 @@ const _fowardTrading = async ({
     if (wsCandle.confirm !== "1") return;
     console.log(`[${campaignId}] new epoch`)
     const positions = await getAccountPositions('SWAP')
-
+    console.log(positions.map(e => [e.instId, e.notionalUsd]))
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
         const candles = (
@@ -96,7 +96,12 @@ const _fowardTrading = async ({
           })
         ).filter((can) => can?.ts <= Number(wsCandle?.ts));
         const emaCross = findEMACrossovers(candles, 9, 21);
-        const lastestCross = emaCross[emaCross.length - 1];
+        // const lastestCross = emaCross[emaCross.length - 1];
+        const lastestCross = {
+          ...emaCross[emaCross.length - 1],
+          ts: Number(wsCandle?.ts),
+          type: 'bullish'
+        }
 
         if (lastestCross?.ts === Number(wsCandle?.ts)) {
           console.log(SYMBOL, "cross");
@@ -147,42 +152,40 @@ const _fowardTrading = async ({
             (!slopeThresholdUp ||
               lastestCross.slopeThreshold >= slopeThresholdUp)
           ) {
-            if(!instPosition || Number(instPosition.notionalUsd) > 1) {
-              const { openAlgoOrderRes, openPositionRes } =
-                await openFuturePosition(openPositionParams);
+            if (!instPosition || (instPosition && Number(instPosition?.notionalUsd) < 1)) {
+              const { openAlgoOrderRes, openPositionRes } = await openFuturePosition(openPositionParams);
               openPositionMsg = openPositionRes.msg;
               openAlgoOrderResMsg = openAlgoOrderRes.msg;
-              if(campaignId && campaigns.get(campaignId)?.WSTrailing?.readyState === WebSocket.CLOSED) {
+              
+              if (campaignId && campaigns.get(campaignId)?.WSTrailing?.readyState === WebSocket.CLOSED) {
                 botTrailingLossByATR({
                   ctx,
                   id: campaignId,
                   config,
                   tradeAbleCrypto,
-                  campaigns
-                })
+                  campaigns,
+                });
+              }
             } else {
-              openPositionMsg = "Already have open position";
-
+              openPositionMsg = "Already have an open position with size >= 1";
             }
-          }
           } else {
             openPositionMsg = "Slope out of range";
           }
-          // let estimateMoveTrigglePrice = 0;
-          // if (openPositionParams?.posSide === "long" && variance)
-          //   estimateMoveTrigglePrice =
-          //     lastestCross.c - lastestCross.c * Number(variance);
-          // else if (openPositionParams?.posSide === "short" && variance)
-          //   estimateMoveTrigglePrice =
-          //     lastestCross.c + lastestCross.c * Number(variance);
+          let estimateTradeTrigglePrice = 0
+          if (openPositionParams?.posSide === "long" && variance)
+            estimateTradeTrigglePrice = lastestCross.c + lastestCross.c * Number(variance);
+          else if (openPositionParams?.posSide === "short" && variance)
+            estimateTradeTrigglePrice =
+              lastestCross.c - lastestCross.c * Number(variance);
 
-          // const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
-          //   estimatePnl({
-          //     posSide: openPositionParams.posSide as IPosSide,
-          //     sz,
-          //     e: lastestCross.c,
-          //     c: estimateMoveTrigglePrice,
-          //   });
+          const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
+            estimatePnl({
+              posSide: openPositionParams.posSide as IPosSide,
+              sz,
+              e: lastestCross.c,
+              c: estimateTradeTrigglePrice,
+            });
 
           let notificationMessage = "";
           notificationMessage += `🔔 <b>[${decodeSymbol(
@@ -209,8 +212,8 @@ const _fowardTrading = async ({
             notificationMessage += `🩸 <b>Sz | Leve:</b> <code>${zerofy(
               openPositionParams.size
             )}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
-            // if (isTrailingLossMode)
-            //   notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
+            if (isTrailingLossMode)
+              notificationMessage += `🚨 <b>Est. Trailing Trigger:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
           }
           notificationMessage += `<code>------------ORDERS-------------</code>\n`;
 

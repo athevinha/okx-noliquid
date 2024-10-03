@@ -97,7 +97,6 @@ const _fowardTickerATRWithWs = async ({
             const algoOrders = await getAccountPendingAlgoOrders({})
             const algoOrder = algoOrders.filter(aOrder => aOrder.instId === instId)[0]
             const realActivePrice = Number(algoOrder.moveTriggerPx || algoOrder.triggerPx || algoOrder.last)
-            console.log(algoOrder)
             const estActivePrice = Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
             const slippage = ((realActivePrice - estActivePrice) / estActivePrice) * 100;
             
