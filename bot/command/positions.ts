@@ -9,8 +9,10 @@ import {
   getTradeAbleCrypto,
   zerofy,
 } from "../utils";
-import { USDT } from "../utils/config";
-import { CampaignConfig, IPosSide } from "../type";
+import { ATR_PERIOD, USDT } from "../utils/config";
+import { CampaignConfig, ICandle, ICandles, IPosSide } from "../type";
+import {getSymbolCandles} from "../helper/okx.candles";
+import {calculateATR} from "../signals/atr";
 
 export const botReportPositions = ({
   bot,
@@ -36,6 +38,18 @@ export const botReportPositions = ({
         );
       }
       const positions = await getAccountPositions("SWAP", tokensFilter);
+      let tradeAbleCryptoCandles: { [instId: string]: ICandles } = {};
+      if(CampaignConfig) {
+        await Promise.all(tokensFilter.map(async instId => {
+          tradeAbleCryptoCandles[instId] = await getSymbolCandles({
+            instID: instId,
+            before: 0,
+            bar: CampaignConfig?.bar,
+            limit: 300,
+          })
+        }))
+      }
+    
       let trailingLossOrders = await getAccountPendingAlgoOrders({});
       trailingLossOrders =
         tokensFilter.length === 0
@@ -74,6 +88,20 @@ export const botReportPositions = ({
             c: trailingLossOrder?.moveTriggerPx,
           });
         totalTrailingLossPnl += estPnlStopLoss;
+        let markPrice = 0, estTriggerPrice = 0
+        if(!trailingLossOrder && CampaignConfig) {
+            const multiple = CampaignConfig.variance
+          ? Number(
+              CampaignConfig.variance === "auto"
+                ? [1, "auto"]
+                : CampaignConfig.variance.split(",")[0]
+            )
+          : 0.05;
+          const instCandle = tradeAbleCryptoCandles[position.instId]
+          markPrice = instCandle.slice(-1)[0].c
+          const currentAtr = calculateATR(instCandle, ATR_PERIOD).slice(-1)[0];
+          estTriggerPrice = Number(position.avgPx) + (currentAtr?.atr * multiple)
+        }
         totalPnl += parseFloat(position.upl);
         totalRealizedPnl += realizedPnl;
         totalBet += Number(position.notionalUsd) / Number(position.lever);
@@ -86,7 +114,7 @@ export const botReportPositions = ({
         report += `• <b>Real. Pnl:</b> <code>${zerofy(realizedPnl)}${USDT}</code> • ${realizedPnlIcon}\n`;
         report += trailingLossOrder
           ? `• <b>Trail:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n`
-          : "";
+          : (CampaignConfig ? `• <b>Trig | mark:</b> <code>${zerofy(estTriggerPrice)}</code> | <code>${zerofy(markPrice)}</code> • ${markPrice > estTriggerPrice ? "🟢" : "🔴" }\n` : '');
         positionReports += report;
       });
       let summaryReport = ``;

@@ -66,13 +66,16 @@ const _fowardTickerATRWithWs = async ({
         : 0.05;
       if (!candles) return;
       const pos = trablePositions[instId] as IPositionOpen;
-      // console.log(tradeAbleCryptoCandles[tickData.instId].slice(-1)[0].c, tickData.markPx)
       if (markPrice < candles[candles.length - 1].l)
         candles[candles.length - 1].l = markPrice;
       if (markPrice > candles[candles.length - 1].h)
         candles[candles.length - 1].h = markPrice;
       candles[candles.length - 1].c = markPrice;
+      tradeAbleCryptoCandles[instId] = candles
+
       const currentAtr = calculateATR(candles, 14).slice(-1)[0];
+      // console.log(instId, Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple, markPrice)
+
       if (
         markPrice >
         Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
