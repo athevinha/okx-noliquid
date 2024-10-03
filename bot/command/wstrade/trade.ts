@@ -167,7 +167,7 @@ const _fowardTrading = async ({
                 });
               }
             } else {
-              openPositionMsg = "Already have an open position with size >= 1";
+              openPositionMsg = "Already have an open position";
             }
           } else {
             openPositionMsg = "Slope out of range";
