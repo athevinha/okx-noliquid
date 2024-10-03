@@ -28,21 +28,39 @@ export const getAccountBalance = async (): Promise<IAccountBalance[]> => {
 export const getAccountPositions = async (
   instType: IInstType,
   instIds?: string[],
+  maxRetries: number = 3, // default retry count
+  retryDelay: number = 1000 // delay between retries in ms
 ): Promise<IPositionOpen[]> => {
-  try {
-    const path = `/api/v5/account/positions?instType=${instType}`;
-    const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
-      headers: makeHeaderAuthenticationOKX("GET", path, ""),
-    });
-    if (!instIds || instIds.length === 0)
-      return res?.data?.data as IPositionOpen[];
-    return (res?.data?.data as IPositionOpen[]).filter((r) =>
-      instIds?.includes(r.instId),
-    );
-  } catch (error: any) {
-    axiosErrorDecode(error);
-    return [];
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
+    try {
+      const path = `/api/v5/account/positions?instType=${instType}`;
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      });
+
+      if (!instIds || instIds.length === 0)
+        return res?.data?.data as IPositionOpen[];
+
+      return (res?.data?.data as IPositionOpen[]).filter((r) =>
+        instIds?.includes(r.instId),
+      );
+      
+    } catch (error: any) {
+      axiosErrorDecode(error);
+
+      attempts += 1;
+      if (attempts >= maxRetries) {
+        return [];
+      }
+
+      console.log(`[POSITION] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
+    }
   }
+
+  return [];
 };
 
 export const getAccountPosition = async (
@@ -194,6 +212,7 @@ export const getAccountPendingAlgoOrders = async ({
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
     });
+    console.log(res.data)
     return res?.data?.data as IPendingAlgoOrder[];
   } catch (error: any) {
     axiosErrorDecode(error);

@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { setTimeout } from "timers/promises";
 import {
   getAccountOrder,
+  getAccountPositions,
   getAccountPositionsHistory,
 } from "../bot/helper/okx.account";
 import {
@@ -40,6 +41,12 @@ describe("OKX positions with test", () => {
     expect(order.length).greaterThan(0);
     await setTimeout(1000);
   });
+  it("Fetch position OKX", async () => {
+    await Promise.all([1,2,3,4,5,6,7,8].map(async e => {
+      const positions = await getAccountPositions('SWAP')
+      expect(positions.length).greaterThan(0)
+    }))
+  });
   it("Close position OKX", async () => {
     const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition({
       instId: instId,
@@ -52,3 +59,4 @@ describe("OKX positions with test", () => {
     expect(closePositionRes.msg).eq("");
   });
 });
+
