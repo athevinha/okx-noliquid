@@ -60,10 +60,13 @@ describe("OKX trailing stoploss test", () => {
   });
 
   it("Fetch open pending trailing loss orders", async () => {
-    const algoOrders = await getAccountPendingAlgoOrders({});
-    expect(algoOrders.length).greaterThanOrEqual(
-      supportFutureCryptosByInstId.length,
-    );
+    await Promise.all([1,2,3,4,5,6,7,8].map(async e => {
+      const algo = await getAccountPendingAlgoOrders({})
+      expect(algo.length).greaterThanOrEqual(
+        supportFutureCryptosByInstId.length,
+      );
+    }))
+
   });
 
   it("closes all pending trailing loss orders", async () => {

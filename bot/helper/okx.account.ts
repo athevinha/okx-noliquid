@@ -200,25 +200,44 @@ export const getAccountPendingAlgoOrders = async ({
   ordType = "move_order_stop",
   limit = 100,
   instId,
+  maxRetries = 3, // default retry count
+  retryDelay = 1000 // delay between retries in ms
 }: {
   ordType?: string;
   limit?: number;
   instId?: string;
+  maxRetries?: number; // optional parameter for retries
+  retryDelay?: number; // optional delay between retries
 }): Promise<IPendingAlgoOrder[]> => {
-  try {
-    const path = `/api/v5/trade/orders-algo-pending?ordType=${ordType}&limit=${limit}${
-      instId ? `&instId=${instId}` : ""
-    }`;
-    const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
-      headers: makeHeaderAuthenticationOKX("GET", path, ""),
-    });
-    console.log(res.data)
-    return res?.data?.data as IPendingAlgoOrder[];
-  } catch (error: any) {
-    axiosErrorDecode(error);
-    return [];
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
+    try {
+      const path = `/api/v5/trade/orders-algo-pending?ordType=${ordType}&limit=${limit}${
+        instId ? `&instId=${instId}` : ""
+      }`;
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      });
+
+      return res?.data?.data as IPendingAlgoOrder[];
+
+    } catch (error: any) {
+      axiosErrorDecode(error);
+
+      attempts += 1;
+      if (attempts >= maxRetries) {
+        return [];
+      }
+
+      console.log(`[ALGO ORDERS] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
+    }
   }
+
+  return [];
 };
+
 
 export const getAccountConfig = async (): Promise<any[]> => {
   try {
