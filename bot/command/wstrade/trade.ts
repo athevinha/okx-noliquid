@@ -213,7 +213,7 @@ const _fowardTrading = async ({
               openPositionParams.size
             )}${USDT}</code> | <code>${openPositionParams.leverage}x</code>\n`;
             if (isTrailingLossMode)
-              notificationMessage += `🚨 <b>Est. Trailing Trigger:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
+              notificationMessage += `🚨 <b>Est. Trailing Trigger:</b> <code>${estPnlStopLoss > 0 ? '🟢' : '🔴'}${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
           }
           notificationMessage += `<code>------------ORDERS-------------</code>\n`;
 
