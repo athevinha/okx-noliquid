@@ -48,7 +48,7 @@ export const getAccountPositions = async (
       );
       
     } catch (error: any) {
-      axiosErrorDecode(error);
+      axiosErrorDecode(error,false);
 
       attempts += 1;
       if (attempts >= maxRetries) {
@@ -223,7 +223,7 @@ export const getAccountPendingAlgoOrders = async ({
       return res?.data?.data as IPendingAlgoOrder[];
 
     } catch (error: any) {
-      axiosErrorDecode(error);
+      axiosErrorDecode(error, false);
 
       attempts += 1;
       if (attempts >= maxRetries) {
