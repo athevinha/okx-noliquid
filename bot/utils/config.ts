@@ -20,7 +20,6 @@ export const DEFAULT_BOT_CONFIG = {
   leve: 3,
   mgnMode: "isolated",
   equityPercent: 90,
-  sz: 50,
   slopeThresholdUp: undefined,
   slopeThresholdUnder: undefined,
   slopeThreshAverageMode: undefined,

@@ -25,7 +25,7 @@ import { wsCandles } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
 import {botTrailingLossByATR} from "./trailing";
 import WebSocket from "ws";
-import {getAccountPositions} from "../../helper/okx.account";
+import {getAccountPositions, getUSDTBalance} from "../../helper/okx.account";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -76,7 +76,7 @@ const _fowardTrading = async ({
   campaignId?: string;
   campaigns: Map<string, CampaignConfig>;
 }) => {
-  const { bar, mgnMode, leve, sz, slopeThresholdUp, tradeDirection, slopeThresholdUnder } =
+  const { bar, mgnMode, leve, sz, slopeThresholdUp,equityPercent, tradeDirection, slopeThresholdUnder } =
     config;
   let variance = config.variance;
   try {
@@ -84,6 +84,9 @@ const _fowardTrading = async ({
     if (wsCandle.confirm !== "1") return;
     console.log(`[${campaignId}] new epoch`)
     const positions = await getAccountPositions('SWAP')
+    const usdtBal = await getUSDTBalance()
+    const posSz = ((usdtBal * (equityPercent / 100)) / tradeAbleCrypto.length) * leve
+    console.log('#posSz', posSz,'|', '#usdtBal',usdtBal)
     console.log(positions.map(e => [e.instId, e.notionalUsd]))
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
@@ -134,13 +137,14 @@ const _fowardTrading = async ({
             if (Number(variance) < 0.001) variance = "0.001";
             else if (Number(variance) > 1) variance = "1";
           }
+
           const openPositionParams = {
             instId: SYMBOL,
             leverage: leve,
             mgnMode,
             posSide:
               lastestCross.type === "bullish" ? "long" : ("short" as IPosSide),
-            size: sz,
+            size: sz || posSz,
             // callbackRatio: variance,
           };
           // Postion already have
