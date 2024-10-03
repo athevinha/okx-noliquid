@@ -9,7 +9,7 @@ import {
   IPositionRisk,
 } from "../type";
 import { axiosErrorDecode } from "../utils";
-import { OKX_BASE_API_URL } from "../utils/config";
+import { DEFAULT_BOT_CONFIG, OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 
 export const getAccountBalance = async (
@@ -42,6 +42,11 @@ export const getAccountBalance = async (
 
   return [];
 };
+export const getUSDTBalance = async (equityPercent:number = 100) => {
+  const [balances] = await getAccountBalance()
+  const usdtBal = balances.details.filter(bal => bal.ccy === 'USDT')[0]?.availBal
+  return Number(usdtBal) * (equityPercent / 100)
+}
 
 export const getAccountPositions = async (
   instType: IInstType,
