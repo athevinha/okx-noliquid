@@ -4,16 +4,9 @@ dotenv.config();
 
 export const WHITE_LIST_TOKENS_TRADE = [
   "WIF-USDT-SWAP",
-  "ETH-USDT-SWAP",
-  "SOL-USDT-SWAP",
-  "BNB-USDT-SWAP",
-  "NOT-USDT-SWAP",
   "PEPE-USDT-SWAP",
-  "OP-USDT-SWAP",
-  "MEW-USDT-SWAP",
-  "SUI-USDT-SWAP",
-  "LTC-USDT-SWAP",
-  "STRK-USDT-SWAP",
+  "FLOKI-USDT-SWAP",
+  "BONK-USDT-SWAP"
 ];
 export const DEFAULT_BOT_CONFIG = {
   bar: "1H",
