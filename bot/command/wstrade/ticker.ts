@@ -96,7 +96,7 @@ const _fowardTickerATRWithWs = async ({
           if(closeAlgoOrderRes.msg === '') { // success
             const algoOrders = await getAccountPendingAlgoOrders({})
             const algoOrder = algoOrders.filter(aOrder => aOrder.instId === instId)[0]
-            const realActivePrice = Number(algoOrder.moveTriggerPx || algoOrder.triggerPx || algoOrder.last)
+            const realActivePrice = Number( algoOrder.last)
             const estActivePrice = Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
             const slippage = ((realActivePrice - estActivePrice) / estActivePrice) * 100;
             
@@ -104,9 +104,9 @@ const _fowardTickerATRWithWs = async ({
             notificationMessage += `• <b>Time:</b> <code>${decodeTimestamp(
               Math.round(Number(algoOrder?.uTime))
             )}</code>\n`;
-            notificationMessage += `• <b>Est. / Real. price:</b> <code>$${zerofy(estActivePrice)}</code> / <code>$${zerofy(realActivePrice)}</code>\n`;
+            notificationMessage += `• <b>Est. / Real. trig price:</b> <code>$${zerofy(estActivePrice)}</code> / <code>$${zerofy(realActivePrice)}</code>\n`;
             notificationMessage += `• <b>Est. / Real. variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> / <code>${(Number(algoOrder.callbackRatio) * 100)}%</code>\n`;
-            notificationMessage += `• <b>Slippage:</b> ${slippage <= 0 ? '🟢' : '🔴'} <code>${zerofy(slippage)}%</code>\n`;
+            notificationMessage += `• <b>Slippage:</b> ${slippage <= 0 ? '🟢' : '🟠'} <code>${zerofy(slippage)}%</code>\n`;
           } else {
             notificationMessage = `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`
           }
