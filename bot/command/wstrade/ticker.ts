@@ -98,9 +98,8 @@ const _fowardTickerATRWithWs = async ({
           };
           const closeAlgoOrderRes = await openTrailingStopOrder(param);
           let notificationMessage = ''
-          console.log(closeAlgoOrderRes)
           if(closeAlgoOrderRes.msg === '') { // success
-            await setTimeout(1000)
+            await setTimeout(500)
             const algoOrders = await getAccountPendingAlgoOrders({})
             console.log(algoOrders)
             const algoOrder = algoOrders.filter(aOrder => aOrder.instId === instId)[0]
