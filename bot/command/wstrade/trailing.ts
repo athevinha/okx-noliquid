@@ -197,7 +197,7 @@ async function forwardTrailingWithWs({
         ctx.replyWithHTML(
           `🔗 [TRAILING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
-        campaigns.delete(id);
+        // campaigns.delete(id);
       } else if (code === 4004) {
         // 4004 code indicates no data received within 30 seconds
         Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {

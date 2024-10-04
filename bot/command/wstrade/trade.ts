@@ -310,7 +310,7 @@ function forwardTradingWithWs({
         ctx.replyWithHTML(
           `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
-        campaigns.delete(id);
+        // campaigns.delete(id);
       } else {
         forwardTradingWithWs({
           ctx,

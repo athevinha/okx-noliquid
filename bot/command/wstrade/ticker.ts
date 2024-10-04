@@ -248,7 +248,7 @@ export async function fowardTickerATRWithWs({
         ctx.replyWithHTML(
           `🔗 [TICK] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
-        campaigns.delete(id);
+        // campaigns.delete(id);
       } else {
         fowardTickerATRWithWs({
           ctx,
