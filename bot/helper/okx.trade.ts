@@ -81,10 +81,12 @@ export const convertUSDToContractOrderSize = async ({
   type = 1,
   instId,
   sz,
+  opType,
 }: {
   type?: number;
   instId: string;
   sz: number;
+  opType: 'close' | 'open'
 }): Promise<string> => {
   try {
     let _sz = "";
@@ -95,7 +97,7 @@ export const convertUSDToContractOrderSize = async ({
       const httpsAgent = getRandomeHttpAgent();
       const _instId = `${instId.split("-")[0]}-${instId.split("-")[1]}`;
       const [{ idxPx }] = await getSymbolPriceTicker({ instId: _instId });
-      const path = `/api/v5/public/convert-contract-coin?type=${type}&instId=${instId}&sz=${
+      const path = `/api/v5/public/convert-contract-coin?type=${type}&opType=${opType}&instId=${instId}&sz=${
         sz / Number(idxPx)
       }`;
       const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
@@ -167,7 +169,7 @@ export const placeOrder = async ({
   tag?: string;
 }): Promise<OKXResponse> => {
   try {
-    const sz = await convertUSDToContractOrderSize({ instId, sz: szUSD });
+    const sz = await convertUSDToContractOrderSize({ instId, sz: szUSD, opType: 'open' });
     if (!sz)
       return {
         code: "",

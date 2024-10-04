@@ -22,7 +22,7 @@ export const openTrailingStopOrder = async ({
   reduceOnly?: boolean;
 }): Promise<OKXResponse> => {
   try {
-    const sz = await convertUSDToContractOrderSize({ instId, sz: size });
+    const sz = await convertUSDToContractOrderSize({ instId, sz: size, opType:'close' });
     if (!sz)
       return {
         code: "",
@@ -39,7 +39,7 @@ export const openTrailingStopOrder = async ({
       callbackRatio,
       ordType: "move_order_stop",
       sz,
-      reduceOnly,
+      cxlOnClosePos: true,
     });
     const path = `/api/v5/trade/order-algo`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {

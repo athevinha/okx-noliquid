@@ -17,6 +17,7 @@ import WebSocket from "ws";
 import { calculateATR } from "../../signals/atr";
 import { openTrailingStopOrder } from "../../helper/okx.trade.algo";
 import {USDT} from "../../utils/config";
+import {setTimeout} from "timers/promises";
 dotenv.config();
 let a = 0;
 const _fowardTickerATRWithWs = async ({
@@ -96,10 +97,13 @@ const _fowardTickerATRWithWs = async ({
           };
           const closeAlgoOrderRes = await openTrailingStopOrder(param);
           let notificationMessage = ''
+          console.log(closeAlgoOrderRes)
           if(closeAlgoOrderRes.msg === '') { // success
+            await setTimeout(1000)
             const algoOrders = await getAccountPendingAlgoOrders({})
+            console.log(algoOrders)
             const algoOrder = algoOrders.filter(aOrder => aOrder.instId === instId)[0]
-            const realActivePrice = Number( algoOrder.last)
+            const realActivePrice = Number(algoOrder?.last)
             const estActivePrice = Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
             const slippage = ((realActivePrice - estActivePrice) / estActivePrice) * 100;
             
@@ -108,7 +112,7 @@ const _fowardTickerATRWithWs = async ({
               Math.round(Number(algoOrder?.uTime))
             )}</code>\n`;
             notificationMessage += `• <b>Est. / Real. trig price:</b> <code>$${zerofy(estActivePrice)}</code> / <code>$${zerofy(realActivePrice)}</code>\n`;
-            notificationMessage += `• <b>Est. / Real. variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> / <code>${(Number(algoOrder.callbackRatio) * 100)}%</code>\n`;
+            notificationMessage += `• <b>Est. / Real. variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> / <code>${(Number(algoOrder?.callbackRatio) * 100)}%</code>\n`;
             notificationMessage += `• <b>Slippage:</b> ${slippage <= 0 ? '🟢' : '🟠'} <code>${zerofy(slippage)}%</code>\n`;
           } else {
             notificationMessage = `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`

@@ -99,12 +99,12 @@ const _fowardTrading = async ({
           })
         ).filter((can) => can?.ts <= Number(wsCandle?.ts));
         const emaCross = findEMACrossovers(candles, 9, 21);
-        const lastestCross = emaCross[emaCross.length - 1];
-        // const lastestCross = {
-        //   ...emaCross[emaCross.length - 1],
-        //   ts: Number(wsCandle?.ts),
-        //   type: 'bullish'
-        // }
+        // const lastestCross = emaCross[emaCross.length - 1];
+        const lastestCross = {
+          ...emaCross[emaCross.length - 1],
+          ts: Number(wsCandle?.ts),
+          type: 'bullish'
+        }
 
         if (lastestCross?.ts === Number(wsCandle?.ts)) {
           console.log(SYMBOL, "cross");
@@ -186,7 +186,7 @@ const _fowardTrading = async ({
           const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
             estimatePnl({
               posSide: openPositionParams.posSide as IPosSide,
-              sz,
+              sz: posSz || sz,
               e: lastestCross.c,
               c: estimateTradeTrigglePrice,
             });
