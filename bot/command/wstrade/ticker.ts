@@ -6,18 +6,27 @@ import { wsTicks } from "../../helper/okx.socket";
 import {
   CampaignConfig,
   CandleWithATR,
+  ICandle,
   ICandles,
   ImgnMode,
   IPositionOpen,
   IPosSide,
   IWsTickerReponse,
 } from "../../type";
-import { axiosErrorDecode, decodeSymbol, decodeTimestamp, okxReponseDecode, zerofy } from "../../utils";
+import {
+  axiosErrorDecode,
+  decodeSymbol,
+  decodeTimestamp,
+  decodeTimestampAgo,
+  okxReponseDecode,
+  zerofy,
+} from "../../utils";
 import WebSocket from "ws";
 import { calculateATR } from "../../signals/atr";
 import { openTrailingStopOrder } from "../../helper/okx.trade.algo";
-import {USDT} from "../../utils/config";
-import {setTimeout} from "timers/promises";
+import { USDT } from "../../utils/config";
+import { setTimeout } from "timers/promises";
+import {getSymbolCandles} from "../../helper/okx.candles";
 dotenv.config();
 let a = 0;
 const _fowardTickerATRWithWs = async ({
@@ -55,7 +64,7 @@ const _fowardTickerATRWithWs = async ({
 }) => {
   try {
     if (Object.keys(trablePositions).includes(tick.data[0].instId)) {
-      const { markPx, instId } = tick.data[0];
+      const { markPx, instId, ts } = tick.data[0];
       const markPrice = Number(markPx);
       const candles = tradeAbleCryptoCandles[instId];
       const multiple = config.variance
@@ -65,16 +74,36 @@ const _fowardTickerATRWithWs = async ({
               : config.variance.split(",")[0]
           )
         : 0.05;
-      if (!candles) return;
-      const pos = trablePositions[instId] as IPositionOpen;
-      if (markPrice < candles[candles.length - 1].l)
-        candles[candles.length - 1].l = markPrice;
-      if (markPrice > candles[candles.length - 1].h)
-        candles[candles.length - 1].h = markPrice;
-      candles[candles.length - 1].c = markPrice;
-      tradeAbleCryptoCandles[instId] = candles
+      // if (!candles) return;
+      if (!candles || candles.length < 2) return;
 
+      const candlePeriod = candles[1].ts - candles[0].ts;
+      const lastCandle = candles[candles.length - 1];
+
+      if (Number(ts) >= lastCandle.ts + candlePeriod) {
+        console.log('---------------TICKER NEW CANDLE-----------------------')
+        const newCandle: ICandle = {
+          ts: Number(ts),
+          o: markPrice,
+          h: markPrice,
+          l: markPrice,
+          c: markPrice,
+          vol: 0,
+          volCcy: 0,
+          volCcyQuote: 0,
+          confirm: 0
+        };
+        candles.push(newCandle);
+      } else {
+        if (markPrice <= lastCandle.l) lastCandle.l = markPrice;
+        if (markPrice >= lastCandle.h) lastCandle.h = markPrice;
+        candles[candles.length - 1].c = markPrice
+      }
+      tradeAbleCryptoCandles[instId] = candles;
       const currentAtr = calculateATR(candles, 14).slice(-1)[0];
+
+      // console.log('Last 2st:', [candles[candles.length - 2].c, candles[candles.length - 2].h], 'Last 1st:', [candles[candles.length - 1].c, candles[candles.length - 1].h], 'ATR:', currentAtr.atr)
+      const pos = trablePositions[instId] as IPositionOpen;
       // console.log(instId, Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple, markPrice)
 
       if (
@@ -97,27 +126,38 @@ const _fowardTickerATRWithWs = async ({
             callbackRatio: callbackRatio.toFixed(4),
           };
           const closeAlgoOrderRes = await openTrailingStopOrder(param);
-          let notificationMessage = ''
-          if(closeAlgoOrderRes.msg === '') { // success
-            await setTimeout(500)
-            const algoOrders = await getAccountPendingAlgoOrders({})
-            console.log(algoOrders)
-            const algoOrder = algoOrders.filter(aOrder => aOrder.instId === instId)[0]
-            const realActivePrice = Number(algoOrder?.last)
-            const estActivePrice = Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
-            const slippage = ((realActivePrice - estActivePrice) / estActivePrice) * 100;
-            
+          let notificationMessage = "";
+          if (closeAlgoOrderRes.msg === "") {
+            // success
+            await setTimeout(500);
+            const algoOrders = await getAccountPendingAlgoOrders({});
+            console.log(algoOrders);
+            const algoOrder = algoOrders.filter(
+              (aOrder) => aOrder.instId === instId
+            )[0];
+            const realActivePrice = Number(algoOrder?.last);
+            const estActivePrice =
+              Number(trablePositions[instId]?.avgPx) +
+              currentAtr?.atr * multiple;
+            console.log(
+              Number(trablePositions[instId]?.avgPx),
+              currentAtr?.atr,
+              multiple
+            );
+            const slippage =
+              ((realActivePrice - estActivePrice) / estActivePrice) * 100;
+
             notificationMessage += `🔔 <b>[${decodeSymbol(instId)}]</b> <code>${id}</code> trailing trigger\n`;
             notificationMessage += `• <b>Time:</b> <code>${decodeTimestamp(
               Math.round(Number(algoOrder?.uTime))
             )}</code>\n`;
             notificationMessage += `• <b>Est. / Real. trig price:</b> <code>$${zerofy(estActivePrice)}</code> / <code>$${zerofy(realActivePrice)}</code>\n`;
-            notificationMessage += `• <b>Est. / Real. variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> / <code>${(Number(algoOrder?.callbackRatio) * 100)}%</code>\n`;
-            notificationMessage += `• <b>Slippage:</b> ${slippage <= 0 ? '🟢' : '🟠'} <code>${zerofy(slippage)}%</code>\n`;
+            notificationMessage += `• <b>Est. / Real. variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> / <code>${Number(algoOrder?.callbackRatio) * 100}%</code>\n`;
+            notificationMessage += `• <b>Slippage:</b> ${slippage <= 0 ? "🟢" : "🟠"} <code>${zerofy(slippage)}%</code>\n`;
           } else {
-            notificationMessage = `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`
+            notificationMessage = `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`;
           }
-          ctx.reply(notificationMessage, { parse_mode: "HTML" })
+          ctx.reply(notificationMessage, { parse_mode: "HTML" });
         }
       }
     }
@@ -205,7 +245,9 @@ export async function fowardTickerATRWithWs({
     closeCallBack(code, reason) {
       console.error("[TICK] WS closed with code: ", code);
       if (code === 1005) {
-        ctx.replyWithHTML(`🔗 [TICK] WebSocket connection terminated for <b><code>${id}</code>.</b>`);
+        ctx.replyWithHTML(
+          `🔗 [TICK] WebSocket connection terminated for <b><code>${id}</code>.</b>`
+        );
         campaigns.delete(id);
       } else {
         fowardTickerATRWithWs({
