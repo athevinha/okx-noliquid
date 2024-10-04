@@ -90,7 +90,8 @@ const _fowardTickerATRWithWs = async ({
           alreadyOpenTrailingPositions[instId] = true;
           const param = {
             instId,
-            size: Number(pos.notionalUsd),
+            size: Number(pos.availPos),
+            sizeContract: Number(pos.availPos),
             posSide: pos.posSide as IPosSide,
             mgnMode: pos.mgnMode as ImgnMode,
             callbackRatio: callbackRatio.toFixed(4),

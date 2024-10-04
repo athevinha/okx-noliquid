@@ -12,6 +12,7 @@ export const openTrailingStopOrder = async ({
   posSide,
   callbackRatio,
   size,
+  sizeContract,
   reduceOnly = false,
 }: {
   instId: string;
@@ -19,16 +20,21 @@ export const openTrailingStopOrder = async ({
   posSide: IPosSide;
   callbackRatio: string;
   size: number;
+  sizeContract?: number;
   reduceOnly?: boolean;
 }): Promise<OKXResponse> => {
   try {
-    const sz = await convertUSDToContractOrderSize({ instId, sz: size, opType:'close' });
-    if (!sz)
-      return {
-        code: "",
-        msg: "Convert USD contract error",
-        data: [],
-      };
+    let sz = String(sizeContract);
+    if(!sizeContract) {
+      if(size)
+      sz = await convertUSDToContractOrderSize({ instId, sz: size, opType:'close' });
+      if (!sz)
+        return {
+          code: "",
+          msg: "Convert USD contract error",
+          data: [],
+        };
+    }
     const _side =
       posSide === "long" ? "sell" : posSide === "short" ? "buy" : "net";
     const body = JSON.stringify({
