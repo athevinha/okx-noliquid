@@ -50,6 +50,8 @@ export const botReportPositionsHistory = ({
       let totalPositions = 0;
       let totalVolume = 0;
       let slippageTrailingAverage = 0, slippageTrailingCount = 0; 
+      let feePercentAverage = 0; 
+
       // Get the last 10 positions history
       const recentPositions = positionsHistory.sort(
         (a, b) => Number(b.uTime) - Number(a.uTime)
@@ -75,7 +77,8 @@ export const botReportPositionsHistory = ({
         const realizedPnl = Number(position.realizedPnl);
         const pnlRatio = Number(position.pnlRatio);
         const size = (pnlRatio !== 0 ? realizedPnl / pnlRatio : 0) * Number(position.lever);
-        const feePercent = size ? ((fee / size) * 100).toFixed(2) : 0;
+        const feePercent = size ? ((fee / size)) : 0;
+        feePercentAverage += feePercent
         if (index < showPositionHistory) {
           const realizedPnlIcon =
             parseFloat(zerofy(position.realizedPnl)) >= 0 ? "🟢" : "🔴";
@@ -92,12 +95,11 @@ export const botReportPositionsHistory = ({
 
           report += `• <b>Fee:</b> <code>${zerofy(
             fee
-          )}${USDT}</code> (<code>${feePercent}%</code>)\n`;
+          )}${USDT}</code> (<code>${(feePercent * 100).toFixed(2)}%</code>)\n`;
           report += `• <b>R.Pnl:</b> <code>${zerofy(
             position.realizedPnl
           )}${USDT}</code> (<code>${(Number(position.pnlRatio) * 100).toFixed(2)}%</code>) • ${realizedPnlIcon} \n`;
-          report += trailingLossSlippage ? `• <b>Slippage:</b> ${trailingLossSlippage >= 0 ? "🟢" : "🟡"} <code>${zerofy(trailingLossSlippage * 100)}%</code>\n` : '';
-
+          report += trailingLossSlippage ? `• <b>Slippage:</b> <code>${zerofy(trailingLossSlippage * 100)}%</code>  • ${trailingLossSlippage >= 0 ? "🟢" : "🟡"}\n` : '';
           positionReports += report;
         }
         // Accumulate totals
@@ -107,6 +109,7 @@ export const botReportPositionsHistory = ({
         totalPositions++;
       });
       slippageTrailingAverage = (slippageTrailingAverage / slippageTrailingCount)
+      feePercentAverage = feePercentAverage / totalPositions
       // Generate the summary report
       let summaryReport = ``;
       summaryReport += `<code>-----------HISTORYS------------</code>\n`;
@@ -114,16 +117,18 @@ export const botReportPositionsHistory = ({
       summaryReport += `<b>Total Volume:</b> <code>${zerofy(
         totalVolume
       )}</code>\n`;
-      summaryReport += `<b>Total Fee:</b> <code>${zerofy(
-        totalFee
-      )}${USDT}</code>\n`;
-      summaryReport += `<b>Total R. PnL:</b> <code>${zerofy(
+      summaryReport += `<b>Total R.PnL:</b> <code>${zerofy(
         totalRealizedPnl
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
-      summaryReport += `<b>Slippage Avg:</b> <code>${zerofy(
+      summaryReport += `<b>Total Fee:</b> <code>${zerofy(
+        totalFee
+      )}${USDT}</code> (<code>${(feePercentAverage * 100).toFixed(2)}%</code>)\n`;
+      summaryReport += `<b>Avg.Slippage:</b> <code>${zerofy(
         slippageTrailingAverage * 100
       )}%</code>\n`;
-
+      summaryReport += `<b>Avg.Commision:</b> <code>${zerofy(
+        (slippageTrailingAverage + feePercentAverage) * 100
+      )}%</code>\n`;
       // Send the summary and the detailed reports
       await ctx.reply(positionReports + summaryReport, {
         parse_mode: "HTML",
