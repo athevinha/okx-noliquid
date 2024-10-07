@@ -128,22 +128,42 @@ export const getAccountOrder = async ({
 export const getAccountPositionsHistory = async (
   instType: IInstType,
   instIds?: string[],
+  maxRetries: number = 3, // default retry count
+  retryDelay: number = 1000 // delay between retries in ms
 ): Promise<IPositionHistory[]> => {
-  try {
-    const path = `/api/v5/account/positions-history?instType=${instType}`;
-    const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
-      headers: makeHeaderAuthenticationOKX("GET", path, ""),
-    });
-    if (!instIds || instIds.length === 0)
-      return res?.data?.data as IPositionHistory[];
-    return (res?.data?.data as IPositionHistory[]).filter((r) =>
-      instIds?.includes(r.instId),
-    );
-  } catch (error: any) {
-    axiosErrorDecode(error);
-    return [];
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
+    try {
+      const path = `/api/v5/account/positions-history?instType=${instType}`;
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      });
+
+      if (!instIds || instIds.length === 0)
+        return res?.data?.data as IPositionHistory[];
+
+      return (res?.data?.data as IPositionHistory[]).filter((r) =>
+        instIds?.includes(r.instId),
+      );
+      
+    } catch (error: any) {
+      axiosErrorDecode(error, false);
+
+      attempts += 1;
+      if (attempts >= maxRetries) {
+        console.log(`[POSITION HISTORY] Max retry attempts reached (${maxRetries}). Returning empty result.`);
+        return [];
+      }
+
+      console.log(`[POSITION HISTORY] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
+    }
   }
+
+  return [];
 };
+
 
 export const getAccountPositionRisk = async (
   instType: IInstType,
