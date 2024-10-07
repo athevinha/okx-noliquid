@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import { getAccountPositionsHistory } from "../helper/okx.account";
+import { getAccountHistoryAlgoOrders, getAccountPositionsHistory } from "../helper/okx.account";
 import { CampaignConfig } from "../type";
 import {
   axiosErrorDecode,
@@ -28,16 +28,17 @@ export const botReportPositionsHistory = ({
         CampaignConfig?.tokenTradingMode
       ) {
         tokensFilter = await getTradeAbleCrypto(
-          CampaignConfig?.tokenTradingMode,
+          CampaignConfig?.tokenTradingMode
         );
       }
 
       // Fetch positions history
       const positionsHistory = await getAccountPositionsHistory(
         "SWAP",
-        tokensFilter,
+        tokensFilter
       );
 
+      const algoHistorys = await getAccountHistoryAlgoOrders({});
       if (positionsHistory.length === 0) {
         await ctx.replyWithHTML("<code>No position history found.</code>");
         return;
@@ -48,60 +49,80 @@ export const botReportPositionsHistory = ({
       let totalRealizedPnl = 0;
       let totalPositions = 0;
       let totalVolume = 0;
-
+      let slippageTrailingAverage = 0, slippageTrailingCount = 0; 
       // Get the last 10 positions history
       const recentPositions = positionsHistory.sort(
-        (a, b) => Number(b.uTime) - Number(a.uTime),
+        (a, b) => Number(b.uTime) - Number(a.uTime)
       );
-      const showPositionHistory = 5;
+      const showPositionHistory = 10;
       // Generate report for the last 10 positions
       let positionReports =
         tokensFilter.length > 0
           ? `<b>Report for interval: </b> <code>${id}</code>\n`
           : "";
       recentPositions.forEach((position, index) => {
-        if (index <= showPositionHistory) {
+        const algoOrder = algoHistorys.filter(algo => algo.uTime+algo.instId === position.uTime+position.instId)[0]
+        // console.log(position);
+        let trailingLossSlippage
+        if(algoOrder?.instId) { // Position close by move_trail_stop orders
+          const moveTriggerPx = Number(algoOrder.moveTriggerPx) // last trigger price
+          const closeAvgPx = Number(position.closeAvgPx)
+          trailingLossSlippage = moveTriggerPx ? ((closeAvgPx - moveTriggerPx) / moveTriggerPx) : 0;
+          slippageTrailingAverage += trailingLossSlippage
+          slippageTrailingCount++
+        }
+        const fee = Number(position.fundingFee) + Number(position.fee);
+        const realizedPnl = Number(position.realizedPnl);
+        const pnlRatio = Number(position.pnlRatio);
+        const size = (pnlRatio !== 0 ? realizedPnl / pnlRatio : 0) * Number(position.lever);
+        const feePercent = size ? ((fee / size) * 100).toFixed(2) : 0;
+        if (index < showPositionHistory) {
           const realizedPnlIcon =
             parseFloat(zerofy(position.realizedPnl)) >= 0 ? "🟢" : "🔴";
-
           const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
           let report = ``;
           report += `<code>[${position.posSide.toUpperCase()}]</code> <b><a href="${tradeLink}">${
             position.instId.split("-")[0]
-          }</a></b> | ${decodeTimestampAgo(Number(position.uTime), true)}\n`;
+        } x${Number(position.lever)}</a></b> | ${decodeTimestampAgo(Number(position.uTime), true)} (<code>${zerofy(size)}${USDT}</code>)\n`;
           report += `• <b>O/C Avg Px:</b> <code>${zerofy(
-            position.openAvgPx,
+            position.openAvgPx
           )}${USDT}</code> | <code>${zerofy(
-            position.closeAvgPx,
+            position.closeAvgPx
           )}${USDT}</code>\n`;
-          report += `• <b>Pnl:</b> <code>${zerofy(
-            position.realizedPnl,
-          )}${USDT}</code> ( <code>${zerofy(
-            position.fee,
-          )}${USDT}</code> ) • ${realizedPnlIcon}\n`;
+
+          report += `• <b>Fee:</b> <code>${zerofy(
+            fee
+          )}${USDT}</code> (<code>${feePercent}%</code>)\n`;
+          report += `• <b>R.Pnl:</b> <code>${zerofy(
+            position.realizedPnl
+          )}${USDT}</code> (<code>${(Number(position.pnlRatio) * 100).toFixed(2)}%</code>) • ${realizedPnlIcon} \n`;
+          report += trailingLossSlippage ? `• <b>Slippage:</b> ${trailingLossSlippage >= 0 ? "🟢" : "🟡"} <code>${zerofy(trailingLossSlippage * 100)}%</code>\n` : '';
 
           positionReports += report;
         }
         // Accumulate totals
-        totalFee += parseFloat(position.fee);
+        totalFee += fee;
         totalRealizedPnl += parseFloat(position.realizedPnl);
         totalVolume += parseFloat(position.openMaxPos);
         totalPositions++;
       });
-
+      slippageTrailingAverage = (slippageTrailingAverage / slippageTrailingCount)
       // Generate the summary report
       let summaryReport = ``;
       summaryReport += `<code>-----------HISTORYS------------</code>\n`;
       summaryReport += `<b>Total Positions:</b> <code>${totalPositions}</code>\n`;
       summaryReport += `<b>Total Volume:</b> <code>${zerofy(
-        totalVolume,
+        totalVolume
       )}</code>\n`;
       summaryReport += `<b>Total Fee:</b> <code>${zerofy(
-        totalFee,
+        totalFee
       )}${USDT}</code>\n`;
-      summaryReport += `<b>Total Realized PnL:</b> <code>${zerofy(
-        totalRealizedPnl,
+      summaryReport += `<b>Total R. PnL:</b> <code>${zerofy(
+        totalRealizedPnl
       )}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
+      summaryReport += `<b>Slippage Avg:</b> <code>${zerofy(
+        slippageTrailingAverage * 100
+      )}%</code>\n`;
 
       // Send the summary and the detailed reports
       await ctx.reply(positionReports + summaryReport, {

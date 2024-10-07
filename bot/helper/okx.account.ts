@@ -1,6 +1,7 @@
 import axios from "axios";
 import {
   IAccountBalance,
+  IHistoryAlgoOrder,
   IInstType,
   IOrderDetails,
   IPendingAlgoOrder,
@@ -244,6 +245,52 @@ export const getAccountPendingAlgoOrders = async ({
       });
 
       return res?.data?.data as IPendingAlgoOrder[];
+
+    } catch (error: any) {
+      axiosErrorDecode(error, false);
+
+      attempts += 1;
+      if (attempts >= maxRetries) {
+        return [];
+      }
+
+      console.log(`[ALGO ORDERS] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
+    }
+  }
+
+  return [];
+};
+
+export const getAccountHistoryAlgoOrders = async ({
+  ordType = "move_order_stop",
+  state = 'effective,canceled,order_failed',
+  instType = 'SWAP',
+  limit = 100,
+  instId,
+  maxRetries = 3, // default retry count
+  retryDelay = 1000 // delay between retries in ms
+}: {
+  state?: string;
+  ordType?: string;
+  instType?:string;
+  limit?: number;
+  instId?: string;
+  maxRetries?: number; // optional parameter for retries
+  retryDelay?: number; // optional delay between retries
+}): Promise<IHistoryAlgoOrder[]> => {
+  let attempts = 0;
+
+  while (attempts < maxRetries) {
+    try {
+      const path = `/api/v5/trade/orders-algo-history?ordType=${ordType}&instType=${instType}&state=${state}&limit=${limit}${
+        instId ? `&instId=${instId}` : ""
+      }`;
+      const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
+        headers: makeHeaderAuthenticationOKX("GET", path, ""),
+      });
+
+      return res?.data?.data as IHistoryAlgoOrder[];
 
     } catch (error: any) {
       axiosErrorDecode(error, false);

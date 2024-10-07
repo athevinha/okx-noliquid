@@ -425,6 +425,58 @@ export type IPendingAlgoOrder = {
     ordId: string;
   };
 };
+export type IHistoryAlgoOrder = {
+  activePx: string
+  actualPx: string
+  actualSide: string
+  actualSz: string
+  algoClOrdId: string
+  algoId: string
+  amendPxOnTriggerType: string
+  attachAlgoOrds: Array<any>
+  cTime: string
+  uTime: string
+  callbackRatio: string
+  callbackSpread: string
+  ccy: string
+  clOrdId: string
+  closeFraction: string
+  failCode: string
+  instId: string
+  instType: string
+  last: string
+  lever: string
+  moveTriggerPx: string
+  ordId: string
+  ordIdList: Array<any>
+  ordPx: string
+  ordType: string
+  posSide: string
+  pxLimit: string
+  pxSpread: string
+  pxVar: string
+  quickMgnType: string
+  reduceOnly: string
+  side: string
+  slOrdPx: string
+  slTriggerPx: string
+  slTriggerPxType: string
+  state: string
+  sz: string
+  szLimit: string
+  tag: string
+  tdMode: string
+  tgtCcy: string
+  timeInterval: string
+  tpOrdPx: string
+  tpTriggerPx: string
+  tpTriggerPxType: string
+  triggerPx: string
+  triggerPxType: string
+  triggerTime: string
+  isTradeBorrowMode: string
+}
+
 export type IPosSide = "long" | "short";
 export type ISide = "buy" | "sell";
 export type ImgnMode = "isolated" | "cross";
