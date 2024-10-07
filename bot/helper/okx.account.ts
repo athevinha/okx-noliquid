@@ -137,6 +137,7 @@ export const getAccountOrder = async ({
 export const getAccountPositionsHistory = async (
   instType: IInstType,
   instIds?: string[],
+  after?: number,
   maxRetries: number = 3, // default retry count
   retryDelay: number = 1000, // delay between retries in ms
 ): Promise<IPositionHistory[]> => {
@@ -144,7 +145,7 @@ export const getAccountPositionsHistory = async (
 
   while (attempts < maxRetries) {
     try {
-      const path = `/api/v5/account/positions-history?instType=${instType}`;
+      const path = `/api/v5/account/positions-history?instType=${instType}${after ? `&after=${after}` : ''}`;
       const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
         headers: makeHeaderAuthenticationOKX("GET", path, ""),
       });
@@ -156,7 +157,7 @@ export const getAccountPositionsHistory = async (
         instIds?.includes(r.instId),
       );
     } catch (error: any) {
-      axiosErrorDecode(error, false);
+      axiosErrorDecode(error, true);
 
       attempts += 1;
       if (attempts >= maxRetries) {

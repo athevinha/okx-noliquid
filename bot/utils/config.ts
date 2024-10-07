@@ -1,4 +1,4 @@
-import { ImgnMode } from "../type";
+import { CampainState, ImgnMode } from "../type";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -48,6 +48,10 @@ export const parseConfigInterval = (configString: string) => {
     scapeMode,
     tokenTradingMode,
   }: any = DEFAULT_BOT_CONFIG;
+  const campaignInitialState: CampainState = {
+    posIds: [],
+    startTime: Date.now(),
+  };
   configParts.forEach((part) => {
     if (part.startsWith("bar-")) {
       bar = part.replace("bar-", "");
@@ -92,5 +96,7 @@ export const parseConfigInterval = (configString: string) => {
     slopeThreshAverageMode,
     tokenTradingMode,
     variance,
+    // Campain state
+    ...campaignInitialState
   };
 };

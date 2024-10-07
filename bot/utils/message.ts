@@ -1,4 +1,4 @@
-import { decodeSymbol } from ".";
+import { decodeSymbol, decodeTimestamp, decodeTimestampAgo } from ".";
 import { CampaignConfig } from "../type";
 
 export const formatReportInterval = (
@@ -26,7 +26,8 @@ export const formatReportInterval = (
   report += `• <b>Variance:</b> <code>${config.variance ? `${!config.variance.includes("auto") ? Number(config.variance) * 100 + "%" : config.variance}` : "N/A"}</code>\n`;
   report += `• <b>Trade direction:</b> <code>${config.tradeDirection}</code>\n`;
   report += `• <b>Slope:</b> <code>${config.slopeThresholdUp || "N/A"}</code> | <code>${config.slopeThresholdUnder || "N/A"}</code>\n`;
-  report += `• <b>Ccys:</b> <code>${currencies.length}</code> (${currencies.slice(0, 15).map((ccy) => ` <code>${ccy}</code> `)})`;
+  report += `• <b>Ccys:</b> <code>${currencies.length}</code> (${currencies.slice(0, 15).map((ccy) => ` <code>${ccy}</code> `)}) \n`;
+  report += `• <b>Start time:</b> <code>${decodeTimestamp(config.startTime)}</code> (<code>${decodeTimestampAgo(config.startTime )}</code>)`;
 
   return report;
 };

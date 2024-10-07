@@ -22,7 +22,7 @@ export const botReportPositionsHistory = ({
   bot.command("history", async (ctx) => {
     try {
       const id = ctx.message.text.split(" ")[1];
-      let tokensFilter: string[] = [];
+      let tokensFilter: string[] = [], after: number | undefined = undefined;
       const CampaignConfig = campaigns.get(id);
 
       if (
@@ -33,13 +33,16 @@ export const botReportPositionsHistory = ({
         tokensFilter = await getTradeAbleCrypto(
           CampaignConfig?.tokenTradingMode,
         );
+        after = CampaignConfig.startTime
       }
-
       // Fetch positions history
-      const positionsHistory = await getAccountPositionsHistory(
+      let positionsHistory = await getAccountPositionsHistory(
         "SWAP",
         tokensFilter,
       );
+      if(after !== undefined) {
+        positionsHistory = positionsHistory.filter(pos => Number(pos.uTime) >= (Number(after || 0)))
+      }
 
       const algoHistorys = await getAccountHistoryAlgoOrders({});
       if (positionsHistory.length === 0) {
@@ -60,6 +63,7 @@ export const botReportPositionsHistory = ({
       const recentPositions = positionsHistory.sort(
         (a, b) => Number(b.uTime) - Number(a.uTime),
       );
+      console.log(recentPositions[0])
       const showPositionHistory = 10;
       // Generate report for the last 10 positions
       let positionReports =

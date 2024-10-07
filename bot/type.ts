@@ -362,6 +362,10 @@ export type CampaignData = {
     variance?: string;
   };
 };
+export type CampainState = {
+  posIds: string[]
+  startTime: number
+}
 export type IntervalState = {
   positions: IPositionOpen[];
   positionsHistory: IPositionHistory[];
@@ -370,7 +374,7 @@ export type CampaignConfig = CampaignData[keyof CampaignData] & {
   WS?: WebSocket;
   WSTrailing?: WebSocket;
   WSTicker?: WebSocket;
-};
+} & CampainState;
 
 export type IPendingAlgoOrder = {
   activePx: string;
