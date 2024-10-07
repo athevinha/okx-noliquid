@@ -26,7 +26,7 @@ import { calculateATR } from "../../signals/atr";
 import { openTrailingStopOrder } from "../../helper/okx.trade.algo";
 import { USDT } from "../../utils/config";
 import { setTimeout } from "timers/promises";
-import {getSymbolCandles} from "../../helper/okx.candles";
+import { getSymbolCandles } from "../../helper/okx.candles";
 dotenv.config();
 let a = 0;
 const _fowardTickerATRWithWs = async ({
@@ -81,7 +81,7 @@ const _fowardTickerATRWithWs = async ({
       const lastCandle = candles[candles.length - 1];
 
       if (Number(ts) >= lastCandle.ts + candlePeriod) {
-        console.log('---------------TICKER NEW CANDLE-----------------------')
+        console.log("---------------TICKER NEW CANDLE-----------------------");
         const newCandle: ICandle = {
           ts: Number(ts),
           o: markPrice,
@@ -91,13 +91,13 @@ const _fowardTickerATRWithWs = async ({
           vol: 0,
           volCcy: 0,
           volCcyQuote: 0,
-          confirm: 0
+          confirm: 0,
         };
         candles.push(newCandle);
       } else {
         if (markPrice <= lastCandle.l) lastCandle.l = markPrice;
         if (markPrice >= lastCandle.h) lastCandle.h = markPrice;
-        candles[candles.length - 1].c = markPrice
+        candles[candles.length - 1].c = markPrice;
       }
       tradeAbleCryptoCandles[instId] = candles;
       const currentAtr = calculateATR(candles, 14).slice(-1)[0];
@@ -107,8 +107,11 @@ const _fowardTickerATRWithWs = async ({
       // console.log(instId, Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple, markPrice)
 
       if (
+        trablePositions[instId]?.avgPx !== "" &&
+        trablePositions[instId]?.avgPx !== undefined &&
+        currentAtr?.atr * multiple &&
         markPrice >
-        Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
+          Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple
       ) {
         const callbackRatio =
           currentAtr.fluctuationsPercent * multiple * 100 <= 0.1
