@@ -10,7 +10,7 @@ import { decodeTimestamp, decodeTimestampAgo } from "../utils";
  */
 export function calculateEMA(
   candles: ICandles,
-  periods: number
+  periods: number,
 ): Array<{ ts: number; ema: number; crossPercentFilter?: number }> {
   const multiplier = 2 / (periods + 1);
   let ema = 0;
@@ -47,12 +47,12 @@ export function calculateSlope(
   prevShortEMA: number,
   prevLongEMA: number,
   currentShortEMA: number,
-  currentLongEMA: number
+  currentLongEMA: number,
 ): number {
   const deltaShortEMA = currentShortEMA - prevShortEMA;
   const deltaLongEMA = currentLongEMA - prevLongEMA;
   return Math.abs(
-    (deltaShortEMA - deltaLongEMA) / (prevLongEMA + deltaLongEMA)
+    (deltaShortEMA - deltaLongEMA) / (prevLongEMA + deltaLongEMA),
   ); // Normalized slope
 }
 /**
@@ -75,11 +75,11 @@ export function calculateSlope(
 export function findEMACrossovers(
   candles: ICandles,
   shortPeriods: number,
-  longPeriods: number
+  longPeriods: number,
 ): ICandlesEMACrossovers {
   const longEMA = calculateEMA(candles, longPeriods);
   const shortEMA = calculateEMA(candles, shortPeriods).filter(
-    (ema) => ema?.ts >= longEMA[0]?.ts
+    (ema) => ema?.ts >= longEMA[0]?.ts,
   );
   const crossovers: ICandlesEMACrossovers = [];
 
@@ -96,13 +96,13 @@ export function findEMACrossovers(
       prevShortEMA,
       prevLongEMA,
       currentShortEMA,
-      currentLongEMA
+      currentLongEMA,
     );
     const calculatedSlopePre = calculateSlope(
       prev2ShortEMA,
       prev2LongEMA,
       prevShortEMA,
-      prevLongEMA
+      prevLongEMA,
     );
     const slopeThreshold = calculatedSlopePre / calculatedSlope;
     // Check for a valid bullish crossover
@@ -179,12 +179,17 @@ export function simulateTradesEmaCross({
   let win = 0;
   let avgPositiveSlope = 0;
   let avgNegativeSlope = 0;
-  const atrPeriodAver = 14; 
+  const atrPeriodAver = 14;
   emaCrossovers.map((crossover) => {
     const { ts, c, type, calculatedSlope, slopeThreshold } = crossover;
-    const atr = atrs?.filter(a => a.ts === ts)[0]
-    const atrPerAver = atrs ? atrs?.slice(atrPeriodAver, atrs.length + 1)?.reduce((atr, atrP) => atr + (atrP?.fluctuationsPercent || 0),0) / atrPeriodAver : undefined
-    console.log(atrPerAver)
+    const atr = atrs?.filter((a) => a.ts === ts)[0];
+    const atrPerAver = atrs
+      ? atrs
+          ?.slice(atrPeriodAver, atrs.length + 1)
+          ?.reduce((atr, atrP) => atr + (atrP?.fluctuationsPercent || 0), 0) /
+        atrPeriodAver
+      : undefined;
+    console.log(atrPerAver);
     if (type === "bullish") {
       positions = positions.filter((position) => {
         if (position.type === "short") {
@@ -221,7 +226,7 @@ export function simulateTradesEmaCross({
       const baseTokenAmount = usdVolume / c; // Calculate how much base token is bought with the given USD
       if (
         (!slopeThresholdUnder || slopeThreshold <= slopeThresholdUnder) &&
-        (!slopeThresholdUp || slopeThreshold >= slopeThresholdUp) && 
+        (!slopeThresholdUp || slopeThreshold >= slopeThresholdUp) &&
         (!atrPerAver || (atr?.fluctuationsPercent || 0) <= atrPerAver)
       ) {
         positions.push({
@@ -341,10 +346,10 @@ export function simulateTradesEmaCross({
   // Calculate total PnL
   const totalPnL = historyTrades.reduce((acc, trade) => acc + trade.pnl, 0);
   const positivePnLTrades = historyTrades.filter(
-    (trade) => trade.pnl > 0 && trade.slopeThreshold !== undefined
+    (trade) => trade.pnl > 0 && trade.slopeThreshold !== undefined,
   );
   const negativePnLTrades = historyTrades.filter(
-    (trade) => trade.pnl < 0 && trade.slopeThreshold !== undefined
+    (trade) => trade.pnl < 0 && trade.slopeThreshold !== undefined,
   );
 
   avgPositiveSlope =

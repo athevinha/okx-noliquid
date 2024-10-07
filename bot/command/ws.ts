@@ -18,19 +18,36 @@ export const botWSManagement = ({
       const wsStatus = (ws?: WebSocket) => {
         if (!ws) return "🔴 Not connected";
         switch (ws.readyState) {
-          case 0: return "🟡 Connecting";
-          case 1: return "🟢 Open";
-          case 2: return "🟠 Closing";
-          case 3: return "🔴 Closed";
-          default: return "⚪️ Unknown";
+          case 0:
+            return "🟡 Connecting";
+          case 1:
+            return "🟢 Open";
+          case 2:
+            return "🟠 Closing";
+          case 3:
+            return "🔴 Closed";
+          default:
+            return "⚪️ Unknown";
         }
       };
 
       // Helper function to build table data for a specific campaign
-      const buildTableData = (campaignId: string, campaignConfig: CampaignConfig) => [
-        { Service: `Trade [${campaignId}]`, Status: wsStatus(campaignConfig.WS) },
-        { Service: `Trailing [${campaignId}]`, Status: wsStatus(campaignConfig.WSTrailing) },
-        { Service: `Ticker [${campaignId}]`, Status: wsStatus(campaignConfig.WSTicker) },
+      const buildTableData = (
+        campaignId: string,
+        campaignConfig: CampaignConfig,
+      ) => [
+        {
+          Service: `Trade [${campaignId}]`,
+          Status: wsStatus(campaignConfig.WS),
+        },
+        {
+          Service: `Trailing [${campaignId}]`,
+          Status: wsStatus(campaignConfig.WSTrailing),
+        },
+        {
+          Service: `Ticker [${campaignId}]`,
+          Status: wsStatus(campaignConfig.WSTicker),
+        },
       ];
 
       let sortedTableData: any[] = [];
@@ -39,7 +56,9 @@ export const botWSManagement = ({
         // If ID is provided, show status for that specific campaign
         const campaignConfig = campaigns.get(id);
         if (!campaignConfig) {
-          await ctx.replyWithHTML(`Campaign with ID <code>${id}</code> not found.`);
+          await ctx.replyWithHTML(
+            `Campaign with ID <code>${id}</code> not found.`,
+          );
           return;
         }
         sortedTableData = buildTableData(id, campaignConfig);
@@ -59,11 +78,13 @@ export const botWSManagement = ({
       const tableHeaders = ["Service", "Status"];
 
       // Generate the report
-      const fullReport = generateTelegramTableReport(sortedTableData, tableHeaders);
+      const fullReport = generateTelegramTableReport(
+        sortedTableData,
+        tableHeaders,
+      );
 
       // Send the full report
       await ctx.reply(fullReport, { parse_mode: "HTML" });
-
     } catch (err: any) {
       console.log(axiosErrorDecode(err));
       await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);

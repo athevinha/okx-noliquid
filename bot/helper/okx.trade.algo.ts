@@ -25,9 +25,13 @@ export const openTrailingStopOrder = async ({
 }): Promise<OKXResponse> => {
   try {
     let sz = String(sizeContract);
-    if(!sizeContract) {
-      if(size)
-      sz = await convertUSDToContractOrderSize({ instId, sz: size, opType:'close' });
+    if (!sizeContract) {
+      if (size)
+        sz = await convertUSDToContractOrderSize({
+          instId,
+          sz: size,
+          opType: "close",
+        });
       if (!sz)
         return {
           code: "",

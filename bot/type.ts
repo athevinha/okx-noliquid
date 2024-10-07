@@ -350,7 +350,7 @@ export type CampaignData = {
     bar: string;
     leve: number;
     mgnMode: ImgnMode;
-    equityPercent: number; 
+    equityPercent: number;
     sz: number;
     slopeThresholdUp?: number;
     slopeThresholdUnder?: number;
@@ -426,64 +426,64 @@ export type IPendingAlgoOrder = {
   };
 };
 export type IHistoryAlgoOrder = {
-  activePx: string
-  actualPx: string
-  actualSide: string
-  actualSz: string
-  algoClOrdId: string
-  algoId: string
-  amendPxOnTriggerType: string
-  attachAlgoOrds: Array<any>
-  cTime: string
-  uTime: string
-  callbackRatio: string
-  callbackSpread: string
-  ccy: string
-  clOrdId: string
-  closeFraction: string
-  failCode: string
-  instId: string
-  instType: string
-  last: string
-  lever: string
-  moveTriggerPx: string
-  ordId: string
-  ordIdList: Array<any>
-  ordPx: string
-  ordType: string
-  posSide: string
-  pxLimit: string
-  pxSpread: string
-  pxVar: string
-  quickMgnType: string
-  reduceOnly: string
-  side: string
-  slOrdPx: string
-  slTriggerPx: string
-  slTriggerPxType: string
-  state: string
-  sz: string
-  szLimit: string
-  tag: string
-  tdMode: string
-  tgtCcy: string
-  timeInterval: string
-  tpOrdPx: string
-  tpTriggerPx: string
-  tpTriggerPxType: string
-  triggerPx: string
-  triggerPxType: string
-  triggerTime: string
-  isTradeBorrowMode: string
-}
+  activePx: string;
+  actualPx: string;
+  actualSide: string;
+  actualSz: string;
+  algoClOrdId: string;
+  algoId: string;
+  amendPxOnTriggerType: string;
+  attachAlgoOrds: Array<any>;
+  cTime: string;
+  uTime: string;
+  callbackRatio: string;
+  callbackSpread: string;
+  ccy: string;
+  clOrdId: string;
+  closeFraction: string;
+  failCode: string;
+  instId: string;
+  instType: string;
+  last: string;
+  lever: string;
+  moveTriggerPx: string;
+  ordId: string;
+  ordIdList: Array<any>;
+  ordPx: string;
+  ordType: string;
+  posSide: string;
+  pxLimit: string;
+  pxSpread: string;
+  pxVar: string;
+  quickMgnType: string;
+  reduceOnly: string;
+  side: string;
+  slOrdPx: string;
+  slTriggerPx: string;
+  slTriggerPxType: string;
+  state: string;
+  sz: string;
+  szLimit: string;
+  tag: string;
+  tdMode: string;
+  tgtCcy: string;
+  timeInterval: string;
+  tpOrdPx: string;
+  tpTriggerPx: string;
+  tpTriggerPxType: string;
+  triggerPx: string;
+  triggerPxType: string;
+  triggerTime: string;
+  isTradeBorrowMode: string;
+};
 
 export type IPosSide = "long" | "short";
 export type ISide = "buy" | "sell";
 export type ImgnMode = "isolated" | "cross";
-export type ITradeDirection = "long" | "short" | "both"
+export type ITradeDirection = "long" | "short" | "both";
 export type IWsRequestParams = {
   op: string;
-  args: { channel: string;instType?: string, instId?: string }[];
+  args: { channel: string; instType?: string; instId?: string }[];
 };
 
 export type IWsCandlesReponse = {
@@ -510,18 +510,20 @@ export type IWsPositionReponse = {
   data: Array<IPositionOpen>;
 };
 
-
 export type IWsTickerReponse = {
   arg: {
     channel: string;
     instId: string;
   };
   data: Array<{
-    instType: string,
-    ts: string,
-    instId: string,
-    markPx: string,
+    instType: string;
+    ts: string;
+    instId: string;
+    markPx: string;
   }>;
 };
 
-export type CandleWithATR = ICandle & { atr: number; fluctuationsPercent: number };
+export type CandleWithATR = ICandle & {
+  atr: number;
+  fluctuationsPercent: number;
+};

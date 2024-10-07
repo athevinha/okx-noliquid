@@ -39,7 +39,7 @@ describe("OKX trailing stoploss test", () => {
   it("open position with trailing loss", async () => {
     const res = await openFuturePosition({
       campaignId,
-      instId: 'BTC-USDT-SWAP',
+      instId: "BTC-USDT-SWAP",
       size: size,
       mgnMode: mgnMode as ImgnMode,
       posSide: posSide as IPosSide,
@@ -69,13 +69,14 @@ describe("OKX trailing stoploss test", () => {
   });
 
   it("Fetch open pending trailing loss orders", async () => {
-    await Promise.all([1,2,3,4,5,6,7,8].map(async e => {
-      const algo = await getAccountPendingAlgoOrders({})
-      expect(algo.length).greaterThanOrEqual(
-        supportFutureCryptosByInstId.length,
-      );
-    }))
-
+    await Promise.all(
+      [1, 2, 3, 4, 5, 6, 7, 8].map(async (e) => {
+        const algo = await getAccountPendingAlgoOrders({});
+        expect(algo.length).greaterThanOrEqual(
+          supportFutureCryptosByInstId.length,
+        );
+      }),
+    );
   });
 
   it("closes all pending trailing loss orders", async () => {

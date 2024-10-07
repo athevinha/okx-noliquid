@@ -6,7 +6,7 @@ export const WHITE_LIST_TOKENS_TRADE = [
   "WIF-USDT-SWAP",
   "PEPE-USDT-SWAP",
   "FLOKI-USDT-SWAP",
-  "BONK-USDT-SWAP"
+  "BONK-USDT-SWAP",
 ];
 export const DEFAULT_BOT_CONFIG = {
   bar: "1H",
@@ -18,14 +18,17 @@ export const DEFAULT_BOT_CONFIG = {
   slopeThreshAverageMode: undefined,
   variance: undefined,
   scapeMode: true,
-  tradeDirection: 'long',
+  tradeDirection: "long",
   tokenTradingMode: "whitelist",
 };
 export const USE_PROXY = true;
 export const MC_ALLOW_TO_TRADING = 500_000_000;
-export const ATR_PERIOD = 14
+export const ATR_PERIOD = 14;
 export const OKX_BASE_FETCH_API_URL = "https://www.okx.com/priapi/v5";
-export const OKX_BASE_WS_URL =  Number(process.env.DEMO_TRADING) === 1 ? "wss://wspap.okx.com:8443" : "wss://ws.okx.com:8443";
+export const OKX_BASE_WS_URL =
+  Number(process.env.DEMO_TRADING) === 1
+    ? "wss://wspap.okx.com:8443"
+    : "wss://ws.okx.com:8443";
 export const OKX_BASE_API_URL = "https://www.okx.com";
 export const USDT = "₮";
 

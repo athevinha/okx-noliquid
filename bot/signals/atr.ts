@@ -1,5 +1,4 @@
-import {CandleWithATR, ICandle} from "../type";
-
+import { CandleWithATR, ICandle } from "../type";
 
 export function calculateATR(
   candles: ICandle[],
@@ -72,10 +71,9 @@ export function calculateATR(
     return {
       ...candle,
       atr: atr || 0,
-      fluctuationsPercent:
-        Math.abs(atr / candle.c),
+      fluctuationsPercent: Math.abs(atr / candle.c),
     };
   });
-  candlesWithATR.sort((a,b) => a.ts - b.ts)
+  candlesWithATR.sort((a, b) => a.ts - b.ts);
   return candlesWithATR;
 }

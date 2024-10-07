@@ -59,7 +59,7 @@ describe("OKX EMA Cross backtest", () => {
           const emaCrossovers = findEMACrossovers(
             candles,
             TEST_CONFIG.SHORT_EMA,
-            TEST_CONFIG.LONG_EMA
+            TEST_CONFIG.LONG_EMA,
           );
           let slopeThresholdUnder = undefined;
           let slopeThresholdUp = undefined;
@@ -105,11 +105,11 @@ describe("OKX EMA Cross backtest", () => {
                 "PnL ($)": zerofy(result.pnl),
                 Exit: zerofy(result.exitPrice || 0),
                 Entry: zerofy(result.entryPrice || 0),
-                "Atr": `${zerofy(result.atr || 0)} (${zerofy((result.atrPercent || 0) * 100)}%)`,
+                Atr: `${zerofy(result.atr || 0)} (${zerofy((result.atrPercent || 0) * 100)}%)`,
                 "Slope Diveder": zerofy(result.slopeThreshold || 0),
                 Type: result.positionType,
                 Action: result.action,
-              }))
+              })),
             );
 
           totalPnL += tradeResults.totalPnL;
@@ -130,13 +130,13 @@ describe("OKX EMA Cross backtest", () => {
               tradeResults.historyTrades[tradeResults.historyTrades.length - 1]
                 ?.ts,
           };
-        })
+        }),
       )
     ).filter((res) => res);
 
     // Rank symbols by PnL
     const rankedResults = results.sort(
-      (a, b) => Number(a.totalPnL) - Number(b.totalPnL)
+      (a, b) => Number(a.totalPnL) - Number(b.totalPnL),
     );
 
     if (TEST_CONFIG.LOG_PNL_DETAILS)
@@ -148,11 +148,11 @@ describe("OKX EMA Cross backtest", () => {
           "Win rate": zerofy(result.winRate * 100) + "%",
           "PnL ($)": zerofy(result.totalPnL),
           "Est. Trade Time:": decodeTimestampAgo(result.startTradeTime, true),
-        }))
+        })),
       );
     if (TEST_CONFIG.LOG_PNL_SUMMARY) {
       console.log(
-        `------------------------SUMMARY----------------------------`
+        `------------------------SUMMARY----------------------------`,
       );
       const Fee = (totalTradeVolume * TEST_CONFIG.FEE_PERCENTAGE) / 100;
       const PercentPnl =
@@ -163,11 +163,11 @@ describe("OKX EMA Cross backtest", () => {
       console.log(
         "Est. Lost/Win:",
         `${lostCount}/${winCount}`,
-        `(${zerofy((winCount / (winCount + lostCount)) * 100)}%)`
+        `(${zerofy((winCount / (winCount + lostCount)) * 100)}%)`,
       );
       console.log(
         "Est. Trade Time:",
-        decodeTimestampAgo(earliestTradeTimestamp)
+        decodeTimestampAgo(earliestTradeTimestamp),
       );
       console.log("Est. Total Volume ($):", zerofy(totalTradeVolume));
       console.log("Est. Total Fee ($):", zerofy(Fee));

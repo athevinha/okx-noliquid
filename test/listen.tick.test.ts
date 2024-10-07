@@ -10,7 +10,7 @@ describe("OKX socket test ticker", () => {
     instID: "BTC-USDT-SWAP",
   };
   it("OKX new candles socket test", async () => {
-    let count = 0
+    let count = 0;
     let candles = await getSymbolCandles({
       instID,
       bar,
@@ -28,16 +28,14 @@ describe("OKX socket test ticker", () => {
           },
         ],
       },
-      subcribedCallBack(param) {
-      },
+      subcribedCallBack(param) {},
       messageCallBack(mark) {
-        count++
+        count++;
       },
-      errorCallBack(e) {
-      },
+      errorCallBack(e) {},
     });
     await setTimeout(2000);
     ws.close();
-    expect(count).greaterThanOrEqual(10)
+    expect(count).greaterThanOrEqual(10);
   });
 });

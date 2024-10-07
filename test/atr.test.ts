@@ -16,7 +16,7 @@ import { getAccountPendingAlgoOrders } from "../bot/helper/okx.account";
 
 describe("Candles ATR test", () => {
   const TEST_CONFIG = {
-    BAR: '1Dutc',
+    BAR: "1Dutc",
     SYMBOL: "OP-USDT-SWAP",
     LIMIT: 1000,
     ATR_PERIOD: 14,

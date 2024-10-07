@@ -1,6 +1,11 @@
 import WebSocket from "ws";
 import { OKX_BASE_WS_URL } from "../utils/config";
-import { IWsCandlesReponse, IWsPositionReponse, IWsRequestParams, IWsTickerReponse } from "../type";
+import {
+  IWsCandlesReponse,
+  IWsPositionReponse,
+  IWsRequestParams,
+  IWsTickerReponse,
+} from "../type";
 import { makeWsAuth } from "./auth";
 
 export const wsCandles = ({
@@ -93,12 +98,12 @@ export const wsTicks = ({
 
 export const wsPositions = ({
   path = "/ws/v5/private",
-  subscribeMessage= {
+  subscribeMessage = {
     op: "subscribe",
     args: [
       {
         channel: `positions`,
-        instType: 'SWAP',
+        instType: "SWAP",
       },
     ],
   },
@@ -120,7 +125,7 @@ export const wsPositions = ({
   const wsAuth = makeWsAuth();
   ws.on("open", () => {
     ws.send(JSON.stringify(wsAuth));
-    if(authCallBack) authCallBack(wsAuth)
+    if (authCallBack) authCallBack(wsAuth);
   });
 
   ws.on("message", (message: Buffer) => {
@@ -151,17 +156,26 @@ export const wsPositions = ({
   return ws;
 };
 
-
-
-
-export const sendOKXWsMessage = ({ws, op, channel, instIds, callback}: {ws?: WebSocket, op: 'subscribe' | 'unsubscribe' | 'login', channel: string, instIds: string[], callback?: (e:any) => void}) => {
-  if(!ws || ws?.readyState !== WebSocket.OPEN) return;
-  const params =  {
+export const sendOKXWsMessage = ({
+  ws,
+  op,
+  channel,
+  instIds,
+  callback,
+}: {
+  ws?: WebSocket;
+  op: "subscribe" | "unsubscribe" | "login";
+  channel: string;
+  instIds: string[];
+  callback?: (e: any) => void;
+}) => {
+  if (!ws || ws?.readyState !== WebSocket.OPEN) return;
+  const params = {
     op,
-    args: instIds.map(instId => ({
+    args: instIds.map((instId) => ({
       channel,
       instId,
-    }))
-  }
-  ws.send(JSON.stringify(params), callback)
-}
+    })),
+  };
+  ws.send(JSON.stringify(params), callback);
+};

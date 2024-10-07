@@ -20,7 +20,7 @@ describe("OKX convert size to contract", () => {
         return await convertUSDToContractOrderSize({
           instId: spCrypto,
           sz: 100,
-          opType: 'close'
+          opType: "close",
         });
       }),
     );

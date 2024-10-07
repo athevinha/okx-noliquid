@@ -1,12 +1,13 @@
-import {expect} from "chai";
-import {setTimeout} from "timers/promises";
+import { expect } from "chai";
+import { setTimeout } from "timers/promises";
+import { getAccountOrder } from "../bot/helper/okx.account";
+import { wsPositions } from "../bot/helper/okx.socket";
 import {
-  getAccountOrder
-} from "../bot/helper/okx.account";
-import {wsPositions} from "../bot/helper/okx.socket";
-import {closeFuturePosition,openFuturePosition} from "../bot/helper/okx.trade";
-import {ImgnMode,IPosSide} from "../bot/type";
-import {decodeTag} from "../bot/utils";
+  closeFuturePosition,
+  openFuturePosition,
+} from "../bot/helper/okx.trade";
+import { ImgnMode, IPosSide } from "../bot/type";
+import { decodeTag } from "../bot/utils";
 
 describe("OKX positions with test", () => {
   const TEST_CONFIG = {
@@ -37,21 +38,18 @@ describe("OKX positions with test", () => {
     expect(order.length).greaterThan(0);
     await setTimeout(1000);
   });
-    it("OKX new candles socket test", async () => {
-      const ws = wsPositions({
-        authCallBack(config) {
-        },
-        subcribedCallBack(param) {
-        },
-        messageCallBack(pos) {
-          expect(pos.data.length).greaterThan(0)
-        },
-        errorCallBack(e) {
-        },
-      });
-      await setTimeout(3000)
-      ws.close();
+  it("OKX new candles socket test", async () => {
+    const ws = wsPositions({
+      authCallBack(config) {},
+      subcribedCallBack(param) {},
+      messageCallBack(pos) {
+        expect(pos.data.length).greaterThan(0);
+      },
+      errorCallBack(e) {},
     });
+    await setTimeout(3000);
+    ws.close();
+  });
   it("Close position OKX", async () => {
     const { closeAlgoOrderRes, closePositionRes } = await closeFuturePosition({
       instId: instId,

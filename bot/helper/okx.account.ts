@@ -15,7 +15,7 @@ import { makeHeaderAuthenticationOKX } from "./auth";
 
 export const getAccountBalance = async (
   maxRetries: number = 3, // default retry count
-  retryDelay: number = 1000 // delay between retries in ms
+  retryDelay: number = 1000, // delay between retries in ms
 ): Promise<IAccountBalance[]> => {
   let attempts = 0;
 
@@ -27,7 +27,6 @@ export const getAccountBalance = async (
       });
 
       return res?.data?.data as IAccountBalance[];
-
     } catch (error: any) {
       axiosErrorDecode(error, false);
 
@@ -36,24 +35,27 @@ export const getAccountBalance = async (
         return [];
       }
 
-      console.log(`[BALANCE] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      console.log(
+        `[BALANCE] Retrying fetch... Attempt ${attempts}/${maxRetries}`,
+      );
       await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
     }
   }
 
   return [];
 };
-export const getUSDTBalance = async (equityPercent:number = 100) => {
-  const [balances] = await getAccountBalance()
-  const usdtBal = balances.details.filter(bal => bal.ccy === 'USDT')[0]?.availBal
-  return Number(usdtBal) * (equityPercent / 100)
-}
+export const getUSDTBalance = async (equityPercent: number = 100) => {
+  const [balances] = await getAccountBalance();
+  const usdtBal = balances.details.filter((bal) => bal.ccy === "USDT")[0]
+    ?.availBal;
+  return Number(usdtBal) * (equityPercent / 100);
+};
 
 export const getAccountPositions = async (
   instType: IInstType,
   instIds?: string[],
   maxRetries: number = 3, // default retry count
-  retryDelay: number = 1000 // delay between retries in ms
+  retryDelay: number = 1000, // delay between retries in ms
 ): Promise<IPositionOpen[]> => {
   let attempts = 0;
 
@@ -70,16 +72,17 @@ export const getAccountPositions = async (
       return (res?.data?.data as IPositionOpen[]).filter((r) =>
         instIds?.includes(r.instId),
       );
-      
     } catch (error: any) {
-      axiosErrorDecode(error,false);
+      axiosErrorDecode(error, false);
 
       attempts += 1;
       if (attempts >= maxRetries) {
         return [];
       }
 
-      console.log(`[POSITION] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      console.log(
+        `[POSITION] Retrying fetch... Attempt ${attempts}/${maxRetries}`,
+      );
       await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
     }
   }
@@ -129,7 +132,7 @@ export const getAccountPositionsHistory = async (
   instType: IInstType,
   instIds?: string[],
   maxRetries: number = 3, // default retry count
-  retryDelay: number = 1000 // delay between retries in ms
+  retryDelay: number = 1000, // delay between retries in ms
 ): Promise<IPositionHistory[]> => {
   let attempts = 0;
 
@@ -146,24 +149,26 @@ export const getAccountPositionsHistory = async (
       return (res?.data?.data as IPositionHistory[]).filter((r) =>
         instIds?.includes(r.instId),
       );
-      
     } catch (error: any) {
       axiosErrorDecode(error, false);
 
       attempts += 1;
       if (attempts >= maxRetries) {
-        console.log(`[POSITION HISTORY] Max retry attempts reached (${maxRetries}). Returning empty result.`);
+        console.log(
+          `[POSITION HISTORY] Max retry attempts reached (${maxRetries}). Returning empty result.`,
+        );
         return [];
       }
 
-      console.log(`[POSITION HISTORY] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      console.log(
+        `[POSITION HISTORY] Retrying fetch... Attempt ${attempts}/${maxRetries}`,
+      );
       await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
     }
   }
 
   return [];
 };
-
 
 export const getAccountPositionRisk = async (
   instType: IInstType,
@@ -245,7 +250,7 @@ export const getAccountPendingAlgoOrders = async ({
   limit = 100,
   instId,
   maxRetries = 3, // default retry count
-  retryDelay = 1000 // delay between retries in ms
+  retryDelay = 1000, // delay between retries in ms
 }: {
   ordType?: string;
   limit?: number;
@@ -265,7 +270,6 @@ export const getAccountPendingAlgoOrders = async ({
       });
 
       return res?.data?.data as IPendingAlgoOrder[];
-
     } catch (error: any) {
       axiosErrorDecode(error, false);
 
@@ -274,7 +278,9 @@ export const getAccountPendingAlgoOrders = async ({
         return [];
       }
 
-      console.log(`[ALGO ORDERS] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      console.log(
+        `[ALGO ORDERS] Retrying fetch... Attempt ${attempts}/${maxRetries}`,
+      );
       await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
     }
   }
@@ -284,16 +290,16 @@ export const getAccountPendingAlgoOrders = async ({
 
 export const getAccountHistoryAlgoOrders = async ({
   ordType = "move_order_stop",
-  state = 'effective,canceled,order_failed',
-  instType = 'SWAP',
+  state = "effective,canceled,order_failed",
+  instType = "SWAP",
   limit = 100,
   instId,
   maxRetries = 3, // default retry count
-  retryDelay = 1000 // delay between retries in ms
+  retryDelay = 1000, // delay between retries in ms
 }: {
   state?: string;
   ordType?: string;
-  instType?:string;
+  instType?: string;
   limit?: number;
   instId?: string;
   maxRetries?: number; // optional parameter for retries
@@ -311,7 +317,6 @@ export const getAccountHistoryAlgoOrders = async ({
       });
 
       return res?.data?.data as IHistoryAlgoOrder[];
-
     } catch (error: any) {
       axiosErrorDecode(error, false);
 
@@ -320,14 +325,15 @@ export const getAccountHistoryAlgoOrders = async ({
         return [];
       }
 
-      console.log(`[ALGO ORDERS] Retrying fetch... Attempt ${attempts}/${maxRetries}`);
+      console.log(
+        `[ALGO ORDERS] Retrying fetch... Attempt ${attempts}/${maxRetries}`,
+      );
       await new Promise((resolve) => setTimeout(resolve, retryDelay)); // delay before retrying
     }
   }
 
   return [];
 };
-
 
 export const getAccountConfig = async (): Promise<any[]> => {
   try {

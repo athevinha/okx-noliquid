@@ -86,7 +86,7 @@ export const convertUSDToContractOrderSize = async ({
   type?: number;
   instId: string;
   sz: number;
-  opType: 'close' | 'open'
+  opType: "close" | "open";
 }): Promise<string> => {
   try {
     let _sz = "";
@@ -169,7 +169,11 @@ export const placeOrder = async ({
   tag?: string;
 }): Promise<OKXResponse> => {
   try {
-    const sz = await convertUSDToContractOrderSize({ instId, sz: szUSD, opType: 'open' });
+    const sz = await convertUSDToContractOrderSize({
+      instId,
+      sz: szUSD,
+      opType: "open",
+    });
     if (!sz)
       return {
         code: "",
