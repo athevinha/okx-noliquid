@@ -50,6 +50,12 @@ export const getUSDTBalance = async (equityPercent: number = 100) => {
     ?.availBal;
   return Number(usdtBal) * (equityPercent / 100);
 };
+export const getUSDTEquity = async (equityPercent: number = 100) => {
+  const [balances] = await getAccountBalance();
+  const usdtBal = balances.details.filter((bal) => bal.ccy === "USDT")[0]
+    ?.eq;
+  return Number(usdtBal) * (equityPercent / 100);
+};
 
 export const getAccountPositions = async (
   instType: IInstType,

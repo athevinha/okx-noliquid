@@ -33,7 +33,7 @@ import { wsCandles } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
 import { botTrailingLossByATR } from "./trailing";
 import WebSocket from "ws";
-import { getAccountPositions, getUSDTBalance } from "../../helper/okx.account";
+import { getAccountPositions, getUSDTBalance, getUSDTEquity } from "../../helper/okx.account";
 dotenv.config();
 /**
  * Executes trading logic for the given interval configuration.
@@ -100,10 +100,10 @@ const _fowardTrading = async ({
     if (wsCandle.confirm !== "1") return;
     console.log(`[${campaignId}] new epoch`);
     const positions = await getAccountPositions("SWAP");
-    const usdtBal = await getUSDTBalance();
+    const usdtEquity = await getUSDTEquity();
     const posSz =
-      ((usdtBal * (equityPercent / 100)) / tradeAbleCrypto.length) * leve;
-    console.log("#posSz", posSz, "|", "#usdtBal", usdtBal);
+      ((usdtEquity * (equityPercent / 100)) / tradeAbleCrypto.length) * leve;
+    console.log("#posSz", posSz, "|", "#usdtEquity", usdtEquity);
     console.log(positions.map((e) => [e.instId, e.notionalUsd]));
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
