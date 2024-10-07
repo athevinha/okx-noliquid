@@ -18,7 +18,6 @@ describe("OKX socket test ticker", () => {
       limit: 3000,
     });
     const atrs = calculateATR(candles, 14);
-    let currentATR = atrs[atrs.length - 1].atr;
     const ws = wsTicks({
       subscribeMessage: {
         op: "subscribe",
@@ -30,21 +29,14 @@ describe("OKX socket test ticker", () => {
         ],
       },
       subcribedCallBack(param) {
-        console.log(param);
       },
       messageCallBack(mark) {
-        const markPrice = Number(mark.data[0].markPx);
         count++
-        // if(markPrice < candles[candles.length - 1].l) candles[candles.length - 1].l = markPrice
-        // if(markPrice > candles[candles.length - 1].h) candles[candles.length - 1].h = markPrice
-        // candles[candles.length - 1].c = markPrice
-        // currentATR =  calculateATR(candles, 14).slice(-1)[0].atr
       },
       errorCallBack(e) {
-        console.log(e);
       },
     });
-    await setTimeout(10000);
+    await setTimeout(2000);
     ws.close();
     expect(count).greaterThanOrEqual(10)
   });

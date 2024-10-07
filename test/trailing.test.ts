@@ -78,19 +78,19 @@ describe("OKX trailing stoploss test", () => {
 
   });
 
-  // it("closes all pending trailing loss orders", async () => {
-  //   let statuss = await Promise.all(
-  //     supportFutureCryptosByInstId.map(async (spCrypto) => {
-  //       const res = await closeFuturePosition({
-  //         instId: spCrypto,
-  //         mgnMode,
-  //         posSide,
-  //         isCloseAlgoOrders: true,
-  //       });
-  //       return res;
-  //     }),
-  //   );
-  //   const algoOrders = await getAccountPendingAlgoOrders({ instId });
-  //   expect(algoOrders.length).eq(0);
-  // });
+  it("closes all pending trailing loss orders", async () => {
+    let statuss = await Promise.all(
+      supportFutureCryptosByInstId.map(async (spCrypto) => {
+        const res = await closeFuturePosition({
+          instId: spCrypto,
+          mgnMode,
+          posSide,
+          isCloseAlgoOrders: true,
+        });
+        return res;
+      }),
+    );
+    const algoOrders = await getAccountPendingAlgoOrders({ instId });
+    expect(algoOrders.length).eq(0);
+  });
 });
