@@ -255,6 +255,7 @@ function forwardTradingWithWs({
   lastestSignalTs: { [instId: string]: number };
   campaigns: Map<string, CampaignConfig>;
 }) {
+  console.log('Start?')
   const WS = wsCandles({
     subscribeMessage: {
       op: "subscribe",
