@@ -4,9 +4,9 @@ dotenv.config();
 
 export const WHITE_LIST_TOKENS_TRADE = [
   "WIF-USDT-SWAP",
-  "PEPE-USDT-SWAP",
-  "FLOKI-USDT-SWAP",
-  "BONK-USDT-SWAP",
+  "MEW-USDT-SWAP",
+  "NEIRO-USDT-SWAP",
+  "PEOPLE-USDT-SWAP",
 ];
 export const DEFAULT_BOT_CONFIG = {
   bar: "1H",
