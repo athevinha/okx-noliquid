@@ -4,7 +4,7 @@ import { Message, Update } from "telegraf/typings/core/types/typegram";
 import { getSymbolCandles } from "../helper/okx.candles";
 import { closeFuturePosition, openFuturePosition } from "../helper/okx.trade";
 import { findEMACrossovers } from "../signals/ema-cross";
-import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse } from "../type";
+import { ICandles, CampaignConfig, IPosSide, IWsCandlesReponse, OKXResponse } from "../type";
 import {
   axiosErrorDecode,
   decodeSymbol,
@@ -77,7 +77,7 @@ const _fowardTrading = async ({
   try {
     const wsCandle = wsCandles?.data?.[0];
     if (wsCandle.confirm !== "1") return;
-    console.log(`[${campaignId}] new epoch`)
+    console.log(`[${campaignId}] new epoch`);
     await Promise.all(
       tradeAbleCrypto.map(async (SYMBOL) => {
         const candles = (
@@ -94,6 +94,7 @@ const _fowardTrading = async ({
         if (lastestCross?.ts === Number(wsCandle?.ts)) {
           console.log(SYMBOL, "cross");
           lastestSignalTs[SYMBOL] = lastestCross?.ts;
+          const readOnly = config.sz === 0;
           const isTrailingLossMode =
             variance === "auto" || variance !== undefined;
           const closePositionParams = {
@@ -103,8 +104,13 @@ const _fowardTrading = async ({
               lastestCross.type === "bullish" ? "short" : ("long" as IPosSide),
             isCloseAlgoOrders: isTrailingLossMode ? true : false,
           };
-          const { closeAlgoOrderRes, closePositionRes } =
+          let closeAlgoOrderRes: OKXResponse | undefined, closePositionRes: OKXResponse | undefined
+          if(!readOnly) {
+          const { closeAlgoOrderRes: _closeAlgoOrderRes, closePositionRes: _closePositionRes } =
             await closeFuturePosition(closePositionParams);
+            closeAlgoOrderRes = _closeAlgoOrderRes
+            closePositionRes = _closePositionRes
+          }
           let openPositionMsg = "",
             openAlgoOrderResMsg = "";
           if (variance && variance?.includes("auto")) {
@@ -127,10 +133,11 @@ const _fowardTrading = async ({
             callbackRatio: variance,
           };
           if (
-            (!slopeThresholdUnder ||
+            !readOnly &&
+            ((!slopeThresholdUnder ||
               lastestCross.slopeThreshold <= slopeThresholdUnder) &&
-            (!slopeThresholdUp ||
-              lastestCross.slopeThreshold >= slopeThresholdUp)
+              (!slopeThresholdUp ||
+                lastestCross.slopeThreshold >= slopeThresholdUp))
           ) {
             const { openAlgoOrderRes, openPositionRes } =
               await openFuturePosition(openPositionParams);
@@ -183,8 +190,8 @@ const _fowardTrading = async ({
             if (isTrailingLossMode)
               notificationMessage += `🚨 <b>Trailing Loss:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%)\n`;
           }
+          if(!readOnly) {
           notificationMessage += `<code>------------ORDERS-------------</code>\n`;
-
           notificationMessage += `<code>${
             openPositionMsg === ""
               ? `🟢 O: ${openPositionParams.posSide.toUpperCase()} ${decodeSymbol(
@@ -193,11 +200,11 @@ const _fowardTrading = async ({
               : "🔴 O: " + openPositionMsg
           }</code>\n`;
           notificationMessage += `<code>${
-            closePositionRes.msg === ""
+            closePositionRes?.msg === ""
               ? `🟢 C: ${closePositionParams.posSide.toUpperCase()} ${decodeSymbol(
                   closePositionParams.instId
                 )}`
-              : "🔴 C: " + closePositionRes.msg
+              : "🔴 C: " + closePositionRes?.msg
           }</code>\n`;
 
           if (isTrailingLossMode) {
@@ -208,13 +215,14 @@ const _fowardTrading = async ({
                 : "🔴 O: " + openAlgoOrderResMsg
             }</code>\n`;
             notificationMessage += `<code>${
-              closeAlgoOrderRes.msg === ""
+              closeAlgoOrderRes?.msg === ""
                 ? `🟢 C: Cancel trailing ${decodeSymbol(
                     closePositionParams.instId
                   )}`
-                : "🔴 C: " + closeAlgoOrderRes.msg
+                : "🔴 C: " + closeAlgoOrderRes?.msg
             }</code>\n`;
           }
+        }
           await ctx.reply(notificationMessage, { parse_mode: "HTML" });
         }
       })
