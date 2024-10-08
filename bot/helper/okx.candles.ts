@@ -1,7 +1,7 @@
 import axios from "axios";
 import { IAccountBalance, ICandles, IInstrumentsData } from "../type";
 import { axiosErrorDecode, getRandomeHttpAgent } from "../utils";
-import { MC_ALLOW_TO_TRADING, OKX_BASE_API_URL } from "../utils/config";
+import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 import { getCurrencyInfo } from "./okx.ccy";
 // -- DEV --
@@ -142,14 +142,14 @@ export const getSupportCrypto = async ({
       (e) => e.instId.includes("USDT") && !e.instId.includes("USDC"),
     );
 
-    const instData: IInstrumentsData[] = [];
-    await Promise.all(
-      instInfo.map(async (inst) => {
-        const info = await getCurrencyInfo(inst.instId.split("-")[0]);
-        if ((info?.marketCap || 0) >= MC_ALLOW_TO_TRADING) instData.push(inst);
-      }),
-    );
-    return instData;
+    // const instData: IInstrumentsData[] = [];
+    // await Promise.all(
+    //   instInfo.map(async (inst) => {
+    //     const info = await getCurrencyInfo(inst.instId.split("-")[0]);
+    //     if ((info?.marketCap || 0) >= MC_ALLOW_TO_TRADING) instData.push(inst);
+    //   }),
+    // );
+    return instInfo;
   } catch (error: any) {
     return [];
   }
