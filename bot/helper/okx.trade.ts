@@ -215,6 +215,7 @@ export const openFuturePosition = async ({
   ordType = "market",
   campaignId = "",
   callbackRatio, // active trailing loss
+  trailActiveAvgPx
 }: {
   instId: string;
   mgnMode: ImgnMode;
@@ -224,6 +225,7 @@ export const openFuturePosition = async ({
   size: number;
   campaignId?: string;
   callbackRatio?: string;
+  trailActiveAvgPx?: string
 }): Promise<{
   openPositionRes: OKXResponse;
   openAlgoOrderRes: OKXResponse;
@@ -281,6 +283,7 @@ export const openFuturePosition = async ({
         posSide,
         mgnMode,
         callbackRatio: _callbackRatio,
+        activePx: trailActiveAvgPx
       });
     } catch (error: any) {
       return {

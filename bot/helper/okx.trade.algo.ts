@@ -13,12 +13,14 @@ export const openTrailingStopOrder = async ({
   callbackRatio,
   size,
   sizeContract,
+  activePx,
   reduceOnly = false,
 }: {
   instId: string;
   mgnMode: ImgnMode;
   posSide: IPosSide;
   callbackRatio: string;
+  activePx?:string;
   size: number;
   sizeContract?: number;
   reduceOnly?: boolean;
@@ -49,6 +51,7 @@ export const openTrailingStopOrder = async ({
       callbackRatio,
       ordType: "move_order_stop",
       sz,
+      activePx,
       cxlOnClosePos: true,
     });
     const path = `/api/v5/trade/order-algo`;
