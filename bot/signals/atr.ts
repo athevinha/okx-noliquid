@@ -64,7 +64,7 @@ export function calculateATR(
   };
 
   // Calculate ATR values using RMA
-  const atrValues = movingAverage(trValues, period, method || "RMA");
+  const atrValues = movingAverage(trValues, period, method || "SMA");
   // Attach ATR values to the corresponding candles (starting from period)
   const candlesWithATR: CandleWithATR[] = atrValues.map((atr, i) => {
     const candle = candles[i + period];
