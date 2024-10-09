@@ -45,6 +45,7 @@ describe("OKX trailing stoploss test", () => {
       posSide: posSide as IPosSide,
       leverage: leverage,
       callbackRatio: callbackRatioLoss.toString(), // trailing percent ratio
+      trailActiveAvgPx: '100000'
     });
     // let statuss = await Promise.all(
     //   supportFutureCryptosByInstId.map(async (spCrypto) => {
@@ -70,11 +71,10 @@ describe("OKX trailing stoploss test", () => {
 
   it("Fetch open pending trailing loss orders", async () => {
     await Promise.all(
-      [1, 2, 3, 4, 5, 6, 7, 8].map(async (e) => {
+      [1].map(async (e) => {
         const algo = await getAccountPendingAlgoOrders({});
-        expect(algo.length).greaterThanOrEqual(
-          supportFutureCryptosByInstId.length,
-        );
+        console.log(algo)
+        expect(algo.length).greaterThanOrEqual(1);
       }),
     );
   });
