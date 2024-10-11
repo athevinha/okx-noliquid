@@ -100,3 +100,5 @@ export const parseConfigInterval = (configString: string) => {
     ...campaignInitialState
   };
 };
+
+export const TOLERANCE_MS = 1000; // Adjust based on how "fuzzy" you want the equality

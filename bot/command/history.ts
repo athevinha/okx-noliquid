@@ -10,7 +10,7 @@ import {
   getTradeAbleCrypto,
   zerofy,
 } from "../utils";
-import { USDT } from "../utils/config";
+import { TOLERANCE_MS, USDT } from "../utils/config";
 
 export const botReportPositionsHistory = ({
   bot,
@@ -73,7 +73,8 @@ export const botReportPositionsHistory = ({
       recentPositions.forEach((position, index) => {
         const algoOrder = algoHistorys.filter(
           (algo) =>
-            algo.uTime + algo.instId === position.uTime + position.instId,
+            algo.instId === position.instId &&
+            Math.abs(Number(algo.uTime) - Number(position.uTime)) <= TOLERANCE_MS,
         )[0];
         // console.log(position);
         let trailingLossSlippage;
