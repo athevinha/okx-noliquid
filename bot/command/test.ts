@@ -158,9 +158,12 @@ export const test = async (ctx: NarrowedContext<
   reconnectPositions = () => {
     setupWsPositions();
   };
-
   reconnectTicks();
   reconnectPositions();
+  setInterval(() => {
+    reconnectTicks();
+    reconnectPositions();
+  }, (10000));
 };
 
 
