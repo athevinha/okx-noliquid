@@ -5,15 +5,19 @@ import { wsPositions, wsTicks } from "../helper/okx.socket";
 import { closeFuturePosition, openFuturePosition } from "../helper/okx.trade";
 import { calculateATR } from "../signals/atr";
 import {
+  CampaignConfig,
   ICandle,
   ICandles,
   IOKXFunding,
   IPositionOpen,
   IWsPositionReponse,
 } from "../type";
-import { ATR_PERIOD } from "../utils/config";
+import { ATR_PERIOD, parseConfigInterval } from "../utils/config";
 import {existsSync} from "fs";
 import {config} from "dotenv";
+import { Context, NarrowedContext, Telegraf } from "telegraf";
+import { Message, Update } from "telegraf/typings/core/types/typegram";
+
 const env = process.env.ENV || "dev"; // fallback to 'dev' mode
 const envPath = `.env.${env}`;
 if (existsSync(envPath)) {
@@ -22,7 +26,15 @@ if (existsSync(envPath)) {
 } else {
   console.warn(`⚠️ Environment file ${envPath} not found.`);
 }
-export const test = async () => {
+export const test = async (ctx: NarrowedContext<
+    Context<Update>,
+    {
+      message:
+        | (Update.New & Update.NonChannel & Message.AnimationMessage)
+        | (Update.New & Update.NonChannel & Message.TextMessage);
+      update_id: number;
+    }
+  >) => {
   let fundingArbitrage: { [instId: string]: IOKXFunding } = {};
   let candles: { [instId: string]: ICandles } = {};
   let positions: { [instId: string]: IPositionOpen | boolean } = {};
@@ -59,7 +71,7 @@ export const test = async () => {
   };
 
   await updateFetchData();
-  setInterval(updateFetchData, 2000);
+  setInterval(updateFetchData, 3000);
 
   let reconnectTicks = () => {};
   let reconnectPositions = () => {};
@@ -93,7 +105,7 @@ export const test = async () => {
           fundingTimeLeftSec > (2 * 60) - 1 &&
           !positions[data.instId]
         ) {
-          console.log(`🚀 Opening position for ${data.instId}`);
+          ctx.reply(`🚀 Opening position for ${data.instId}`);
           openFuturePosition({
             instId: data.instId,
             leverage: 10,
@@ -110,7 +122,7 @@ export const test = async () => {
           fundingTimeLeftSec < 2 &&
           !!(positions[data.instId] as IPositionOpen)?.avgPx
         ) {
-          console.log(`❌ Closing position for ${data.instId}`);
+          ctx.reply(`❌ Closing position for ${data.instId} ${fundingTimeLeftSec}`);
           closeFuturePosition({
             instId: data.instId,
             mgnMode: "isolated",
@@ -160,4 +172,45 @@ export const test = async () => {
   reconnectPositions();
 };
 
-test();
+
+export const botFunding = ({
+  bot,
+  campaigns,
+}: {
+  bot: Telegraf;
+  campaigns: Map<string, CampaignConfig>;
+}) => {
+  let lastestSignalTs: { [instId: string]: number } = {};
+  bot.command("start-funding", async (ctx) => {
+    const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
+    const config = parseConfigInterval(configStrings.join(" "));
+
+    if (campaigns.has(id)) {
+      ctx.replyWithHTML(
+        `🚫 Trading interval with ID <code>${id}</code> is already active.`,
+      );
+      return;
+    }
+    await ctx.replyWithHTML("Funding start");
+    await test(ctx)
+    // await setTimeout(5000);
+    // WS?.close();
+  });
+
+  bot.command("stop", (ctx) => {
+    const id = ctx.message.text.split(" ")[1];
+
+    if (!campaigns.has(id)) {
+      ctx.replyWithHTML(
+        `🚫 No active trading interval found with ID <code>${id}</code>.`,
+      );
+      return;
+    }
+
+    const CampaignConfig = campaigns.get(id);
+    CampaignConfig?.WS?.close();
+    CampaignConfig?.WSTicker?.close();
+    CampaignConfig?.WSTrailing?.close();
+    campaigns.delete(id);
+  });
+};

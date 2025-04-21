@@ -8,8 +8,18 @@ import { botReportSymbolReport } from "./command/symbols-report";
 import { botAutoTrading } from "./command/wstrade/trade";
 import { CampaignConfig } from "./type";
 import { botWSManagement } from "./command/ws";
-dotenv.config();
+import {botFunding} from "./command/test";
+import {existsSync} from "fs";
+import {config} from "dotenv";
 
+const env = process.env.ENV || "dev"; // fallback to 'dev' mode
+const envPath = `.env.${env}`;
+if (existsSync(envPath)) {
+  config({ path: envPath });
+  console.log(`✅ Loaded ${envPath}`);
+} else {
+  console.warn(`⚠️ Environment file ${envPath} not found.`);
+}
 export async function bot(apiKey?: string) {
   if (apiKey) {
     const bot = new Telegraf(apiKey);
@@ -23,6 +33,7 @@ export async function bot(apiKey?: string) {
     botReportSymbolReport({ bot, campaigns });
     botAutoTrading({ bot, campaigns });
     botWSManagement({ bot, campaigns });
+    botFunding({bot, campaigns})
     bot.launch();
 
     process.once("SIGINT", () => bot.stop("SIGINT"));

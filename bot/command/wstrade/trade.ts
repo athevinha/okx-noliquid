@@ -120,7 +120,6 @@ function forwardTradingWithWs({
   id,
   config,
   tradeAbleCrypto,
-  OKXFundingList,
   lastestSignalTs,
   campaigns,
 }: {
@@ -135,7 +134,6 @@ function forwardTradingWithWs({
   >;
   id: string;
   config: CampaignConfig;
-  OKXFundingList: IOKXFunding;
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number };
   campaigns: Map<string, CampaignConfig>;
@@ -174,7 +172,6 @@ function forwardTradingWithWs({
           id,
           config,
           tradeAbleCrypto,
-          OKXFundingList,
           lastestSignalTs,
           campaigns,
         });
@@ -209,11 +206,10 @@ export const botAutoTrading = ({
       );
       return;
     }
-    const _OKXFundingList = await getOKXFunding()
-    const OKXFundingList = _OKXFundingList.filter(e => Number(e.fundingRate) < -0.001 && Number(e.fundingRate) > -0.04 && e.buyInstType === "SWAP")
-    console.log(OKXFundingList)
-    let tradeAbleCrypto = OKXFundingList.map(e => e.buyInstId)
-    // await getTradeAbleCrypto(config.tokenTradingMode);
+    // const _OKXFundingList = await getOKXFunding()
+    // const OKXFundingList = _OKXFundingList.filter(e => Number(e.fundingRate) < -0.001 && Number(e.fundingRate) > -0.04 && e.buyInstType === "SWAP")
+    // console.log(OKXFundingList)
+    let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode);
     await ctx.reply(
       `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`,
     );
@@ -226,7 +222,7 @@ export const botAutoTrading = ({
       id,
       config,
       tradeAbleCrypto,
-      OKXFundingList,
+      // OKXFundingList,
       lastestSignalTs,
       campaigns,
     });
