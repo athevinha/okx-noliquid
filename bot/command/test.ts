@@ -172,16 +172,9 @@ export const botFunding = ({
   campaigns: Map<string, CampaignConfig>;
 }) => {
   let lastestSignalTs: { [instId: string]: number } = {};
-  bot.command("start-funding", async (ctx) => {
+  bot.command("funding", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
-    const config = parseConfigInterval(configStrings.join(" "));
 
-    if (campaigns.has(id)) {
-      ctx.replyWithHTML(
-        `🚫 Trading interval with ID <code>${id}</code> is already active.`,
-      );
-      return;
-    }
     await ctx.replyWithHTML("Funding start");
     await test(ctx)
     // await setTimeout(5000);
