@@ -13,19 +13,10 @@ import {
   IWsPositionReponse,
 } from "../type";
 import { ATR_PERIOD, parseConfigInterval } from "../utils/config";
-import {existsSync} from "fs";
-import {config} from "dotenv";
+
 import { Context, NarrowedContext, Telegraf } from "telegraf";
 import { Message, Update } from "telegraf/typings/core/types/typegram";
 
-const env = process.env.ENV || "dev"; // fallback to 'dev' mode
-const envPath = `.env.${env}`;
-if (existsSync(envPath)) {
-  config({ path: envPath });
-  console.log(`✅ Loaded ${envPath}`);
-} else {
-  console.warn(`⚠️ Environment file ${envPath} not found.`);
-}
 export const test = async (ctx: NarrowedContext<
     Context<Update>,
     {
@@ -105,7 +96,6 @@ export const test = async (ctx: NarrowedContext<
           fundingTimeLeftSec > (2 * 60) - 1 &&
           !positions[data.instId]
         ) {
-          ctx.reply(`🚀 Opening position for ${data.instId}`);
           openFuturePosition({
             instId: data.instId,
             leverage: 10,
@@ -116,19 +106,20 @@ export const test = async (ctx: NarrowedContext<
             slTriggerPx: String(Number(data.markPx) * (1 - Math.abs(Number(fundingData.fundingRate)) * 2)),
           });
           positions[data.instId] = true;
+          ctx.reply(`🚀 Opening position for ${data.instId}`);
         }
 
         if (
           fundingTimeLeftSec < 2 &&
           !!(positions[data.instId] as IPositionOpen)?.avgPx
         ) {
-          ctx.reply(`❌ Closing position for ${data.instId} ${fundingTimeLeftSec}`);
           closeFuturePosition({
             instId: data.instId,
             mgnMode: "isolated",
             posSide: "long",
           });
           positions[data.instId] = false;
+          ctx.reply(`❌ Closing position for ${data.instId} ${fundingTimeLeftSec}`);
         }
       },
       errorCallBack(e) {
