@@ -47,7 +47,7 @@ export const getSymbolCandles = async ({
     }&before=${before}&bar=${bar}&limit=${limit}&t=${Date.now()}`;
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
-      httpsAgent,
+      // httpsAgent,
     });
     if (res.data.code !== "0") console.log(instID, res.data.msg);
     return res.data?.data;

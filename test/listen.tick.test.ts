@@ -3,30 +3,24 @@ import { expect } from "chai";
 import { wsTicks } from "../bot/helper/okx.socket";
 import { getSymbolCandles } from "../bot/helper/okx.candles";
 import { calculateATR } from "../bot/signals/atr";
+import {getOKXFunding} from "../bot/helper/okx.funding";
 
 describe("OKX socket test ticker", () => {
   const { instID, bar } = {
-    bar: "1m",
+    bar: "1s",
     instID: "BTC-USDT-SWAP",
   };
   it("OKX new candles socket test", async () => {
     let count = 0;
-    let candles = await getSymbolCandles({
-      instID,
-      bar,
-      before: 0,
-      limit: 3000,
-    });
-    const atrs = calculateATR(candles, 14);
+    const fundingArbitrage = await getOKXFunding({})
     const ws = wsTicks({
       subscribeMessage: {
         op: "subscribe",
-        args: [
-          {
-            channel: `mark-price`,
-            instId: instID,
-          },
-        ],
+        args: fundingArbitrage.filter(e => e.buyInstType === "SWAP").map(e => {
+          return {
+              instId: e.buyInstId,
+              channel: `mark-price`
+          }}),
       },
       subcribedCallBack(param) {},
       messageCallBack(mark) {

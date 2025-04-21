@@ -531,3 +531,22 @@ export type CandleWithATR = ICandle & {
   atr: number;
   fluctuationsPercent: number;
 };
+export type IOKXFunding =  {
+  acc3dFundingRate: string
+  apy: string
+  apyNoneAbsolute: string
+  arbitrageId: string
+  buyInstId: string
+  buyInstType: string
+  ccy: string
+  fundingRate: string
+  fundingTime: string
+  nextFundingRate: string
+  notionalUsd: string
+  sellInstId: string
+  sellInstType: string
+  spread: string
+  state: string
+  ts: string
+  yield3dPer10K: string
+}

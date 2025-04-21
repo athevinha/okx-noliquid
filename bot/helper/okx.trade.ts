@@ -94,7 +94,6 @@ export const convertUSDToContractOrderSize = async ({
     let attempts = 0;
 
     const convert = async () => {
-      const httpsAgent = getRandomeHttpAgent();
       const _instId = `${instId.split("-")[0]}-${instId.split("-")[1]}`;
       const [{ idxPx }] = await getSymbolPriceTicker({ instId: _instId });
       const path = `/api/v5/public/convert-contract-coin?type=${type}&opType=${opType}&instId=${instId}&sz=${
@@ -102,7 +101,6 @@ export const convertUSDToContractOrderSize = async ({
       }`;
       const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
         headers: makeHeaderAuthenticationOKX("GET", path, ""),
-        httpsAgent,
       });
       const [response] = res?.data?.data as IContracConvertResponse[];
       return response.sz;
@@ -132,11 +130,9 @@ export const getSymbolPriceTicker = async ({
   instId: string;
 }): Promise<ISymbolPriceTicker[]> => {
   try {
-    const httpsAgent = getRandomeHttpAgent();
     const path = `/api/v5/market/index-tickers?quoteCcy=${quoteCcy}&instId=${instId}`;
     const res = await axios.get(`${OKX_BASE_API_URL}${path}`, {
       headers: makeHeaderAuthenticationOKX("GET", path, ""),
-      httpsAgent,
     });
     return res?.data?.data as ISymbolPriceTicker[];
   } catch (error: any) {
@@ -154,6 +150,7 @@ export const placeOrder = async ({
   szUSD,
   tpOrdPx,
   tpTriggerPx,
+  slTriggerPx,
   clOrdId = "",
   tag = "",
 }: {
@@ -163,10 +160,11 @@ export const placeOrder = async ({
   posSide: IPosSide;
   ordType: string;
   szUSD: number;
-  tpTriggerPx?: string;
   tpOrdPx?: string;
   clOrdId?: string;
   tag?: string;
+  tpTriggerPx?:string,
+  slTriggerPx?:string,
 }): Promise<OKXResponse> => {
   try {
     const sz = await convertUSDToContractOrderSize({
@@ -187,8 +185,10 @@ export const placeOrder = async ({
       posSide,
       ordType,
       sz,
-      tpOrdPx,
       tpTriggerPx,
+      slTriggerPx,
+      tpOrdPx: -1,
+      slOrdPx: -1
       // clOrdId,
       // tag,
     });
@@ -215,7 +215,9 @@ export const openFuturePosition = async ({
   ordType = "market",
   campaignId = "",
   callbackRatio, // active trailing loss
-  trailActiveAvgPx
+  trailActiveAvgPx,
+  tpTriggerPx,
+  slTriggerPx,
 }: {
   instId: string;
   mgnMode: ImgnMode;
@@ -225,7 +227,9 @@ export const openFuturePosition = async ({
   size: number;
   campaignId?: string;
   callbackRatio?: string;
-  trailActiveAvgPx?: string
+  trailActiveAvgPx?: string;
+  tpTriggerPx?:string,
+  slTriggerPx?:string,
 }): Promise<{
   openPositionRes: OKXResponse;
   openAlgoOrderRes: OKXResponse;
@@ -264,6 +268,8 @@ export const openFuturePosition = async ({
         szUSD: size,
         clOrdId,
         tag,
+        tpTriggerPx,
+        slTriggerPx
       });
     } catch (error: any) {
       return {
