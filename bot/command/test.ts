@@ -82,6 +82,7 @@ export const test = async (ctx: NarrowedContext<
       messageCallBack(mark) {
         const data = mark.data[0];
         const fundingData = fundingArbitrage[data.instId];
+        const fundingRate = Number(fundingData.fundingRate)
         if (!fundingData) return;
 
         const fundingTimeLeftMs = Number(fundingData.fundingTime) - Number(data.ts);
@@ -96,21 +97,31 @@ export const test = async (ctx: NarrowedContext<
           fundingTimeLeftSec > (2 * 60) - 1 &&
           !positions[data.instId]
         ) {
+          const tpPercent = Math.min(Math.max(Math.abs(fundingRate) * 2, 0.0015), 0.004);
+          const slPercent = Math.min(Math.max(Math.abs(fundingRate) * 2, 0.0015), 0.004);
+          
+          const posSide = fundingRate < 0 ? "long" : "short";
+          
           openFuturePosition({
             instId: data.instId,
             leverage: 10,
             mgnMode: "isolated",
             size: 20,
-            posSide: "long",
-            tpTriggerPx: String(Number(data.markPx) * (1 + Math.abs(Number(fundingData.fundingRate)) * 2)),
-            slTriggerPx: String(Number(data.markPx) * (1 - Math.abs(Number(fundingData.fundingRate)) * 2)),
+            posSide,
+            tpTriggerPx: String(
+              Number(data.markPx) * (1 + (posSide === "long" ? tpPercent : -tpPercent))
+            ),
+            slTriggerPx: String(
+              Number(data.markPx) * (1 - (posSide === "long" ? slPercent : -slPercent))
+            ),
           });
+          
           positions[data.instId] = true;
           ctx.reply(`🚀 Opening position for ${data.instId}`);
         }
 
         if (
-          fundingTimeLeftSec < 2 &&
+          fundingTimeLeftSec < -15 &&
           !!(positions[data.instId] as IPositionOpen)?.avgPx
         ) {
           closeFuturePosition({
