@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "bot": "ENV=sub npx ts-node index.ts",
+    "bot:sub": "ENV=sub npx ts-node index.ts",
+    "bot:dev": "ENV=dev npx ts-node index.ts",
+    "bot:production": "ENV=production npx ts-node index.ts",
     "start": "ENV=sub npx ts-node bot/command/test.ts",
     "test": "mocha --timeout 5000000 -r ts-node/register 'test/**/*.test.ts'",
     "test:trade": "mocha --timeout 500000 -r ts-node/register 'test/trade.test.ts'",

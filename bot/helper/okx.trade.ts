@@ -178,6 +178,14 @@ export const placeOrder = async ({
         msg: "Convert USD contract error",
         data: [],
       };
+    const tpBody = {
+      tpTriggerPx,
+      tpOrdPx: -1
+    }
+    const slBody = {
+      slTriggerPx,
+      slOrdPx: -1
+    }
     const body = JSON.stringify({
       instId,
       tdMode,
@@ -185,13 +193,15 @@ export const placeOrder = async ({
       posSide,
       ordType,
       sz,
-      tpTriggerPx,
-      slTriggerPx,
-      tpOrdPx: -1,
-      slOrdPx: -1
+      ...(tpTriggerPx ? tpBody : {}),
+      ...(slTriggerPx ? slBody : {}),
+      // slTriggerPx,
+      // tpOrdPx: -1,
+      // slOrdPx: -1
       // clOrdId,
       // tag,
     });
+    console.log(body)
     const path = `/api/v5/trade/order`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
       headers: makeHeaderAuthenticationOKX("POST", path, body),
@@ -279,26 +289,26 @@ export const openFuturePosition = async ({
       };
     }
   };
-  const openTrailingOrder = async (
-    _callbackRatio: string,
-  ): Promise<OKXResponse> => {
-    try {
-      return await openTrailingStopOrder({
-        instId,
-        size,
-        posSide,
-        mgnMode,
-        callbackRatio: _callbackRatio,
-        activePx: trailActiveAvgPx
-      });
-    } catch (error: any) {
-      return {
-        code: error?.code,
-        data: [],
-        msg: "Trailing: " + axiosErrorDecode(error),
-      };
-    }
-  };
+  // const openTrailingOrder = async (
+  //   _callbackRatio: string,
+  // ): Promise<OKXResponse> => {
+  //   try {
+  //     return await openTrailingStopOrder({
+  //       instId,
+  //       size,
+  //       posSide,
+  //       mgnMode,
+  //       callbackRatio: _callbackRatio,
+  //       activePx: trailActiveAvgPx
+  //     });
+  //   } catch (error: any) {
+  //     return {
+  //       code: error?.code,
+  //       data: [],
+  //       msg: "Trailing: " + axiosErrorDecode(error),
+  //     };
+  //   }
+  // };
   while (attempts < maxRetries) {
     attempts += 1;
     openPositionRes = await openPosition();
@@ -308,15 +318,15 @@ export const openFuturePosition = async ({
   }
   attempts = 0;
 
-  if (okxReponseChecker(openPositionRes) && callbackRatio) {
-    while (attempts < maxRetries) {
-      attempts += 1;
-      openAlgoOrderRes = await openTrailingOrder(callbackRatio);
-      if (okxReponseChecker(openAlgoOrderRes)) {
-        break;
-      }
-    }
-  }
+  // if (okxReponseChecker(openPositionRes) && callbackRatio) {
+  //   while (attempts < maxRetries) {
+  //     attempts += 1;
+  //     // openAlgoOrderRes = await openTrailingOrder(callbackRatio);
+  //     if (okxReponseChecker(openAlgoOrderRes)) {
+  //       break;
+  //     }
+  //   }
+  // }
 
   return {
     openPositionRes: {

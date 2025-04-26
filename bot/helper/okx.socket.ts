@@ -41,6 +41,7 @@ export const wsCandles = ({
         l: res[3],
         c: res[4],
         confirm: res[5],
+        instId: response.arg.instId
       }));
       messageCallBack(response as IWsCandlesReponse);
     }

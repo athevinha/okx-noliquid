@@ -502,6 +502,7 @@ export type IWsCandlesReponse = {
     l: string;
     c: string;
     confirm: string;
+    instId: string;
   }>;
 };
 

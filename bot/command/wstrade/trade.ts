@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import dotenv, { config } from "dotenv";
 import { Context, NarrowedContext, Telegraf } from "telegraf";
 import { Message, Update } from "telegraf/typings/core/types/typegram";
 import { getSymbolCandles } from "../../helper/okx.candles";
@@ -14,6 +14,7 @@ import {
   IWsCandlesReponse,
   IWsTickerReponse,
   IOKXFunding,
+  IPositionOpen,
 } from "../../type";
 import {
   axiosErrorDecode,
@@ -35,9 +36,28 @@ import { wsCandles, wsTicks } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
 import { botTrailingLossByATR } from "./trailing";
 import WebSocket from "ws";
-import { getAccountPositions, getUSDTBalance, getUSDTEquity } from "../../helper/okx.account";
-import {getOKXFunding} from "../../helper/okx.funding";
-dotenv.config();
+import {
+  getAccountPositions,
+  getUSDTBalance,
+  getUSDTEquity,
+} from "../../helper/okx.account";
+import { getOKXFunding, getOKXFundingObject } from "../../helper/okx.funding";
+import { existsSync } from "fs";
+const MODE = process.env.ENV;
+const isDev = MODE === "dev"
+const BEFORE_FUNDING_TO_ORDER = 1 * 60
+const FUNDING_DOWNTO = -2
+const FUNDING_UPTO = -0.1
+const MIN_MAX_TP = [0.3, 0.4]
+const MIN_MAX_SL = [0.6, 0.8]
+// const env = process.env.ENV || "dev"; // fallback to 'dev' mode
+// const envPath = `.env.${env}`;
+// if (existsSync(envPath)) {
+//   config({ path: envPath });
+//   console.log(`✅ Loaded ${envPath}`);
+// } else {
+//   console.warn(`⚠️ Environment file ${envPath} not found.`);
+// }
 /**
  * Executes trading logic for the given interval configuration.
  *
@@ -68,6 +88,8 @@ const _fowardTrading = async ({
   tradeAbleCrypto,
   lastestSignalTs,
   wsCandles,
+  flashPositions,
+  fundingArbitrage,
   campaignId,
   campaigns,
 }: {
@@ -80,10 +102,12 @@ const _fowardTrading = async ({
       update_id: number;
     }
   >;
-  wsCandles: IWsTickerReponse;
+  wsCandles: IWsCandlesReponse;
   config: CampaignConfig;
   tradeAbleCrypto: string[];
-  lastestSignalTs: { [instId: string]: number }; // Lastest EmaCross bot make Tx
+  lastestSignalTs: { [instId: string]: number };
+  fundingArbitrage: { [instId: string]: IOKXFunding };
+  flashPositions: { [instId: string]: boolean };
   campaignId?: string;
   campaigns: Map<string, CampaignConfig>;
 }) => {
@@ -99,21 +123,105 @@ const _fowardTrading = async ({
   } = config;
   let variance = config.variance;
   try {
-    // const wsCandle = wsCandles?.data?.[0];
-    // if (wsCandle.confirm !== "1") return;
-    // console.log(`[${campaignId}] new epoch`);
-    // const positions = await getAccountPositions("SWAP");
-    // const usdtEquity = await getUSDTEquity();
-    // const posSz =
-    //   ((usdtEquity * (equityPercent / 100)) / tradeAbleCrypto.length) * leve;
-    // console.log("#posSz", posSz, "|", "#usdtEquity", usdtEquity);
-    // console.log(positions.map((e) => [e.instId, e.notionalUsd]));
-    
-    console.log("abc",wsCandles.data)
+    const wsCandle = wsCandles?.data?.[0];
+    const fundingData = fundingArbitrage[wsCandle.instId];
+    const fundingRate = Number(fundingData.fundingRate);
+    const now = Date.now();
+    const fundingTimeLeftMs = Number(fundingData.fundingTime) - now;
+    const fundingTimeLeftSec = fundingTimeLeftMs / 1000;
+    const timeToOpen = isDev ? 2 : BEFORE_FUNDING_TO_ORDER;
+
+    console.log(
+      `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
+    );
+
+    if (
+      fundingTimeLeftSec <= timeToOpen &&
+      fundingTimeLeftSec > timeToOpen - 1 &&
+      !flashPositions[wsCandle.instId]
+    ) {
+      const tpPercent = Math.min(
+        Math.max(Math.abs(fundingRate) * 2, MIN_MAX_TP[0] / 100),
+        MIN_MAX_TP[1] / 100
+      );
+      const slPercent = Math.min(
+        Math.max(Math.abs(fundingRate) * 2, MIN_MAX_SL[0] / 100),
+        MIN_MAX_SL[1] / 100
+      );
+
+      const posSide = fundingRate < 0 ? "long" : "short";
+
+      flashPositions[wsCandle.instId] = true;
+      const openParams: any = {
+        instId: wsCandle.instId,
+        leverage: 10,
+        mgnMode: "isolated",
+        size: 200,
+        posSide,
+        tpTriggerPx: posSide === 'long' ? Number(wsCandle.c) * (1 + tpPercent) : Number(wsCandle.c) * (1 - tpPercent),
+        slTriggerPx: posSide === 'long' ? Number(wsCandle.c) * (1 - slPercent) : Number(wsCandle.c) * (1 + slPercent)
+      };
+      
+      console.log(`Opening position with params:`, openParams);
+      
+      const { openPositionRes } = await openFuturePosition(openParams);
+      
+      if (openPositionRes.code === "0") {
+        if (ctx) {
+          await ctx.replyWithHTML(
+            `🚀 Successfully opened position for <b>${openParams.instId}</b>\n` +
+            `- Size: <b>${openParams.size}</b>\n` +
+            `- Side: <b>${openParams.posSide}</b>\n` +
+            `- TP %: <b>${zerofy(openParams.tpTriggerPx)}</b>\n` +
+            `- SL %: <b>${zerofy(openParams.slTriggerPx)}</b>`
+          );
+        }
+      } else {
+        if (ctx) {
+          await ctx.replyWithHTML(
+            `❌ Failed to open position for <b>${openParams.instId}</b>\n` +
+            `- Error Code: <code>${openPositionRes.code}</code>\n ` +
+            `- Error Message: <code>${openPositionRes.msg}</code>`
+          );
+        }
+      }
+      
+    }
+
+    if (
+      fundingTimeLeftSec < -40 &&
+      flashPositions[wsCandle.instId]
+    ) {
+      flashPositions[wsCandle.instId] = false;
+
+      const { closePositionRes } = await closeFuturePosition({
+        instId: wsCandle.instId,
+        mgnMode: "isolated",
+        posSide: "long",
+      });
+
+      if (closePositionRes.code === "0") {
+        if (ctx) {
+          await ctx.replyWithHTML(
+            `✅ Successfully closed position for <b>${wsCandle.instId}</b>`
+          );
+        }
+      } else {
+        if (ctx) {
+          await ctx.replyWithHTML(
+            `❌ Failed to close position for <b>${wsCandle.instId}</b>\n` +
+            `- Error Code: <code>${closePositionRes.code}</code>\n` +
+            `- Error Message: <code>${closePositionRes.msg}</code>`
+          );
+        }
+      }
+    }
+
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
 };
+
 
 function forwardTradingWithWs({
   ctx,
@@ -121,6 +229,8 @@ function forwardTradingWithWs({
   config,
   tradeAbleCrypto,
   lastestSignalTs,
+  fundingArbitrage,
+  flashPositions,
   campaigns,
 }: {
   ctx: NarrowedContext<
@@ -136,17 +246,19 @@ function forwardTradingWithWs({
   config: CampaignConfig;
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number };
+  flashPositions: {[instId: string]: boolean}
+  fundingArbitrage: { [instId: string]: IOKXFunding };
   campaigns: Map<string, CampaignConfig>;
 }) {
-  const WS = wsTicks({
+  const WS = wsCandles({
     subscribeMessage: {
       op: "subscribe",
-      args: tradeAbleCrypto.map(e => {
+      args: tradeAbleCrypto.map((e) => {
         return {
-          channel: `mark-price`,
+          channel: `mark-price-candle1m`,
           instId: e,
         };
-      })
+      }),
     },
     messageCallBack(wsCandles) {
       _fowardTrading({
@@ -155,6 +267,8 @@ function forwardTradingWithWs({
         tradeAbleCrypto,
         wsCandles,
         lastestSignalTs,
+        fundingArbitrage,
+        flashPositions,
         campaignId: id,
         campaigns,
       });
@@ -163,7 +277,7 @@ function forwardTradingWithWs({
       console.error(`[TRADING] WebSocket closed with code: ${code}`);
       if (code === 1005) {
         ctx.replyWithHTML(
-          `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`,
+          `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
         // campaigns.delete(id);
       } else {
@@ -171,13 +285,15 @@ function forwardTradingWithWs({
           ctx,
           id,
           config,
+          fundingArbitrage,
           tradeAbleCrypto,
+          flashPositions,
           lastestSignalTs,
           campaigns,
         });
 
         ctx.replyWithHTML(
-          `⛓️ [TRADING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`,
+          `⛓️ [TRADING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
         );
       }
     },
@@ -196,22 +312,26 @@ export const botAutoTrading = ({
   campaigns: Map<string, CampaignConfig>;
 }) => {
   let lastestSignalTs: { [instId: string]: number } = {};
+  let fundingArbitrage: { [instId: string]: IOKXFunding } = {};
+  let flashPositions : {[instId: string]: boolean} = {}
+  let positions:  {[instId: string]: IPositionOpen} = {}
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
-
     if (campaigns.has(id)) {
       ctx.replyWithHTML(
-        `🚫 Trading interval with ID <code>${id}</code> is already active.`,
+        `🚫 Trading interval with ID <code>${id}</code> is already active.`
       );
       return;
     }
-    // const _OKXFundingList = await getOKXFunding()
-    // const OKXFundingList = _OKXFundingList.filter(e => Number(e.fundingRate) < -0.001 && Number(e.fundingRate) > -0.04 && e.buyInstType === "SWAP")
-    // console.log(OKXFundingList)
-    let tradeAbleCrypto = await getTradeAbleCrypto(config.tokenTradingMode);
+    fundingArbitrage = await getOKXFundingObject({
+      fundingDownTo: FUNDING_DOWNTO,
+      fundingUpTo: FUNDING_UPTO
+    });
+    let tradeAbleCrypto = Object.keys(fundingArbitrage);
+    // await getTradeAbleCrypto(config.tokenTradingMode);
     await ctx.reply(
-      `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`,
+      `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`
     );
     if (tradeAbleCrypto.length === 0) {
       ctx.replyWithHTML("🛑 No currency to trade.");
@@ -222,6 +342,8 @@ export const botAutoTrading = ({
       id,
       config,
       tradeAbleCrypto,
+      fundingArbitrage,
+      flashPositions,
       // OKXFundingList,
       lastestSignalTs,
       campaigns,
@@ -231,7 +353,7 @@ export const botAutoTrading = ({
       id,
       { ...config },
       true,
-      tradeAbleCrypto,
+      tradeAbleCrypto
     );
     ctx.replyWithHTML(startReport);
     // await setTimeout(5000);
@@ -243,7 +365,7 @@ export const botAutoTrading = ({
 
     if (!campaigns.has(id)) {
       ctx.replyWithHTML(
-        `🚫 No active trading interval found with ID <code>${id}</code>.`,
+        `🚫 No active trading interval found with ID <code>${id}</code>.`
       );
       return;
     }
@@ -268,7 +390,7 @@ export const botAutoTrading = ({
           id,
           CampaignConfig,
           false,
-          CampaignConfig?.tradeAbleCrypto,
+          CampaignConfig?.tradeAbleCrypto
         ) + "\n";
     });
 
