@@ -45,7 +45,7 @@ import { getOKXFunding, getOKXFundingObject } from "../../helper/okx.funding";
 import { existsSync } from "fs";
 const MODE = process.env.ENV;
 const isDev = MODE === "dev"
-const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60
+const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 8 * 60
 const FUNDING_DOWNTO = isDev ? -0.2 : -2
 const FUNDING_UPTO = isDev ? 0.2 : -0.05 
 const MIN_MAX_TP: [number, number] = [0.6, 0.8]

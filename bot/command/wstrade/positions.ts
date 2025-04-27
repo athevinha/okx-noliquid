@@ -122,7 +122,28 @@ const _fowardPositions = async ({
           size: config.sz,
           posSide: posSide as IPosSide,
         };
+        const {tpTriggerPx: newTpTriggerPx, slTriggerPx: newSlTriggerPx} = calcTpSL({fundingRate: Number(fundingRate), posSide: openParams.posSide, px: breakevenPx, tpMinMax: [0.2, 0.4]})
         const lastTimeDCA = lastTimeDCAPositions[instId];
+        if(Number(fundingFee) > 0 && (pos.closeOrderAlgo[0].tpTriggerPx !== newTpTriggerPx || pos.closeOrderAlgo[0].slTriggerPx !== newSlTriggerPx )) {
+          lastTimeDCAPositions[instId] = Date.now();
+            const editAlgoRes =  await editLimitAlgoOrders({
+              instId: instId, 
+              algoId: closeOrderAlgo[0].algoId,
+              newSlTriggerPx,
+              newTpTriggerPx
+          })
+          if (okxReponseChecker(editAlgoRes)) {
+            const txt = `<b>Limit Update</b>: <b>${pos.instId}</b>
+💰 F.Fee : ${zerofy(fundingFee)}${USDT} 
+🎯 N.TP/SL: <code>${zerofy(newTpTriggerPx)}${USDT}</code> | <code>${zerofy(newSlTriggerPx)}${USDT}</code>`;            
+            await ctx.replyWithHTML(txt);
+          } else {
+            await ctx.replyWithHTML(
+              `⚠️ Edit limit failed. <code> ${editAlgoRes.code}: ${editAlgoRes.msg} </code>`
+            );
+          }
+        }
+            
         if (
           pxChange < -PX_CHANGE_TO_DCA &&
           (!lastTimeDCA || Date.now() - lastTimeDCA > DELAY_FOR_DCA_ORDER) && 
@@ -147,8 +168,8 @@ const _fowardPositions = async ({
 🪙 <b>${pos.instId}</b>
 📈 Est.avg: <code>${zerofy(avgPx)}${USDT}</code> → <code>${zerofy(estNewAvgPx)}${USDT}</code>
 ⚖️ Sz: <code>${zerofy(pos.notionalUsd)}${USDT}</code> → <code>${zerofy(estNewSz)}${USDT}</code>
-💰 Break-even: <code>${zerofy(breakevenPx)}${USDT}</code> -> <code>${zerofy(estBreakevenPx)}${USDT}</code>
-🎯 New TP/SL: <code>${zerofy(tpTriggerPx)}${USDT}</code> | <code>${zerofy(slTriggerPx)}${USDT}</code>`;            
+💰 B.Even: <code>${zerofy(breakevenPx)}${USDT}</code> -> <code>${zerofy(estBreakevenPx)}${USDT}</code>
+🎯 N.TP/SL: <code>${zerofy(tpTriggerPx)}${USDT}</code> | <code>${zerofy(slTriggerPx)}${USDT}</code>`;            
             await ctx.replyWithHTML(txt);
           } else {
             await ctx.replyWithHTML(
@@ -217,26 +238,15 @@ async function forwardPositionsWithWs({
       console.log(e);
     },
     closeCallBack(code, reason) {
-      console.error(`[POSITION] WebSocket closed with code: ${code} ${reason}`);
+      // console.error(`[POSITION] WebSocket closed with code: ${code} ${reason}`);
       if (code === 1005) {
         Object.keys(lastTimeDCAPositions).forEach((instId) => {
           delete lastTimeDCAPositions[instId];
         });
-        ctx.replyWithHTML(
-          `🔗 [POSITION] WebSocket connection terminated for <b><code>${id}</code>.</b>`
-        );
+        // ctx.replyWithHTML(
+        //   `🔗 [POSITION] WebSocket connection terminated for <b><code>${id}</code>.</b>`
+        // );
         // campaigns.delete(id);
-      } else if (code === 4004) {
-        // 4004 code indicates no data received within 30 seconds
-        Object.keys(lastTimeDCAPositions).forEach((instId) => {
-          delete lastTimeDCAPositions[instId];
-        });
-        if (campaigns.get(id)?.WSTicker) {
-          campaigns.get(id)?.WSTicker?.close();
-        }
-        console.log(
-          `🛑 [POSITION] WebSocket connection stopped for <b><code>${id} [${code}]</code>.</b>`
-        );
       } else {
         forwardPositionsWithWs({
           ctx,
@@ -246,9 +256,9 @@ async function forwardPositionsWithWs({
           fundingArbitrage,
           campaigns,
         });
-        ctx.replyWithHTML(
-          `⛓️ [POSITION] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
-        );
+        // ctx.replyWithHTML(
+        //   `⛓️ [POSITION] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
+        // );
       }
     },
   });
