@@ -45,13 +45,13 @@ import { getOKXFunding, getOKXFundingObject } from "../../helper/okx.funding";
 import { existsSync } from "fs";
 const MODE = process.env.ENV;
 const isDev = MODE === "dev"
-const BEFORE_FUNDING_TO_ORDER = 2 * 60
-const FUNDING_DOWNTO = -1
-const FUNDING_UPTO = -0.1
-const MIN_MAX_TP = [0.6, 0.8]
-const MIN_MAX_SL = [1, 2]
-export const DELAY_FOR_DCA_ORDER = 30_000
-export const PX_CHANGE_TO_DCA = 0.5
+const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60
+const FUNDING_DOWNTO = isDev ? -0.2 : -2
+const FUNDING_UPTO = isDev ? 0.2 : -0.05 
+const MIN_MAX_TP: [number, number] = [0.6, 0.8]
+const MIN_MAX_SL: [number, number] = [1.5, 2]
+export const DELAY_FOR_DCA_ORDER = 45_000
+export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5
 // const env = process.env.ENV || "dev"; // fallback to 'dev' mode
 // const envPath = `.env.${env}`;
 // if (existsSync(envPath)) {
@@ -84,6 +84,31 @@ export const PX_CHANGE_TO_DCA = 0.5
  *
  * @throws {Error} - If any error occurs during the trading logic execution, it is logged, and an error message is sent to the user via the Telegram bot.
  */
+
+export const calcTpSL = ({px, fundingRate, posSide, tpMinMax = MIN_MAX_TP, slMinMax = MIN_MAX_SL}: {px: string, fundingRate: number, posSide: IPosSide, tpMinMax?: [number, number], slMinMax?: [number, number]}) => {
+  const tpPercent = Math.min(
+    Math.max(Math.abs(fundingRate) * 2, tpMinMax[0] / 100),
+    tpMinMax[1] / 100
+  );
+  const slPercent = Math.min(
+    Math.max(Math.abs(fundingRate) * 2, slMinMax[0] / 100),
+    slMinMax[1] / 100
+  );
+  return {
+    tpTriggerPx: String(posSide === 'long' ? Number(px) * (1 + tpPercent) : Number(px) * (1 - tpPercent)),
+    slTriggerPx: String(posSide === 'long' ? Number(px) * (1 - slPercent) : Number(px) * (1 + slPercent))  
+  }
+}
+
+export const calcBreakEvenPx = ({posSide, avgPx, realizedPnl, notionalUsd}: {posSide: IPosSide, avgPx: string, realizedPnl: string, notionalUsd: string}) => {
+  let breakevenPx;
+  if (posSide === 'long') {
+    breakevenPx = Number(avgPx) - ((Number(realizedPnl) * Number(avgPx)) / Number(notionalUsd));
+  } else if (posSide === 'short') {
+    breakevenPx = Number(avgPx) + ((Number(realizedPnl) * Number(avgPx)) / Number(notionalUsd));
+  }
+  return String(breakevenPx)
+}
 const _fowardTrading = async ({
   ctx,
   config,
@@ -131,26 +156,19 @@ const _fowardTrading = async ({
     const now = Date.now();
     const fundingTimeLeftMs = Number(fundingData.fundingTime) - now;
     const fundingTimeLeftSec = fundingTimeLeftMs / 1000;
-    const timeToOpen = isDev ? 2 : BEFORE_FUNDING_TO_ORDER;
+    const timeToOpen = BEFORE_FUNDING_TO_ORDER;
     const posSide = fundingRate < 0 ? "long" : "short";
 
-    // console.log(
-    //   `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
-    // );
+    console.log(
+      `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
+    );
 
     if (
       fundingTimeLeftSec <= timeToOpen &&
       fundingTimeLeftSec > timeToOpen - 1 &&
       !flashPositions[wsCandle.instId]
     ) {
-      const tpPercent = Math.min(
-        Math.max(Math.abs(fundingRate) * 2, MIN_MAX_TP[0] / 100),
-        MIN_MAX_TP[1] / 100
-      );
-      const slPercent = Math.min(
-        Math.max(Math.abs(fundingRate) * 2, MIN_MAX_SL[0] / 100),
-        MIN_MAX_SL[1] / 100
-      );
+      const {tpTriggerPx, slTriggerPx} = calcTpSL({fundingRate: Number(fundingRate), posSide, px: wsCandle.c})
 
       flashPositions[wsCandle.instId] = true;
       const openParams: any = {
@@ -159,8 +177,8 @@ const _fowardTrading = async ({
         mgnMode: config.mgnMode,
         size: config.sz,
         posSide,
-        tpTriggerPx: posSide === 'long' ? Number(wsCandle.c) * (1 + tpPercent) : Number(wsCandle.c) * (1 - tpPercent),
-        slTriggerPx: posSide === 'long' ? Number(wsCandle.c) * (1 - slPercent) : Number(wsCandle.c) * (1 + slPercent)
+        tpTriggerPx,
+        slTriggerPx,
       };
       
       console.log(`Opening position with params:`, openParams);
@@ -326,8 +344,8 @@ export const botAutoTrading = ({
       return;
     }
     fundingArbitrage = await getOKXFundingObject({
-      fundingDownTo: isDev ? -0.2 : FUNDING_DOWNTO,
-      fundingUpTo: isDev ? 0.2 : FUNDING_UPTO
+      fundingDownTo: FUNDING_DOWNTO,
+      fundingUpTo: FUNDING_UPTO
     });
     let tradeAbleCrypto = Object.keys(fundingArbitrage);
     // await getTradeAbleCrypto(config.tokenTradingMode);

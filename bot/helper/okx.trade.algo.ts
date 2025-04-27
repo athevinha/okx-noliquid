@@ -160,8 +160,29 @@ export const openTPSLAlgoOrder = async ({
       reduceOnly: true,
       cxlOnClosePos: true
     });
-    console.log(body)
     const path = `/api/v5/trade/order-algo`;
+    const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+      headers: makeHeaderAuthenticationOKX("POST", path, body),
+    });
+    return res?.data;
+  } catch (error: any) {
+    axiosErrorDecode(error);
+    return {
+      code: error?.code,
+      data: [],
+      msg: axiosErrorDecode(error),
+    };
+  }
+};
+export const editLimitAlgoOrders = async ({instId, algoId, newTpTriggerPx, newSlTriggerPx}: {instId: string, algoId: string, newTpTriggerPx?: string, newSlTriggerPx?: string}): Promise<OKXResponse> => {
+  try {
+    const body = JSON.stringify({
+      instId,
+      algoId,
+      ...(newTpTriggerPx ? {newTpTriggerPx} : {}),
+      ...(newSlTriggerPx ? {newSlTriggerPx} : {}),
+    });
+    const path = `/api/v5/trade/amend-algos`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
       headers: makeHeaderAuthenticationOKX("POST", path, body),
     });

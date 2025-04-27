@@ -218,7 +218,6 @@ export const placeOrder = async ({
       // clOrdId,
       // tag,
     });
-    console.log(body)
     const path = `/api/v5/trade/order`;
     const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
       headers: makeHeaderAuthenticationOKX("POST", path, body),
@@ -284,7 +283,7 @@ export const openFuturePosition = async ({
       });
       const tag = decodeTag({ campaignId, instId, posSide, leverage, size });
       const side: ISide = posSide === "long" ? "buy" : "sell";
-      // await setPositionMode("long_short_mode");
+      await setPositionMode("long_short_mode");
       await setLeveragePair(instId, leverage, mgnMode, posSide);
       return await placeOrder({
         instId,

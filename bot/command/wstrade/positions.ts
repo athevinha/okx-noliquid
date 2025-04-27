@@ -49,7 +49,8 @@ import {
 } from "../../helper/okx.account";
 import { fowardTickerATRWithWs } from "./ticker";
 import WebSocket from "ws";
-import { DELAY_FOR_DCA_ORDER, PX_CHANGE_TO_DCA } from "./trade";
+import { calcBreakEvenPx, calcTpSL, DELAY_FOR_DCA_ORDER, PX_CHANGE_TO_DCA } from "./trade";
+import {editLimitAlgoOrders} from "../../helper/okx.trade.algo";
 dotenv.config();
 const _fowardPositions = async ({
   ctx,
@@ -100,35 +101,54 @@ const _fowardPositions = async ({
           uplRatio,
           avgPx,
           notionalUsd,
+          closeOrderAlgo,
+          instId,
           lever,
           posSide,
           fundingFee,
-          fee,
           markPx,
         } = pos;
+        const breakevenPx = calcBreakEvenPx({posSide: posSide as IPosSide, avgPx, notionalUsd, realizedPnl})
+        const fundingRate = fundingArbitrage?.[instId]?.fundingRate
+        if(!fundingRate) {
+            console.log(instId)
+            return;
+        }
         const pxChange = (Number(uplRatio) * 100) / Number(lever);
         const openParams = {
-          instId: pos.instId,
+          instId: instId,
           leverage: config.leve,
           mgnMode: config.mgnMode,
           size: config.sz,
           posSide: posSide as IPosSide,
         };
-        const lastTimeDCA = lastTimeDCAPositions[pos.instId];
+        const lastTimeDCA = lastTimeDCAPositions[instId];
         if (
           pxChange < -PX_CHANGE_TO_DCA &&
-          (!lastTimeDCA || Date.now() - lastTimeDCA > DELAY_FOR_DCA_ORDER)
+          (!lastTimeDCA || Date.now() - lastTimeDCA > DELAY_FOR_DCA_ORDER) && 
+          closeOrderAlgo[0].algoId
         ) {
-          lastTimeDCAPositions[pos.instId] = Date.now();
+          lastTimeDCAPositions[instId] = Date.now();
+          const estNewAvgPx = String((Number(avgPx) * Number(notionalUsd) + Number(markPx) * openParams.size) / (Number(notionalUsd) + openParams.size))
+          const estNewSz = String(Number(notionalUsd) + openParams.size)
           const { openPositionRes } = await openFuturePosition(openParams);
-          if (okxReponseChecker(openPositionRes)) {
-            // dca success
-            const txt = `<b>💼 Position Update</b>
-🪙 Ticker: <code>${pos.instId}</code>
-📈 Side: <code>${pos.posSide}</code>
-⚖️ Sz: <code>${zerofy(pos.notionalUsd)} → ${zerofy(Number(pos.notionalUsd) + openParams.size)}</code>
-📊 R.Tio. P&L: <code>${zerofy(Number(pos.uplRatio) * 100)}% </code> <code>(${zerofy(Number(pos.upl) || 0)})</code>
-🏦 F | F.Fee: <code>${zerofy(pos.fee)}${USDT}</code> | <code>${zerofy(pos.fundingFee)}${USDT}</code>`;
+          const estBreakevenPx = calcBreakEvenPx({posSide: posSide as IPosSide, avgPx: estNewAvgPx, notionalUsd: estNewSz, realizedPnl})
+          const {tpTriggerPx, slTriggerPx} = Number(fundingFee) <= 0 ?
+           calcTpSL({fundingRate: Number(fundingRate), posSide: openParams.posSide, px: estNewAvgPx}) :
+           calcTpSL({fundingRate: Number(fundingRate), posSide: openParams.posSide, px: estBreakevenPx, tpMinMax: [0.2, 0.4]})
+          const editAlgoRes =  await editLimitAlgoOrders({
+              instId: instId, 
+              algoId: closeOrderAlgo[0].algoId,
+              newSlTriggerPx: slTriggerPx,
+              newTpTriggerPx: tpTriggerPx
+          })
+          if (okxReponseChecker(openPositionRes) && okxReponseChecker(editAlgoRes)) {
+            const txt = `<b>💼 [DCA] Position Update</b>
+🪙 <b>${pos.instId}</b>
+📈 Est.avg: <code>${zerofy(avgPx)}${USDT}</code> → <code>${zerofy(estNewAvgPx)}${USDT}</code>
+⚖️ Sz: <code>${zerofy(pos.notionalUsd)}${USDT}</code> → <code>${zerofy(estNewSz)}${USDT}</code>
+💰 Break-even: <code>${zerofy(breakevenPx)}${USDT}</code> -> <code>${zerofy(estBreakevenPx)}${USDT}</code>
+🎯 New TP/SL: <code>${zerofy(tpTriggerPx)}${USDT}</code> | <code>${zerofy(slTriggerPx)}${USDT}</code>`;            
             await ctx.replyWithHTML(txt);
           } else {
             await ctx.replyWithHTML(

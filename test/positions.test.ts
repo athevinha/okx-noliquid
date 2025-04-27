@@ -11,6 +11,7 @@ import {
 } from "../bot/helper/okx.trade";
 import { ImgnMode, IPosSide } from "../bot/type";
 import { decodeClOrdId, decodeTag, decodeTimestampAgo } from "../bot/utils";
+import {editLimitAlgoOrders} from "../bot/helper/okx.trade.algo";
 
 describe("OKX positions with test", () => {
   const TEST_CONFIG = {
@@ -35,6 +36,15 @@ describe("OKX positions with test", () => {
       tpTriggerPx: "100000",
       slTriggerPx: "80000",
     });
+    const positions = await getAccountPositions("SWAP");
+    const pos = positions.filter(pos => pos.instId === instId)[0]
+    const editAlgoRes = await editLimitAlgoOrders({
+      instId,
+      algoId: pos.closeOrderAlgo[0].algoId,
+      newSlTriggerPx: "70000",
+      newTpTriggerPx: "110000"
+    })
+    expect(editAlgoRes.msg).eq("")
     expect(openAlgoOrderRes.msg).eq("");
     expect(openPositionRes.msg).eq("");
 
