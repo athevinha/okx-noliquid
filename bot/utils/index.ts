@@ -5,6 +5,18 @@ import { getSupportCrypto } from "../helper/okx.candles";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import proxys from "../../proxys.json";
 import WebSocket from "ws";
+import {existsSync} from "fs";
+import {config} from "dotenv";
+
+export const loadEnv = () =>  {
+  const env = process.env.ENV || "dev"; // fallback to 'dev' mode
+  const envPath = `.env.${env}`;
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+  } else {
+    console.warn(`⚠️ Environment file ${envPath} not found.`);
+  }
+}
 export function decodeTimestamp(
   ts?: number,
   UTC: number = 7 * 60 * 60 * 1000,

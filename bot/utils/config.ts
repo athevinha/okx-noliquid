@@ -1,6 +1,13 @@
+import {existsSync} from "fs";
 import { CampainState, ImgnMode } from "../type";
-import dotenv from "dotenv";
-dotenv.config();
+import dotenv, {config} from "dotenv";
+const env = process.env.ENV || "dev"; // fallback to 'dev' mode
+const envPath = `.env.${env}`;
+if (existsSync(envPath)) {
+  config({ path: envPath });
+} else {
+  console.warn(`⚠️ Environment file ${envPath} not found.`);
+}
 
 export const WHITE_LIST_TOKENS_TRADE = [
   "WIF-USDT-SWAP",

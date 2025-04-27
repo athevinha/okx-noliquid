@@ -6,11 +6,18 @@
 import WebSocket from "ws";
 import { IMethod } from "../type";
 import { createSignature, decodeTimestamp } from "../utils";
-import dotenv from "dotenv";
+import dotenv, {config} from "dotenv";
 import crypto from "crypto";
 import { OKX_BASE_WS_URL } from "../utils/config";
-dotenv.config();
-
+import {existsSync} from "fs";
+const env = process.env.ENV || "dev"; // fallback to 'dev' mode
+const envPath = `.env.${env}`;
+if (existsSync(envPath)) {
+  config({ path: envPath });
+} else {
+  console.warn(`⚠️ Environment file ${envPath} not found.`);
+}
+console.log( process.env.OKX_API_KEY)
 export const makeHeaderAuthenticationOKX = (
   method: IMethod,
   path: string,
