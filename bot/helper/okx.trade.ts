@@ -18,7 +18,8 @@ import {
 import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 import {
-  closeAllTrailingStopWithInstId,
+  closeAlgoWithInstId,
+  openTPSLAlgoOrder,
   openTrailingStopOrder,
 } from "./okx.trade.algo";
 
@@ -28,26 +29,42 @@ export const setLeveragePair = async (
   mgnMode: string,
   posSide: string,
 ): Promise<OKXResponse> => {
-  try {
-    const body = JSON.stringify({
-      instId,
-      lever,
-      mgnMode,
-      posSide,
-    });
-    const path = `/api/v5/account/set-leverage`;
-    const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
-      headers: makeHeaderAuthenticationOKX("POST", path, body),
-    });
-    return res?.data;
-  } catch (error: any) {
-    return {
-      code: error?.code,
-      data: [],
-      msg: `${error?.reason} ${error?.message}`,
-    };
+  const path = `/api/v5/account/set-leverage`;
+  
+  const trySetLeverage = async (): Promise<OKXResponse> => {
+    try {
+      const body = JSON.stringify({ instId, lever, mgnMode, posSide });
+      const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+        headers: makeHeaderAuthenticationOKX("POST", path, body),
+      });
+      return res?.data;
+    } catch (error: any) {
+      return {
+        code: error?.code || "-1",
+        data: [],
+        msg: `${error?.reason || "Unknown reason"} ${error?.message || ""}`,
+      };
+    }
+  };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await trySetLeverage();
+    if (response.code === "0") {
+      return response;
+    }
+    if (attempt < 2) {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // wait 2 seconds before next attempt
+    }
   }
+
+  // After 3 failed attempts
+  return {
+    code: "-1",
+    data: [],
+    msg: "Failed to set leverage after 3 attempts",
+  };
 };
+
 export const setPositionMode = async (
   mode: string = "long_short_mode",
 ): Promise<OKXResponse> => {
@@ -267,7 +284,7 @@ export const openFuturePosition = async ({
       });
       const tag = decodeTag({ campaignId, instId, posSide, leverage, size });
       const side: ISide = posSide === "long" ? "buy" : "sell";
-      await setPositionMode("long_short_mode");
+      // await setPositionMode("long_short_mode");
       await setLeveragePair(instId, leverage, mgnMode, posSide);
       return await placeOrder({
         instId,
@@ -278,8 +295,6 @@ export const openFuturePosition = async ({
         szUSD: size,
         clOrdId,
         tag,
-        tpTriggerPx,
-        slTriggerPx
       });
     } catch (error: any) {
       return {
@@ -289,45 +304,46 @@ export const openFuturePosition = async ({
       };
     }
   };
-  // const openTrailingOrder = async (
-  //   _callbackRatio: string,
-  // ): Promise<OKXResponse> => {
-  //   try {
-  //     return await openTrailingStopOrder({
-  //       instId,
-  //       size,
-  //       posSide,
-  //       mgnMode,
-  //       callbackRatio: _callbackRatio,
-  //       activePx: trailActiveAvgPx
-  //     });
-  //   } catch (error: any) {
-  //     return {
-  //       code: error?.code,
-  //       data: [],
-  //       msg: "Trailing: " + axiosErrorDecode(error),
-  //     };
-  //   }
-  // };
-  while (attempts < maxRetries) {
-    attempts += 1;
-    openPositionRes = await openPosition();
-    if (okxReponseChecker(openPositionRes)) {
-      break;
+  const openTPSLOrder = async (): Promise<OKXResponse> => {
+    try {
+      return await openTPSLAlgoOrder({
+        instId,
+        size,
+        posSide,
+        mgnMode,
+        tpTriggerPx,
+        slTriggerPx
+      });
+    } catch (error: any) {
+      return {
+        code: error?.code,
+        data: [],
+        msg: "Trailing: " + axiosErrorDecode(error),
+      };
     }
-  }
-  attempts = 0;
+  };
+  // while (attempts < maxRetries) {
+  //   attempts += 1;
+  //   openPositionRes = await openPosition();
 
-  // if (okxReponseChecker(openPositionRes) && callbackRatio) {
+  //   if (okxReponseChecker(openPositionRes)) {
+  //     break;
+  //   }
+  // }
+  // attempts = 0;
+
+  // if (okxReponseChecker(openPositionRes)) {
   //   while (attempts < maxRetries) {
   //     attempts += 1;
-  //     // openAlgoOrderRes = await openTrailingOrder(callbackRatio);
+  //     openAlgoOrderRes = await openTPSLOrder();
   //     if (okxReponseChecker(openAlgoOrderRes)) {
   //       break;
   //     }
   //   }
   // }
-
+  openPositionRes = await openPosition();
+  if(okxReponseChecker(openPositionRes) && (!!tpTriggerPx || !!slTriggerPx) )
+    openAlgoOrderRes = await openTPSLOrder();
   return {
     openPositionRes: {
       ...openPositionRes,
@@ -393,17 +409,18 @@ export const closeFuturePosition = async ({
       };
     }
   };
-  const closeAlgoOrders = async (): Promise<OKXResponse> => {
-    try {
-      return await closeAllTrailingStopWithInstId({ instId });
-    } catch (error: any) {
-      return {
-        code: error?.code,
-        data: [],
-        msg: axiosErrorDecode(error),
-      };
-    }
-  };
+  // const closeAlgoOrders = async (): Promise<OKXResponse> => {
+  //   try {
+  //     return await closeAlgoWithInstId({ instId });
+  //   } catch (error: any) {
+  //     return {
+  //       code: error?.code,
+  //       data: [],
+  //       msg: axiosErrorDecode(error),
+  //     };
+  //   }
+  // };
+  
   while (attempts < maxRetries) {
     attempts += 1;
     closePositionRes = await closePosition();
@@ -414,19 +431,19 @@ export const closeFuturePosition = async ({
       break;
     }
   }
-  attempts = 0;
-  if (isCloseAlgoOrders) {
-    while (attempts < maxRetries) {
-      attempts += 1;
-      closeAlgoOrderRes = await closeAlgoOrders();
-      if (closeAlgoOrderRes.code === "404") {
-        break;
-      }
-      if (okxReponseChecker(closeAlgoOrderRes)) {
-        break;
-      }
-    }
-  }
+  // attempts = 0;
+  // if (isCloseAlgoOrders) {
+  //   while (attempts < maxRetries) {
+  //     attempts += 1;
+  //     closeAlgoOrderRes = await closeAlgoOrders();
+  //     if (closeAlgoOrderRes.code === "404") {
+  //       break;
+  //     }
+  //     if (okxReponseChecker(closeAlgoOrderRes)) {
+  //       break;
+  //     }
+  //   }
+  // }
 
   return {
     closePositionRes: {

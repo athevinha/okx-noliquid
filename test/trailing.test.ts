@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import {
-  closeAllTrailingStopWithInstId,
+  closeAlgoWithInstId,
   openTrailingStopOrder,
 } from "../bot/helper/okx.trade.algo";
 import { IInstrumentsData, ImgnMode, IPosSide } from "../bot/type";

@@ -4,7 +4,7 @@ import { OKX_BASE_API_URL } from "../utils/config";
 import { makeHeaderAuthenticationOKX } from "./auth";
 import { convertUSDToContractOrderSize } from "./okx.trade";
 import { axiosErrorDecode } from "../utils";
-import { getAccountPendingAlgoOrders } from "./okx.account";
+import { getAccountPendingAlgoOrders, getAccountPosition, getAccountPositions } from "./okx.account";
 
 export const openTrailingStopOrder = async ({
   instId,
@@ -69,17 +69,19 @@ export const openTrailingStopOrder = async ({
   }
 };
 
-export const closeAllTrailingStopWithInstId = async ({
+export const closeAlgoWithInstId = async ({
   instId,
 }: {
   instId: string;
 }): Promise<OKXResponse> => {
   try {
-    const algoOrders = await getAccountPendingAlgoOrders({ instId });
+    const [position] = await getAccountPositions("SWAP", [instId]);
+    if(!position) throw "Not found position"
+    
     const body = JSON.stringify(
-      algoOrders
+      position.closeOrderAlgo
         .map((algo) => ({
-          instId: algo.instId,
+          instId: position.instId,
           algoId: algo.algoId,
         }))
         .slice(0, 10),
@@ -96,6 +98,76 @@ export const closeAllTrailingStopWithInstId = async ({
     });
     return res?.data as OKXResponse;
   } catch (error: any) {
+    return {
+      code: error?.code,
+      data: [],
+      msg: axiosErrorDecode(error),
+    };
+  }
+};
+
+
+export const openTPSLAlgoOrder = async ({
+  instId,
+  mgnMode,
+  posSide,
+  size,
+  sizeContract,
+  slTriggerPx,
+  tpTriggerPx,
+}: {
+  instId: string;
+  mgnMode: ImgnMode;
+  posSide: IPosSide;
+  size: number;
+  tpTriggerPx?: string;
+  slTriggerPx?:string;
+  sizeContract?: number;
+}): Promise<OKXResponse> => {
+  try {
+    let sz = String(sizeContract);
+    if (!sizeContract) {
+      if (size)
+        sz = await convertUSDToContractOrderSize({
+          instId,
+          sz: size,
+          opType: "close",
+        });
+      if (!sz)
+        return {
+          code: "",
+          msg: "Convert USD contract error",
+          data: [],
+        };
+    }
+    const _side =
+      posSide === "long" ? "sell" : posSide === "short" ? "buy" : "net";
+    const body = JSON.stringify({
+      instId,
+      tdMode: mgnMode,
+      side: _side,
+      hasTp: true,
+      hasSl: true,
+      posSide,
+      ordType: "oco",
+      tpTriggerPxType: "mark",
+      tpOrdPx : "-1",
+      tpTriggerPx,
+      slTriggerPxType: "mark",
+      slOrdPx : "-1",
+      closeFraction: 1,
+      slTriggerPx,
+      reduceOnly: true,
+      cxlOnClosePos: true
+    });
+    console.log(body)
+    const path = `/api/v5/trade/order-algo`;
+    const res = await axios.post(`${OKX_BASE_API_URL}${path}`, body, {
+      headers: makeHeaderAuthenticationOKX("POST", path, body),
+    });
+    return res?.data;
+  } catch (error: any) {
+    axiosErrorDecode(error);
     return {
       code: error?.code,
       data: [],

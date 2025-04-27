@@ -14,7 +14,7 @@ import { decodeClOrdId, decodeTag, decodeTimestampAgo } from "../bot/utils";
 
 describe("OKX positions with test", () => {
   const TEST_CONFIG = {
-    instId: "PEPE-USDT-SWAP",
+    instId: "BTC-USDT-SWAP",
     leverage: 5,
     size: 100,
     mgnMode: "isolated",
@@ -32,6 +32,8 @@ describe("OKX positions with test", () => {
       mgnMode: mgnMode as ImgnMode,
       posSide: posSide as IPosSide,
       leverage: leverage,
+      tpTriggerPx: "100000",
+      slTriggerPx: "80000",
     });
     expect(openAlgoOrderRes.msg).eq("");
     expect(openPositionRes.msg).eq("");

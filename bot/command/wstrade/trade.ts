@@ -45,11 +45,13 @@ import { getOKXFunding, getOKXFundingObject } from "../../helper/okx.funding";
 import { existsSync } from "fs";
 const MODE = process.env.ENV;
 const isDev = MODE === "dev"
-const BEFORE_FUNDING_TO_ORDER = 1 * 60
-const FUNDING_DOWNTO = -2
+const BEFORE_FUNDING_TO_ORDER = 2 * 60
+const FUNDING_DOWNTO = -1
 const FUNDING_UPTO = -0.1
-const MIN_MAX_TP = [0.3, 0.4]
-const MIN_MAX_SL = [0.6, 0.8]
+const MIN_MAX_TP = [0.6, 0.8]
+const MIN_MAX_SL = [1, 2]
+export const DELAY_FOR_DCA_ORDER = 30_000
+export const PX_CHANGE_TO_DCA = 0.5
 // const env = process.env.ENV || "dev"; // fallback to 'dev' mode
 // const envPath = `.env.${env}`;
 // if (existsSync(envPath)) {
@@ -130,10 +132,11 @@ const _fowardTrading = async ({
     const fundingTimeLeftMs = Number(fundingData.fundingTime) - now;
     const fundingTimeLeftSec = fundingTimeLeftMs / 1000;
     const timeToOpen = isDev ? 2 : BEFORE_FUNDING_TO_ORDER;
+    const posSide = fundingRate < 0 ? "long" : "short";
 
-    console.log(
-      `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
-    );
+    // console.log(
+    //   `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
+    // );
 
     if (
       fundingTimeLeftSec <= timeToOpen &&
@@ -149,14 +152,12 @@ const _fowardTrading = async ({
         MIN_MAX_SL[1] / 100
       );
 
-      const posSide = fundingRate < 0 ? "long" : "short";
-
       flashPositions[wsCandle.instId] = true;
       const openParams: any = {
         instId: wsCandle.instId,
-        leverage: 10,
-        mgnMode: "isolated",
-        size: 200,
+        leverage: config.leve,
+        mgnMode: config.mgnMode,
+        size: config.sz,
         posSide,
         tpTriggerPx: posSide === 'long' ? Number(wsCandle.c) * (1 + tpPercent) : Number(wsCandle.c) * (1 - tpPercent),
         slTriggerPx: posSide === 'long' ? Number(wsCandle.c) * (1 - slPercent) : Number(wsCandle.c) * (1 + slPercent)
@@ -164,9 +165,9 @@ const _fowardTrading = async ({
       
       console.log(`Opening position with params:`, openParams);
       
-      const { openPositionRes } = await openFuturePosition(openParams);
+      const { openPositionRes, openAlgoOrderRes } = await openFuturePosition(openParams);
       
-      if (openPositionRes.code === "0") {
+      if (openPositionRes.code === "0" && openAlgoOrderRes.code === "0") {
         if (ctx) {
           await ctx.replyWithHTML(
             `🚀 Successfully opened position for <b>${openParams.instId}</b>\n` +
@@ -180,42 +181,42 @@ const _fowardTrading = async ({
         if (ctx) {
           await ctx.replyWithHTML(
             `❌ Failed to open position for <b>${openParams.instId}</b>\n` +
-            `- Error Code: <code>${openPositionRes.code}</code>\n ` +
-            `- Error Message: <code>${openPositionRes.msg}</code>`
+            `- Error Code: <code>${openPositionRes.code} | ${openAlgoOrderRes.code}</code>\n ` +
+            `- Error Message: <code>${openPositionRes.msg} | ${openAlgoOrderRes.msg}</code>`
           );
         }
       }
       
     }
 
-    if (
-      fundingTimeLeftSec < -40 &&
-      flashPositions[wsCandle.instId]
-    ) {
-      flashPositions[wsCandle.instId] = false;
+    // if (
+    //   fundingTimeLeftSec < -40 &&
+    //   flashPositions[wsCandle.instId]
+    // ) {
+    //   flashPositions[wsCandle.instId] = false;
 
-      const { closePositionRes } = await closeFuturePosition({
-        instId: wsCandle.instId,
-        mgnMode: "isolated",
-        posSide: "long",
-      });
+    //   const { closePositionRes } = await closeFuturePosition({
+    //     instId: wsCandle.instId,
+    //     mgnMode: "isolated",
+    //     posSide: posSide,
+    //   });
 
-      if (closePositionRes.code === "0") {
-        if (ctx) {
-          await ctx.replyWithHTML(
-            `✅ Successfully closed position for <b>${wsCandle.instId}</b>`
-          );
-        }
-      } else {
-        if (ctx) {
-          await ctx.replyWithHTML(
-            `❌ Failed to close position for <b>${wsCandle.instId}</b>\n` +
-            `- Error Code: <code>${closePositionRes.code}</code>\n` +
-            `- Error Message: <code>${closePositionRes.msg}</code>`
-          );
-        }
-      }
-    }
+    //   if (closePositionRes.code === "0") {
+    //     if (ctx) {
+    //       await ctx.replyWithHTML(
+    //         `✅ Successfully closed position for <b>${wsCandle.instId}</b>`
+    //       );
+    //     }
+    //   } else {
+    //     if (ctx) {
+    //       await ctx.replyWithHTML(
+    //         `❌ Failed to close position for <b>${wsCandle.instId}</b>\n` +
+    //         `- Error Code: <code>${closePositionRes.code}</code>\n` +
+    //         `- Error Message: <code>${closePositionRes.msg}</code>`
+    //       );
+    //     }
+    //   }
+    // }
 
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
@@ -325,8 +326,8 @@ export const botAutoTrading = ({
       return;
     }
     fundingArbitrage = await getOKXFundingObject({
-      fundingDownTo: FUNDING_DOWNTO,
-      fundingUpTo: FUNDING_UPTO
+      fundingDownTo: isDev ? -0.2 : FUNDING_DOWNTO,
+      fundingUpTo: isDev ? 0.2 : FUNDING_UPTO
     });
     let tradeAbleCrypto = Object.keys(fundingArbitrage);
     // await getTradeAbleCrypto(config.tokenTradingMode);
@@ -344,7 +345,6 @@ export const botAutoTrading = ({
       tradeAbleCrypto,
       fundingArbitrage,
       flashPositions,
-      // OKXFundingList,
       lastestSignalTs,
       campaigns,
     });
@@ -352,6 +352,7 @@ export const botAutoTrading = ({
       ctx,
       id,
       config,
+      fundingArbitrage,
       tradeAbleCrypto,
       campaigns,
     });
