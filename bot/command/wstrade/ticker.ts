@@ -107,65 +107,7 @@ const _fowardTickerATRWithWs = async ({
       // console.log('Last 2st:', [candles[candles.length - 2].c, candles[candles.length - 2].h], 'Last 1st:', [candles[candles.length - 1].c, candles[candles.length - 1].h], 'ATR:', currentAtr.atr)
       const pos = trablePositions[instId] as IPositionOpen;
       // console.log(instId, Number(trablePositions[instId]?.avgPx) + currentAtr?.atr * multiple, markPrice)
-      if (
-        trablePositions[instId]?.avgPx !== "" &&
-        trablePositions[instId]?.avgPx !== undefined &&
-        currentAtr?.atr &&
-        multiple &&
-        estActiveAvgPx &&
-        markPrice >= estActiveAvgPx // When use socket market places ATRs
-      ) {
-        const callbackRatio =
-          currentAtr.fluctuationsPercent * multiple * 100 <= 0.1
-            ? 0.001
-            : currentAtr.fluctuationsPercent * multiple;
-
-        if (!alreadyOpenTrailingPositions[instId]) {
-          alreadyOpenTrailingPositions[instId] = true;
-          const param = {
-            instId,
-            // activePx: estActiveAvgPx.toString(),
-            size: Number(pos.availPos),
-            sizeContract: Number(pos.availPos),
-            posSide: pos.posSide as IPosSide,
-            mgnMode: pos.mgnMode as ImgnMode,
-            callbackRatio: callbackRatio.toFixed(4),
-          };
-          const closeAlgoOrderRes = await openTrailingStopOrder(param);
-          let notificationMessage = "";
-          if (closeAlgoOrderRes.msg === "") {
-            // success
-            await setTimeout(500);
-            const algoOrders = await getAccountPendingAlgoOrders({});
-            const algoOrder = algoOrders.filter(
-              (aOrder) => aOrder.instId === instId
-            )[0];
-            const realActiveAvgPx = Number(algoOrder?.last);
-            const estTriggerAvgPx = estActiveAvgPx * (100 - callbackRatio * 100) / 100;
-            const realTriggerAvgPx = algoOrder?.moveTriggerPx;
-
-            // console.log(
-            //   Number(trablePositions[instId]?.avgPx),
-            //   currentAtr?.atr,
-            //   multiple
-            // );
-            const activePxSlippage =
-              ((realActiveAvgPx - estActiveAvgPx) / estActiveAvgPx) * 100;
-
-            notificationMessage += `🔔 <b>[${decodeSymbol(instId)}]</b> <code>${id}</code> trailing trigger\n`;
-            notificationMessage += `• <b>Time:</b> <code>${decodeTimestamp(
-              Math.round(Number(algoOrder?.uTime))
-            )}</code>\n`;
-            notificationMessage += `• <b>E. | R. Active:</b> <code>$${zerofy(estActiveAvgPx)}</code> | <code>$${zerofy(realActiveAvgPx)}</code>\n`;
-            notificationMessage += `• <b>E. | R. Trig:</b> <code>$${zerofy(estTriggerAvgPx)}</code> | <code>$${zerofy(realTriggerAvgPx)}</code>\n`;
-            notificationMessage += `• <b>E. | R. Variance:</b> <code>${(callbackRatio * 100).toFixed(2)}%</code> | <code>${(Number(algoOrder?.callbackRatio) * 100).toFixed(2)}%</code>\n`;
-            notificationMessage += `• <b>Trail Slippage:</b> <code>${zerofy(Math.abs(activePxSlippage))}%</code> \n`;
-          } else {
-            notificationMessage = `🔴 Auto trailing error: <code>${closeAlgoOrderRes.msg}</code>`;
-          }
-          ctx.reply(notificationMessage, { parse_mode: "HTML" });
-        }
-      }
+      
     }
   } catch (err: any) {
     await ctx.replyWithHTML(

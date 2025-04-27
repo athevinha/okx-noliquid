@@ -34,7 +34,7 @@ import { formatReportInterval } from "../../utils/message";
 import { calculateATR } from "../../signals/atr";
 import { wsCandles, wsTicks } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
-import { botTrailingLossByATR } from "./trailing";
+import { botPositions } from "./positions";
 import WebSocket from "ws";
 import {
   getAccountPositions,
@@ -346,6 +346,13 @@ export const botAutoTrading = ({
       flashPositions,
       // OKXFundingList,
       lastestSignalTs,
+      campaigns,
+    });
+    botPositions({
+      ctx,
+      id,
+      config,
+      tradeAbleCrypto,
       campaigns,
     });
 

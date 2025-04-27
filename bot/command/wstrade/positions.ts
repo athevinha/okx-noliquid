@@ -39,12 +39,16 @@ import {
   wsTicks,
 } from "../../helper/okx.socket";
 import { setTimeout } from "timers/promises";
-import { getAccountPendingAlgoOrders } from "../../helper/okx.account";
+import {
+  getAccountOrder,
+  getAccountPendingAlgoOrders,
+  getAccountPendingOrders,
+} from "../../helper/okx.account";
 import { fowardTickerATRWithWs } from "./ticker";
 import WebSocket from "ws";
 dotenv.config();
 
-const _fowardTrailing = async ({
+const _fowardPositions = async ({
   ctx,
   config,
   tradeAbleCrypto,
@@ -77,71 +81,17 @@ const _fowardTrailing = async ({
 }) => {
   try {
     if (!wsPositions[0]?.avgPx || wsPositions.length === 0) {
-      if (wsPositions[0] && !wsPositions[0]?.avgPx) {
-        delete alreadyOpenTrailingPositions[wsPositions[0].instId];
-      }
       return;
-    } // Close and open pos message
-    const algoOrders = await getAccountPendingAlgoOrders({});
-    const WSPositions = wsPositions.filter((pos) => {
-      if (!tradeAbleCrypto.includes(pos.instId)) return false;
-      const algoOrder = algoOrders.filter(
-        (aOrd) => aOrd.instId === pos.instId,
-      )?.[0];
-      if (algoOrder?.moveTriggerPx || algoOrder?.callbackRatio) return false; // Already set a trailing loss orders
-      return true;
-    });
-    const wsInstIds = WSPositions.map((pos) => pos.instId);
-    const outdated =
-      Object.keys(trablePositions).filter((crypto) =>
-        wsInstIds.includes(crypto),
-      ).length !== WSPositions.length ||
-      WSPositions.length !== Object.keys(trablePositions).length;
-    // console.log("trablePositions", Object.keys(trablePositions).length,"| WSPositions",WSPositions.map((ws) => ws.instId).length, "| outdated", outdated, "| Already", Object.keys(alreadyOpenTrailingPositions).filter(key => alreadyOpenTrailingPositions[key]).length);
-
-    if (outdated) {
-      WSPositions.forEach((pos) => {
-        trablePositions[pos.instId] = pos; // Add or update the position
-      });
-      Object.keys(trablePositions).forEach((instId) => {
-        if (!WSPositions.some((pos) => pos.instId === instId)) {
-          delete trablePositions[instId]; // Remove the position if it no longer exists in WSPositions
-        }
-      });
-      await Promise.all(
-        WSPositions.map(async ({ instId }) => {
-          tradeAbleCryptoCandles[instId] = await getSymbolCandles({
-            instID: instId,
-            bar: config.bar,
-            before: 0,
-            limit: 300,
-          });
-          tradeAbleCryptoATRs[instId] = calculateATR(
-            tradeAbleCryptoCandles[instId],
-            ATR_PERIOD,
-          );
-        }),
-      );
-      fowardTickerATRWithWs({
-        ctx,
-        id,
-        config,
-        wsPositions: WSPositions,
-        campaigns,
-        tradeAbleCrypto,
-        tradeAbleCryptoATRs,
-        tradeAbleCryptoCandles,
-        trablePositions,
-        alreadyOpenTrailingPositions,
-      });
     }
+    const wsInstIds = wsPositions.map((pos) => pos.instId);
+    
   } catch (err: any) {
     await ctx.replyWithHTML(
-      `[TRAILING] Error: <code>${axiosErrorDecode(err)}</code>`,
+      `[POSITION] Error: <code>${axiosErrorDecode(err)}</code>`
     );
   }
 };
-async function forwardTrailingWithWs({
+async function forwardPositionsWithWs({
   ctx,
   id,
   config,
@@ -174,7 +124,7 @@ async function forwardTrailingWithWs({
       console.log(param);
     },
     messageCallBack(pos) {
-      _fowardTrailing({
+      _fowardPositions({
         config,
         ctx,
         wsPositions: pos.data,
@@ -191,13 +141,13 @@ async function forwardTrailingWithWs({
       console.log(e);
     },
     closeCallBack(code, reason) {
-      console.error(`[TRAILING] WebSocket closed with code: ${code}`);
+      console.error(`[POSITION] WebSocket closed with code: ${code} ${reason}`);
       if (code === 1005) {
         Object.keys(alreadyOpenTrailingPositions).forEach((instId) => {
           delete alreadyOpenTrailingPositions[instId];
         });
         ctx.replyWithHTML(
-          `🔗 [TRAILING] WebSocket connection terminated for <b><code>${id}</code>.</b>`,
+          `🔗 [POSITION] WebSocket connection terminated for <b><code>${id}</code>.</b>`
         );
         // campaigns.delete(id);
       } else if (code === 4004) {
@@ -209,10 +159,10 @@ async function forwardTrailingWithWs({
           campaigns.get(id)?.WSTicker?.close();
         }
         console.log(
-          `🛑 [TRAILING] WebSocket connection stopped for <b><code>${id} [${code}]</code>.</b>`,
+          `🛑 [POSITION] WebSocket connection stopped for <b><code>${id} [${code}]</code>.</b>`
         );
       } else {
-        forwardTrailingWithWs({
+        forwardPositionsWithWs({
           ctx,
           id,
           config,
@@ -220,7 +170,7 @@ async function forwardTrailingWithWs({
           campaigns,
         });
         ctx.replyWithHTML(
-          `⛓️ [TRAILING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`,
+          `⛓️ [POSITION] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
         );
       }
     },
@@ -228,7 +178,7 @@ async function forwardTrailingWithWs({
 
   campaigns.set(id, { ...(campaigns.get(id) || config), WSTrailing });
 }
-export const botTrailingLossByATR = ({
+export const botPositions = ({
   ctx,
   id,
   config,
@@ -249,7 +199,7 @@ export const botTrailingLossByATR = ({
   tradeAbleCrypto: string[];
   campaigns: Map<string, CampaignConfig>;
 }) => {
-  forwardTrailingWithWs({
+  forwardPositionsWithWs({
     ctx,
     id,
     config,

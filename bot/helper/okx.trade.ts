@@ -173,9 +173,9 @@ export const placeOrder = async ({
       opType: "open",
     });
     if (!sz)
-      return {
-        code: "",
-        msg: "Convert USD contract error",
+        return {
+          code: "",
+          msg: "Convert USD contract error",
         data: [],
       };
     const tpBody = {
