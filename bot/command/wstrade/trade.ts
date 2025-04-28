@@ -1,14 +1,9 @@
-import {Context,NarrowedContext,Telegraf} from "telegraf";
-import {Message,Update} from "telegraf/typings/core/types/typegram";
-import {
-  getAccountPositions
-} from "../../helper/okx.account";
-import {getOKXFundingObject} from "../../helper/okx.funding";
-import {wsCandles} from "../../helper/okx.socket";
-import {
-  closeFuturePosition,
-  openFuturePosition,
-} from "../../helper/okx.trade";
+import { Context, NarrowedContext, Telegraf } from "telegraf";
+import { Message, Update } from "telegraf/typings/core/types/typegram";
+import { getAccountPositions } from "../../helper/okx.account";
+import { getOKXFundingObject } from "../../helper/okx.funding";
+import { wsCandles } from "../../helper/okx.socket";
+import { closeFuturePosition, openFuturePosition } from "../../helper/okx.trade";
 import {
   CampaignConfig,
   IOKXFunding,
@@ -17,59 +12,41 @@ import {
   IWsCandlesReponse,
   OKXResponse
 } from "../../type";
-import {
-  axiosErrorDecode,
-  zerofy
-} from "../../utils";
-import {
-  parseConfigInterval
-} from "../../utils/config";
-import {formatReportInterval} from "../../utils/message";
-import {botPositions} from "./positions";
+import { axiosErrorDecode, zerofy } from "../../utils";
+import { parseConfigInterval } from "../../utils/config";
+import { formatReportInterval } from "../../utils/message";
+import { botPositions } from "./positions";
+
+// Environment configuration
 const MODE = process.env.ENV;
 const isDev = MODE === "dev";
+
+// Constants for trading parameters
 const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60;
 const FUNDING_DOWNTO = isDev ? -0.1 : -2;
 const FUNDING_UPTO = isDev ? 0.1 : -0.05;
 const MIN_MAX_TP: [number, number] = [0.6, 0.8];
 const MIN_MAX_SL: [number, number] = [1.5, 2];
-const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 5;
+const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 15;
 const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60 * 60;
+const TIM_CLOSE_TO_FUNDING_MINUTES = 15
 export const DELAY_FOR_DCA_ORDER = isDev ? 20 : 45;
 export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5;
-// const env = process.env.ENV || "dev"; // fallback to 'dev' mode
-// const envPath = `.env.${env}`;
-// if (existsSync(envPath)) {
-//   config({ path: envPath });
-//   console.log(`✅ Loaded ${envPath}`);
-// } else {
-//   console.warn(`⚠️ Environment file ${envPath} not found.`);
-// }
+// {
+  // code: '1',
+  // data: [
+  //   {
+  //     algoClOrdId: '',
+  //     algoId: '2460351951473942528',
+  //     reqId: '',
+  //     sCode: '51279',
+  //     sMsg: 'TP trigger price cannot be lower than the last price '
+  //   }
+  // ],
+  // msg
 /**
- * Executes trading logic for the given interval configuration.
- *
- * @param {Object} ctx - The context from the Telegram bot, used to send messages to the user.
- * @param {CampaignConfig} config - Configuration object for the trading interval, including:
- *    - bar: Time period for each candle (e.g., 1m, 5m, 15m).
- *    - mgnMode: Margin mode, either "isolated" or "cross".
- *    - leve: Leverage used for trading.
- *    - sz: Position size for trades.
- *    - slopeThresholdUp: Maximum allowed slope for opening a position.
- *    - slopeThresholdUnder: Minimum allowed slope for opening a position.
- * @param {string[]} tradeAbleCrypto - List of cryptocurrencies that are available for trading.
- * @param {Object} lastestCandles - A record of the latest confirmed candles for each symbol.
- *    Format: { [key: string]: ICandles[] } where `key` is the symbol (e.g., BTC-USDT) and `ICandles[]` represents the candles data.
- * @param {Object} lastestSignalTs - A record of the last confirmed signal bot make tx timestamps for each symbol.
- *    Format: { [instId: string]: number } where `instId` is the symbol and `number` is the timestamp of the last executed signal.
- * @param {string} [campaignId] - Optional ID of the trading interval for logging and tracking purposes.
- *
- * @returns {Promise<void>} - Sends trade signals via the Telegram bot if an EMA crossover occurs, and opens or closes positions based on the type of crossover (bullish or bearish).
- * Handles both opening and closing positions based on EMA crossovers and applies slope filtering if configured.
- * Sends notifications of trade actions to the user via the Telegram bot context.
- *
- * @throws {Error} - If any error occurs during the trading logic execution, it is logged, and an error message is sent to the user via the Telegram bot.
+ * Calculates take profit and stop loss levels based on funding rate
  */
-
 export const calcTpSL = ({
   px,
   fundingRate,
@@ -91,6 +68,7 @@ export const calcTpSL = ({
     Math.max(Math.abs(fundingRate) * 2, slMinMax[0] / 100),
     slMinMax[1] / 100
   );
+  
   return {
     tpTriggerPx: String(
       posSide === "long"
@@ -105,6 +83,9 @@ export const calcTpSL = ({
   };
 };
 
+/**
+ * Calculates breakeven price for a position
+ */
 export const calcBreakEvenPx = ({
   posSide,
   avgPx,
@@ -128,6 +109,10 @@ export const calcBreakEvenPx = ({
   }
   return String(breakevenPx);
 };
+
+/**
+ * Core trading logic implementation
+ */
 const _fowardTrading = async ({
   ctx,
   config,
@@ -157,17 +142,16 @@ const _fowardTrading = async ({
   campaignId?: string;
   campaigns: Map<string, CampaignConfig>;
 }) => {
-  const {
-    mgnMode,
-    leve,
-    sz,
-  } = config;
+  const { mgnMode, leve, sz } = config;
   let variance = config.variance;
+  
   try {
     const wsCandle = wsCandles?.data?.[0];
     const fundingData = fundingArbitrage[wsCandle.instId];
     const fundingRate = Number(fundingData?.fundingRate);
-    if(!fundingRate) return;
+    
+    if (!fundingRate) return;
+    
     const now = Date.now();
     const fundingTimeLeftMs = Number(fundingData.fundingTime) - now;
     const fundingTimeLeftSec = fundingTimeLeftMs / 1000;
@@ -208,28 +192,44 @@ const _fowardTrading = async ({
       if (openPositionRes.code === "0" && openAlgoOrderRes.code === "0") {
         if (ctx) {
           await ctx.replyWithHTML(
-            `🚀 Successfully opened position for <b>${openParams.instId}</b>\n` +
-              `- Size: <b>${openParams.size}</b>\n` +
-              `- Side: <b>${openParams.posSide}</b>\n` +
-              `- TP %: <b>${zerofy(openParams.tpTriggerPx)}</b>\n` +
-              `- SL %: <b>${zerofy(openParams.slTriggerPx)}</b>`
+            `🚀 <b>Position Opened Successfully</b> 🚀\n\n` +
+            `📊 <b>Instrument:</b> ${openParams.instId}\n` +
+            `💰 <b>Position Size:</b> ${openParams.size}\n` +
+            `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
+            `⚡ <b>Funding Rate:</b> ${zerofy(fundingRate * 100)}%\n` +
+            `🎯 <b>Take Profit:</b> ${zerofy(Number(tpTriggerPx))}\n` +
+            `🛑 <b>Stop Loss:</b> ${zerofy(Number(slTriggerPx))}\n` +
+            `⚙️ <b>Leverage:</b> ${leve}x\n` +
+            `📝 <b>Margin Mode:</b> ${mgnMode}\n\n` +
+            `⏱️ <b>Funding Time:</b> ${new Date(Number(fundingData.fundingTime)).toLocaleString()}`
           );
         }
       } else {
         if (ctx) {
           await ctx.replyWithHTML(
-            `❌ Failed to open position for <b>${openParams.instId}</b>\n` +
-              `- Error Code: <code>${openPositionRes.code} | ${openAlgoOrderRes.code}</code>\n ` +
-              `- Error Message: <code>${openPositionRes.msg} | ${openAlgoOrderRes.msg}</code>`
+            `❌ <b>Failed to Open Position</b> ❌\n\n` +
+            `📊 <b>Instrument:</b> ${openParams.instId}\n` +
+            `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n\n` +
+            `🚨 <b>Position Error:</b> <code>${openPositionRes.code}</code>\n` +
+            `📄 <b>Position Message:</b> <code>${openPositionRes.msg}</code>\n\n` +
+            `🚨 <b>Algo Order Error:</b> <code>${openAlgoOrderRes.code}</code>\n` +
+            `📄 <b>Algo Order Message:</b> <code>${openAlgoOrderRes.msg}</code>`
           );
         }
       }
     }
   } catch (err: any) {
-    await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
+    await ctx.replyWithHTML(
+      `❌ <b>Trading Error</b> ❌\n\n` +
+      `📝 <b>Details:</b> <code>${axiosErrorDecode(err)}</code>\n\n` +
+      `Please check your API connection and parameters.`
+    );
   }
 };
 
+/**
+ * WebSocket management for trading strategy
+ */
 function forwardTradingWithWs({
   ctx,
   id,
@@ -283,10 +283,7 @@ function forwardTradingWithWs({
     closeCallBack(code) {
       console.error(`[TRADING] WebSocket closed with code: ${code}`);
       if (code === 1005) {
-        // ctx.replyWithHTML(
-        //   `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
-        // );
-        // campaigns.delete(id);
+        // Normal close
       } else {
         forwardTradingWithWs({
           ctx,
@@ -298,10 +295,6 @@ function forwardTradingWithWs({
           lastestSignalTs,
           campaigns,
         });
-
-        // ctx.replyWithHTML(
-        //   `⛓️ [TRADING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
-        // );
       }
     },
     subcribedCallBack(param) {
@@ -311,6 +304,10 @@ function forwardTradingWithWs({
 
   campaigns.set(id, { ...(campaigns.get(id) || config), tradeAbleCrypto, WS });
 }
+
+/**
+ * Main bot trading initialization function
+ */
 export const botAutoTrading = ({
   bot,
   campaigns,
@@ -324,26 +321,35 @@ export const botAutoTrading = ({
   let positions: { [instId: string]: IPositionOpen } = {};
   let fundingUpdateInterval: NodeJS.Timeout | null = null;
 
-  // Function to check if any pairs are close to funding time
+  // Check if any pairs are close to funding time
   const isCloseToFundingTime = (fundingData: {
     [instId: string]: IOKXFunding;
-  }): boolean => {
+  }): {[instId: string]: number } => {
     const now = Date.now();
+    const closeToFundingList: {[instId: string]: number } = {}
     for (const instId in fundingData) {
       const fundingTimeMs = Number(fundingData[instId].fundingTime);
       const minutesLeft = (fundingTimeMs - now) / (60 * 1000);
-      if (minutesLeft < 30 && minutesLeft > 0) {
-        return true;
+      if (minutesLeft < TIM_CLOSE_TO_FUNDING_MINUTES && minutesLeft > 0) {
+        closeToFundingList[instId] = Number(minutesLeft)
       }
     }
-    return false;
+    return closeToFundingList
   };
 
-  // Function to restart funding arbitrage update
+  // Start funding update monitoring
   const startFundingUpdate = async (
-    ctx: any,
+    ctx: NarrowedContext<
+      Context<Update>,
+      {
+        message:
+          | (Update.New & Update.NonChannel & Message.AnimationMessage)
+          | (Update.New & Update.NonChannel & Message.TextMessage);
+        update_id: number;
+      }
+    >,
     id: string,
-    config: any,
+    config: CampaignConfig,
     tradeAbleCrypto: string[],
     campaigns: Map<string, CampaignConfig>
   ) => {
@@ -370,14 +376,22 @@ export const botAutoTrading = ({
           "Load funding arbitrage",
           Object.keys(fundingArbitrage).length
         );
+        
         // Check if any pairs are close to funding time
-        if (isCloseToFundingTime(fundingArbitrage)) {
-          console.log("Close to funding time, executing trading strategy");
+        const pairsCloseToFunding = isCloseToFundingTime(fundingArbitrage)
+        const pairsCloseToFundingInstIds = Object.keys(pairsCloseToFunding)
+        if (pairsCloseToFundingInstIds.length > 0) {
+          await ctx.replyWithHTML(
+            `🏹 <b>Funding Time Approaching</b> 🏹\n\n` +
+            `⚡ <b>Executing trading strategy with ${pairsCloseToFundingInstIds.length} pairs:</b>\n` +
+            `<code>${pairsCloseToFundingInstIds.join(', ')}</code>\n\n` +
+            `🕐 <b>Left:</b> ${pairsCloseToFunding[pairsCloseToFundingInstIds[0]]} minutes`
+          );
+          
           if (fundingUpdateInterval) clearInterval(fundingUpdateInterval);
           fundingUpdateInterval = null;
 
           // Execute trading strategy
-
           console.log("Execute trading strategy");
           forwardTradingWithWs({
             ctx,
@@ -400,56 +414,85 @@ export const botAutoTrading = ({
             campaigns,
           });
 
-          // Set timer to restart after funding time (60 minutes after funding)
+          // Set timer to restart after funding time
           const campaignConfig = campaigns.get(id);
           if (campaignConfig) {
             setTimeout(async () => {
               // Stop all strategies
               if (campaignConfig.WS) campaignConfig.WS.close();
               if (campaignConfig.WSTicker) campaignConfig.WSTicker.close();
-              if (campaignConfig.WSPositions)
-              campaignConfig.WSPositions.close();
-              const _position = await getAccountPositions("SWAP")
-              console.log("Stop trading strategy | stop:", _position.length);
-              const closeRes: {[instId: string] : OKXResponse} =  {}
+              if (campaignConfig.WSPositions) campaignConfig.WSPositions.close();
+              
+              const _position = await getAccountPositions("SWAP");
+              console.log("Stop trading strategy | positions to close:", _position.length);
+              
+              const closeRes: { [instId: string]: OKXResponse } = {};
               await Promise.all(_position.map(async (pos) => {
-                const { posSide, instId} = pos;
+                const { posSide, instId } = pos;
                 const { closePositionRes } = await closeFuturePosition({
                   instId,
                   mgnMode: "isolated",
                   posSide: posSide as IPosSide,
-                })
+                });
                 flashPositions[instId] = false;
-                closeRes[instId] = closePositionRes
+                closeRes[instId] = closePositionRes;
               }));
-              if(ctx && Object.keys(closeRes).filter(cRes => closeRes[cRes].code === "0").length === _position.length) {
-                ctx.replyWithHTML("💀 Close all positions!")
+              
+              if (ctx && Object.keys(closeRes).filter(cRes => closeRes[cRes].code === "0").length === _position.length) {
+                await ctx.replyWithHTML(
+                  `💫 <b>All Positions Closed Successfully</b> 💫\n\n` +
+                  `✅ <b>Total Positions:</b> ${_position.length}\n` +
+                  `⏱️ <b>Time:</b> ${new Date().toLocaleString()}\n\n` +
+                  `📊 <b>Strategy Cycle Complete</b>`
+                );
               } else {
-                ctx.replyWithHTML(`🐧 Close missing positions! <code>${JSON.stringify(closeRes)}</code>`)
+                const successfulCloses = Object.keys(closeRes).filter(cRes => closeRes[cRes].code === "0").length;
+                const failedCloses = _position.length - successfulCloses;
+                
+                await ctx.replyWithHTML(
+                  `⚠️ <b>Position Closure Status</b> ⚠️\n\n` +
+                  `✅ <b>Successful:</b> ${successfulCloses}/${_position.length}\n` +
+                  `❌ <b>Failed:</b> ${failedCloses}\n\n` +
+                  `📝 <b>Details:</b>\n<code>${JSON.stringify(closeRes, null, 2)}</code>`
+                );
               }
+              
               // Restart funding update
               startFundingUpdate(ctx, id, config, tradeAbleCrypto, campaigns);
-              ctx.replyWithHTML(
-                `Restarting funding arbitrage update for <code>${id}</code>`
+              await ctx.replyWithHTML(
+                `🔄 <b>Restarting Funding Arbitrage Monitor</b> 🔄\n\n` +
+                `📊 <b>Campaign ID:</b> <code>${id}</code>\n` +
+                `🕐 <b>Time:</b> ${new Date().toLocaleString()}\n\n` +
+                `⏳ <b>Monitoring for next funding opportunity...</b>`
               );
-            }, RESTART_STRATEGY_AFTER_FUNDING * 1000); // 60 minutes
+            }, RESTART_STRATEGY_AFTER_FUNDING * 1000);
           }
         }
       } catch (error) {
         console.error("Error updating funding arbitrage:", error);
+        await ctx.replyWithHTML(
+          `❌ <b>Funding Update Error</b> ❌\n\n` +
+          `📝 <b>Details:</b> <code>${error}</code>\n\n` +
+          `System will attempt to continue monitoring.`
+        );
       }
     }, INTERVAL_TO_LOAD_FUNDING_ARBITRAGE * 1000);
   };
 
+  // Bot command handlers
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
+    
     if (campaigns.has(id)) {
-      ctx.replyWithHTML(
-        `🚫 Trading interval with ID <code>${id}</code> is already active.`
+      await ctx.replyWithHTML(
+        `🚫 <b>Campaign Already Active</b> 🚫\n\n` +
+        `Trading campaign with ID <code>${id}</code> is already running.\n` +
+        `Use /tasks to see active campaigns or /stop ${id} to stop this one.`
       );
       return;
     }
+    
     campaigns.set(id, config);
 
     // Initial fetch of funding arbitrage
@@ -460,12 +503,19 @@ export const botAutoTrading = ({
 
     let tradeAbleCrypto = Object.keys(fundingArbitrage);
 
-    await ctx.reply(
-      `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`
+    await ctx.replyWithHTML(
+      `📊 <b>Campaign Initialized</b> 📊\n` +
+      `⚙️ <b>Mode:</b> ${isDev ? "Development" : "Production"}`
     );
 
     if (tradeAbleCrypto.length === 0) {
-      ctx.replyWithHTML("🛑 No currency to trade.");
+      await ctx.replyWithHTML(
+        `🛑 <b>No Trading Pairs Available</b> 🛑\n\n` +
+        `Could not find any currency pairs matching the funding criteria:\n` +
+        `• Funding Down To: ${FUNDING_DOWNTO}%\n` +
+        `• Funding Up To: ${FUNDING_UPTO}%\n\n` +
+        `Please adjust parameters or try again later.`
+      );
       return;
     }
 
@@ -478,15 +528,18 @@ export const botAutoTrading = ({
       true,
       tradeAbleCrypto
     );
-    ctx.replyWithHTML(startReport);
+    
+    await ctx.replyWithHTML(startReport);
   });
 
-  bot.command("stop", (ctx) => {
+  bot.command("stop", async (ctx) => {
     const id = ctx.message.text.split(" ")[1];
 
     if (!campaigns.has(id)) {
-      ctx.replyWithHTML(
-        `🚫 No active trading interval found with ID <code>${id}</code>.`
+      await ctx.replyWithHTML(
+        `🚫 <b>Campaign Not Found</b> 🚫\n\n` +
+        `No active trading campaign found with ID <code>${id}</code>.\n` +
+        `Use /tasks to see active campaigns.`
       );
       return;
     }
@@ -504,29 +557,52 @@ export const botAutoTrading = ({
     }
 
     campaigns.delete(id);
+    
+    await ctx.replyWithHTML(
+      `✅ <b>Campaign Stopped Successfully</b> ✅\n\n` +
+      `Campaign with ID <code>${id}</code> has been terminated.\n` +
+      `All WebSocket connections closed and monitoring stopped.\n\n` +
+      `🕐 <b>Time:</b> ${new Date().toLocaleString()}`
+    );
   });
 
-  bot.command("tasks", (ctx) => {
+  bot.command("tasks", async (ctx) => {
     if (campaigns.size === 0) {
-      ctx.replyWithHTML("📭 No trading campaigns are currently active.");
+      await ctx.replyWithHTML(
+        `📭 <b>No Active Campaigns</b> 📭\n\n` +
+        `There are currently no running trading campaigns.\n` +
+        `Use /start [id] [config] to initialize a new campaign.`
+      );
       return;
     }
 
-    let report = "<b>Current Trading campaigns:</b>\n";
+    let report = `🔍 <b>Active Trading Campaigns</b> 🔍\n\n`;
     campaigns.forEach((campaignConfig, id) => {
-      report +=
-        formatReportInterval(
-          id,
-          campaignConfig,
-          false,
-          campaignConfig?.tradeAbleCrypto
-        ) + "\n";
+      report += formatReportInterval(
+        id,
+        campaignConfig,
+        false,
+        campaignConfig?.tradeAbleCrypto
+      ) + "\n\n";
     });
+    
+    report += `📝 <b>Total Campaigns:</b> ${campaigns.size}\n` +
+              `🕐 <b>Time:</b> ${new Date().toLocaleString()}`;
 
-    ctx.replyWithHTML(report);
+    await ctx.replyWithHTML(report);
   });
 
-  bot.command("stops", (ctx) => {
+  bot.command("stops", async (ctx) => {
+    if (campaigns.size === 0) {
+      await ctx.replyWithHTML(
+        `📭 <b>No Active Campaigns</b> 📭\n\n` +
+        `There are currently no running trading campaigns to stop.`
+      );
+      return;
+    }
+    
+    const campaignCount = campaigns.size;
+    
     campaigns.forEach((campaignConfig) => {
       try {
         if (campaignConfig?.WS) campaignConfig.WS.close();
@@ -544,6 +620,97 @@ export const botAutoTrading = ({
     }
 
     campaigns.clear();
-    ctx.replyWithHTML("🛑 All trading campaigns have been stopped.");
+    
+    await ctx.replyWithHTML(
+      `🛑 <b>All Campaigns Stopped</b> 🛑\n\n` +
+      `✅ <b>Terminated:</b> ${campaignCount} campaigns\n` +
+      `🔌 <b>Connections:</b> All WebSockets closed\n` +
+      `⏱️ <b>Monitoring:</b> All intervals cleared\n\n` +
+      `🕐 <b>Time:</b> ${new Date().toLocaleString()}`
+    );
+  });
+  bot.command("funding", async (ctx) => {
+    try {
+      // Check if there's funding data available
+      if (Object.keys(fundingArbitrage).length === 0) {
+        await ctx.replyWithHTML(
+          `🔍 <b>No Funding Data Available</b> 🔍\n\n` +
+          `⚠️ Funding data hasn't been loaded yet or no pairs match the criteria.\n` +
+          `• 📉 Funding Down To: ${FUNDING_DOWNTO}%\n` +
+          `• 📈 Funding Up To: ${FUNDING_UPTO}%\n\n` +
+          `💡 Start a campaign first or try again later.`
+        );
+        return;
+      }
+  
+      // Check for close to funding time pairs
+      const pairsCloseToFunding = isCloseToFundingTime(fundingArbitrage);
+      const pairsCloseToFundingInstIds = Object.keys(pairsCloseToFunding);
+      
+      // Sort pairs by funding rate (highest to lowest)
+      const sortedPairs = Object.entries(fundingArbitrage)
+        .sort((a, b) => parseFloat(b[1].fundingRate) - parseFloat(a[1].fundingRate));
+      
+      // Take top 10 pairs for display
+      const topPairs = sortedPairs.slice(0, 10);
+      
+      // Format funding data
+      let fundingReport = `💰 <b>Funding Arbitrage Report</b> 💰\n\n`;
+      
+      // Add close to funding time alert if applicable
+      if (pairsCloseToFundingInstIds.length > 0) {
+        fundingReport += `⏰ <b>Pairs Close to Funding Time:</b> ${pairsCloseToFundingInstIds.length}\n`;
+        pairsCloseToFundingInstIds.forEach(instId => {
+          const minutesLeft = pairsCloseToFunding[instId];
+          fundingReport += `  • ${minutesLeft < 10 ? '🔴' : '🟡'} <code>${instId}</code>: ${zerofy(minutesLeft)} minutes left\n`;
+        });
+        fundingReport += `\n`;
+      }
+      
+      // Add top funding rates
+      fundingReport += `🏆 <b>Top Funding Opportunities:</b>\n`;
+      topPairs.forEach(([instId, data], index) => {
+        const fundingTime = new Date(Number(data.fundingTime)).toLocaleString();
+        const fundingRate = zerofy((parseFloat(data.fundingRate) * 100));
+        const nextRate = zerofy((parseFloat(data.nextFundingRate) * 100));
+        const rateIcon = parseFloat(data.fundingRate) > 0 ? '📈' : '📉';
+        
+        // Medal emojis for top 3
+        let rankEmoji = '   ';
+        if (index === 0) rankEmoji = '🥇 ';
+        else if (index === 1) rankEmoji = '🥈 ';
+        else if (index === 2) rankEmoji = '🥉 ';
+        
+        fundingReport += `${rankEmoji}<code>${instId}</code> ${rateIcon} <b>${fundingRate}%</b>\n`;
+        fundingReport += `   ┣ 📊 <i>APY:</i> ${zerofy(parseFloat(data.apy))}%\n`;
+        fundingReport += `   ┣ 🔮 <i>Next Rate:</i> ${nextRate}%\n`;
+        fundingReport += `   ┗ 🕒 <i>Funding:</i> ${fundingTime}\n`;
+      });
+      
+      // Add summary statistics
+      const totalPairs = Object.keys(fundingArbitrage).length;
+      const avgFundingRate = sortedPairs.reduce((sum, [_, data]) => sum + parseFloat(data.fundingRate), 0) / totalPairs;
+      const positiveRatePairs = sortedPairs.filter(([_, data]) => parseFloat(data.fundingRate) > 0).length;
+      const negativeRatePairs = sortedPairs.filter(([_, data]) => parseFloat(data.fundingRate) < 0).length;
+      
+      fundingReport += `\n📊 <b>Market Overview:</b>\n`;
+      fundingReport += `┣ 🔢 <b>Total Pairs:</b> ${totalPairs}\n`;
+      fundingReport += `┣ 📈 <b>Positive Rates:</b> ${positiveRatePairs}\n`;
+      fundingReport += `┣ 📉 <b>Negative Rates:</b> ${negativeRatePairs}\n`;
+      fundingReport += `┣ 🔍 <b>Avg Rate:</b> ${zerofy((avgFundingRate * 100))}%\n`;
+      fundingReport += `┗ 🕰️ <b>Updated:</b> ${new Date().toLocaleString()}\n\n`;
+      
+      fundingReport += `💡 <i>Use /tasks to view active campaigns</i>`;
+      
+      await ctx.replyWithHTML(fundingReport);
+    } catch (error: any) {
+      console.error("Error in funding command:", error);
+      await ctx.replyWithHTML(
+        `❌ <b>Funding Data Error</b> ❌\n\n` +
+        `🚫 An error occurred while processing funding information.\n\n` +
+        `📝 <b>Details:</b>\n<code>${error.message || error}</code>\n\n` +
+        `🔄 Please try again later or check the system logs.`
+      );
+    }
   });
 };
