@@ -55,15 +55,10 @@ dotenv.config();
 const _fowardPositions = async ({
   ctx,
   config,
-  tradeAbleCrypto,
   wsPositions,
   fundingArbitrage,
-  tradeAbleCryptoATRs,
-  tradeAbleCryptoCandles,
-  trablePositions,
   lastTimeDCAPositions,
-  id,
-  campaigns,
+  lastTimeAmendLimitPositions,
 }: {
   ctx: NarrowedContext<
     Context<Update>,
@@ -75,6 +70,7 @@ const _fowardPositions = async ({
     }
   >;
   fundingArbitrage: { [instId: string]: IOKXFunding };
+  positions: { [instId: string]: IPositionOpen };
   id: string;
   campaigns: Map<string, CampaignConfig>;
   wsPositions: IPositionOpen[];
@@ -85,15 +81,16 @@ const _fowardPositions = async ({
   tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] };
   trablePositions: { [instId: string]: IPositionOpen | undefined };
   lastTimeDCAPositions: { [instId: string]: number };
+  lastTimeAmendLimitPositions: { [instId: string]: number } 
 }) => {
   try {
     if (!wsPositions[0]?.avgPx || wsPositions.length === 0) {
       return;
     }
     const wsInstIds = wsPositions.map((pos) => pos.instId);
-    // wsPositions.map(pos => {
-    //   if(pos.re < 0)
-    // })
+    // const _wsPositions: { [instId: string]: IPositionOpen } = {}
+    // wsPositions.map(pos => {_wsPositions[pos.instId] = pos})
+    // positions = _wsPositions
     Promise.all(
       wsPositions.map(async (pos) => {
         const {
@@ -108,6 +105,7 @@ const _fowardPositions = async ({
           fundingFee,
           markPx,
         } = pos;
+        if(!closeOrderAlgo[0]) return;
         const breakevenPx = calcBreakEvenPx({posSide: posSide as IPosSide, avgPx, notionalUsd, realizedPnl})
         const fundingRate = fundingArbitrage?.[instId]?.fundingRate
         if(!fundingRate) {
@@ -124,29 +122,10 @@ const _fowardPositions = async ({
         };
         const {tpTriggerPx: newTpTriggerPx, slTriggerPx: newSlTriggerPx} = calcTpSL({fundingRate: Number(fundingRate), posSide: openParams.posSide, px: breakevenPx, tpMinMax: [0.2, 0.4]})
         const lastTimeDCA = lastTimeDCAPositions[instId];
-        if(Number(fundingFee) > 0 && (pos.closeOrderAlgo[0].tpTriggerPx !== newTpTriggerPx || pos.closeOrderAlgo[0].slTriggerPx !== newSlTriggerPx )) {
-          lastTimeDCAPositions[instId] = Date.now();
-            const editAlgoRes =  await editLimitAlgoOrders({
-              instId: instId, 
-              algoId: closeOrderAlgo[0].algoId,
-              newSlTriggerPx,
-              newTpTriggerPx
-          })
-          if (okxReponseChecker(editAlgoRes)) {
-            const txt = `<b>Limit Update</b>: <b>${pos.instId}</b>
-💰 F.Fee : ${zerofy(fundingFee)}${USDT} 
-🎯 N.TP/SL: <code>${zerofy(newTpTriggerPx)}${USDT}</code> | <code>${zerofy(newSlTriggerPx)}${USDT}</code>`;            
-            await ctx.replyWithHTML(txt);
-          } else {
-            await ctx.replyWithHTML(
-              `⚠️ Edit limit failed. <code> ${editAlgoRes.code}: ${editAlgoRes.msg} </code>`
-            );
-          }
-        }
-            
+        const lastTimeAmendLimit = lastTimeAmendLimitPositions[instId]
         if (
           pxChange < -PX_CHANGE_TO_DCA &&
-          (!lastTimeDCA || Date.now() - lastTimeDCA > DELAY_FOR_DCA_ORDER) && 
+          (!lastTimeDCA || Date.now() - lastTimeDCA > DELAY_FOR_DCA_ORDER * 1000) && 
           closeOrderAlgo[0].algoId
         ) {
           lastTimeDCAPositions[instId] = Date.now();
@@ -177,6 +156,27 @@ const _fowardPositions = async ({
             );
           }
         }
+
+        if(Number(fundingFee) > 0 && (!lastTimeAmendLimit || Date.now() - lastTimeAmendLimit > DELAY_FOR_DCA_ORDER * 1000)) {
+          lastTimeAmendLimitPositions[instId] = Date.now();
+          const editAlgoRes =  await editLimitAlgoOrders({
+            instId: instId, 
+            algoId: closeOrderAlgo[0]?.algoId,
+            newSlTriggerPx,
+            newTpTriggerPx
+        })
+        if (okxReponseChecker(editAlgoRes)) {
+          const txt = `<b>Limit Update</b>: <b>${pos.instId}</b>
+💰 F.Fee : ${zerofy(fundingFee)}${USDT} 
+🎯 N.TP/SL: <code>${zerofy(newTpTriggerPx)}${USDT}</code> | <code>${zerofy(newSlTriggerPx)}${USDT}</code>`;            
+          await ctx.replyWithHTML(txt);
+        } else {
+          await ctx.replyWithHTML(
+            `⚠️ Edit limit failed. <code> ${editAlgoRes.code}: ${editAlgoRes.msg} </code>`
+          );
+        }
+      }
+          
       })
     );
   } catch (err: any) {
@@ -192,6 +192,7 @@ async function forwardPositionsWithWs({
   tradeAbleCrypto,
   campaigns,
   fundingArbitrage,
+  positions
 }: {
   ctx: NarrowedContext<
     Context<Update>,
@@ -204,6 +205,7 @@ async function forwardPositionsWithWs({
   >;
   id: string;
   fundingArbitrage: { [instId: string]: IOKXFunding };
+  positions: { [instId: string]: IPositionOpen };
   config: CampaignConfig;
   tradeAbleCrypto: string[];
   campaigns: Map<string, CampaignConfig>;
@@ -212,7 +214,8 @@ async function forwardPositionsWithWs({
   let tradeAbleCryptoATRs: { [instId: string]: CandleWithATR[] } = {};
   let trablePositions: { [instId: string]: IPositionOpen | undefined } = {};
   let lastTimeDCAPositions: { [instId: string]: number } = {};
-  const WSTrailing = wsPositions({
+  let lastTimeAmendLimitPositions: { [instId: string]: number } = {};
+  const WSPositions = wsPositions({
     authCallBack(config) {
       console.log(config);
     },
@@ -227,9 +230,11 @@ async function forwardPositionsWithWs({
         tradeAbleCrypto,
         tradeAbleCryptoATRs,
         fundingArbitrage,
+        positions,
         tradeAbleCryptoCandles,
         trablePositions,
         lastTimeDCAPositions,
+        lastTimeAmendLimitPositions,
         id,
         campaigns,
       });
@@ -254,6 +259,7 @@ async function forwardPositionsWithWs({
           config,
           tradeAbleCrypto,
           fundingArbitrage,
+          positions,
           campaigns,
         });
         // ctx.replyWithHTML(
@@ -263,7 +269,7 @@ async function forwardPositionsWithWs({
     },
   });
 
-  campaigns.set(id, { ...(campaigns.get(id) || config), WSTrailing });
+  campaigns.set(id, { ...(campaigns.get(id) || config), WSPositions });
 }
 export const botPositions = ({
   ctx,
@@ -271,6 +277,7 @@ export const botPositions = ({
   config,
   tradeAbleCrypto,
   fundingArbitrage,
+  positions,
   campaigns,
 }: {
   ctx: NarrowedContext<
@@ -284,6 +291,7 @@ export const botPositions = ({
   >;
   id: string;
   fundingArbitrage: { [instId: string]: IOKXFunding };
+  positions: { [instId: string]: IPositionOpen };
   config: CampaignConfig;
   tradeAbleCrypto: string[];
   campaigns: Map<string, CampaignConfig>;
@@ -293,6 +301,7 @@ export const botPositions = ({
     id,
     config,
     fundingArbitrage,
+    positions,
     tradeAbleCrypto,
     campaigns,
   });

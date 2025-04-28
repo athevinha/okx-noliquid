@@ -149,7 +149,7 @@ export async function fowardTickerATRWithWs({
   if (campaigns.get(id)?.WSTicker?.readyState === WebSocket.OPEN) return;
   if (
     !campaigns.has(id) ||
-    campaigns.get(id)?.WSTrailing?.readyState === WebSocket.CLOSED ||
+    campaigns.get(id)?.WSPositions?.readyState === WebSocket.CLOSED ||
     campaigns.get(id)?.WS?.readyState === WebSocket.CLOSED
   ) {
     campaigns.get(id)?.WSTicker?.close();

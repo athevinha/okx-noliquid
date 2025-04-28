@@ -15,6 +15,7 @@ import {
   IWsTickerReponse,
   IOKXFunding,
   IPositionOpen,
+  OKXResponse,
 } from "../../type";
 import {
   axiosErrorDecode,
@@ -23,6 +24,7 @@ import {
   decodeTimestampAgo,
   estimatePnl,
   getTradeAbleCrypto,
+  okxReponseChecker,
   zerofy,
 } from "../../utils";
 import {
@@ -33,7 +35,7 @@ import {
 import { formatReportInterval } from "../../utils/message";
 import { calculateATR } from "../../signals/atr";
 import { wsCandles, wsTicks } from "../../helper/okx.socket";
-import { setTimeout } from "timers/promises";
+import { setTimeout as STO } from "timers/promises";
 import { botPositions } from "./positions";
 import WebSocket from "ws";
 import {
@@ -44,14 +46,16 @@ import {
 import { getOKXFunding, getOKXFundingObject } from "../../helper/okx.funding";
 import { existsSync } from "fs";
 const MODE = process.env.ENV;
-const isDev = MODE === "dev"
-const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 8 * 60
-const FUNDING_DOWNTO = isDev ? -0.2 : -2
-const FUNDING_UPTO = isDev ? 0.2 : -0.05 
-const MIN_MAX_TP: [number, number] = [0.6, 0.8]
-const MIN_MAX_SL: [number, number] = [1.5, 2]
-export const DELAY_FOR_DCA_ORDER = 45_000
-export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5
+const isDev = MODE === "dev";
+const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60;
+const FUNDING_DOWNTO = isDev ? -0.1 : -2;
+const FUNDING_UPTO = isDev ? 0.1 : -0.05;
+const MIN_MAX_TP: [number, number] = [0.6, 0.8];
+const MIN_MAX_SL: [number, number] = [1.5, 2];
+const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 5;
+const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60 * 60;
+export const DELAY_FOR_DCA_ORDER = isDev ? 20 : 45;
+export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5;
 // const env = process.env.ENV || "dev"; // fallback to 'dev' mode
 // const envPath = `.env.${env}`;
 // if (existsSync(envPath)) {
@@ -85,7 +89,19 @@ export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5
  * @throws {Error} - If any error occurs during the trading logic execution, it is logged, and an error message is sent to the user via the Telegram bot.
  */
 
-export const calcTpSL = ({px, fundingRate, posSide, tpMinMax = MIN_MAX_TP, slMinMax = MIN_MAX_SL}: {px: string, fundingRate: number, posSide: IPosSide, tpMinMax?: [number, number], slMinMax?: [number, number]}) => {
+export const calcTpSL = ({
+  px,
+  fundingRate,
+  posSide,
+  tpMinMax = MIN_MAX_TP,
+  slMinMax = MIN_MAX_SL,
+}: {
+  px: string;
+  fundingRate: number;
+  posSide: IPosSide;
+  tpMinMax?: [number, number];
+  slMinMax?: [number, number];
+}) => {
   const tpPercent = Math.min(
     Math.max(Math.abs(fundingRate) * 2, tpMinMax[0] / 100),
     tpMinMax[1] / 100
@@ -95,20 +111,42 @@ export const calcTpSL = ({px, fundingRate, posSide, tpMinMax = MIN_MAX_TP, slMin
     slMinMax[1] / 100
   );
   return {
-    tpTriggerPx: String(posSide === 'long' ? Number(px) * (1 + tpPercent) : Number(px) * (1 - tpPercent)),
-    slTriggerPx: String(posSide === 'long' ? Number(px) * (1 - slPercent) : Number(px) * (1 + slPercent))  
-  }
-}
+    tpTriggerPx: String(
+      posSide === "long"
+        ? Number(px) * (1 + tpPercent)
+        : Number(px) * (1 - tpPercent)
+    ),
+    slTriggerPx: String(
+      posSide === "long"
+        ? Number(px) * (1 - slPercent)
+        : Number(px) * (1 + slPercent)
+    ),
+  };
+};
 
-export const calcBreakEvenPx = ({posSide, avgPx, realizedPnl, notionalUsd}: {posSide: IPosSide, avgPx: string, realizedPnl: string, notionalUsd: string}) => {
+export const calcBreakEvenPx = ({
+  posSide,
+  avgPx,
+  realizedPnl,
+  notionalUsd,
+}: {
+  posSide: IPosSide;
+  avgPx: string;
+  realizedPnl: string;
+  notionalUsd: string;
+}) => {
   let breakevenPx;
-  if (posSide === 'long') {
-    breakevenPx = Number(avgPx) - ((Number(realizedPnl) * Number(avgPx)) / Number(notionalUsd));
-  } else if (posSide === 'short') {
-    breakevenPx = Number(avgPx) + ((Number(realizedPnl) * Number(avgPx)) / Number(notionalUsd));
+  if (posSide === "long") {
+    breakevenPx =
+      Number(avgPx) -
+      (Number(realizedPnl) * Number(avgPx)) / Number(notionalUsd);
+  } else if (posSide === "short") {
+    breakevenPx =
+      Number(avgPx) +
+      (Number(realizedPnl) * Number(avgPx)) / Number(notionalUsd);
   }
-  return String(breakevenPx)
-}
+  return String(breakevenPx);
+};
 const _fowardTrading = async ({
   ctx,
   config,
@@ -152,7 +190,8 @@ const _fowardTrading = async ({
   try {
     const wsCandle = wsCandles?.data?.[0];
     const fundingData = fundingArbitrage[wsCandle.instId];
-    const fundingRate = Number(fundingData.fundingRate);
+    const fundingRate = Number(fundingData?.fundingRate);
+    if(!fundingRate) return;
     const now = Date.now();
     const fundingTimeLeftMs = Number(fundingData.fundingTime) - now;
     const fundingTimeLeftSec = fundingTimeLeftMs / 1000;
@@ -168,7 +207,11 @@ const _fowardTrading = async ({
       fundingTimeLeftSec > timeToOpen - 1 &&
       !flashPositions[wsCandle.instId]
     ) {
-      const {tpTriggerPx, slTriggerPx} = calcTpSL({fundingRate: Number(fundingRate), posSide, px: wsCandle.c})
+      const { tpTriggerPx, slTriggerPx } = calcTpSL({
+        fundingRate: Number(fundingRate),
+        posSide,
+        px: wsCandle.c,
+      });
 
       flashPositions[wsCandle.instId] = true;
       const openParams: any = {
@@ -180,67 +223,36 @@ const _fowardTrading = async ({
         tpTriggerPx,
         slTriggerPx,
       };
-      
+
       console.log(`Opening position with params:`, openParams);
-      
-      const { openPositionRes, openAlgoOrderRes } = await openFuturePosition(openParams);
-      
+
+      const { openPositionRes, openAlgoOrderRes } =
+        await openFuturePosition(openParams);
+
       if (openPositionRes.code === "0" && openAlgoOrderRes.code === "0") {
         if (ctx) {
           await ctx.replyWithHTML(
             `🚀 Successfully opened position for <b>${openParams.instId}</b>\n` +
-            `- Size: <b>${openParams.size}</b>\n` +
-            `- Side: <b>${openParams.posSide}</b>\n` +
-            `- TP %: <b>${zerofy(openParams.tpTriggerPx)}</b>\n` +
-            `- SL %: <b>${zerofy(openParams.slTriggerPx)}</b>`
+              `- Size: <b>${openParams.size}</b>\n` +
+              `- Side: <b>${openParams.posSide}</b>\n` +
+              `- TP %: <b>${zerofy(openParams.tpTriggerPx)}</b>\n` +
+              `- SL %: <b>${zerofy(openParams.slTriggerPx)}</b>`
           );
         }
       } else {
         if (ctx) {
           await ctx.replyWithHTML(
             `❌ Failed to open position for <b>${openParams.instId}</b>\n` +
-            `- Error Code: <code>${openPositionRes.code} | ${openAlgoOrderRes.code}</code>\n ` +
-            `- Error Message: <code>${openPositionRes.msg} | ${openAlgoOrderRes.msg}</code>`
+              `- Error Code: <code>${openPositionRes.code} | ${openAlgoOrderRes.code}</code>\n ` +
+              `- Error Message: <code>${openPositionRes.msg} | ${openAlgoOrderRes.msg}</code>`
           );
         }
       }
-      
     }
-
-    // if (
-    //   fundingTimeLeftSec < -40 &&
-    //   flashPositions[wsCandle.instId]
-    // ) {
-    //   flashPositions[wsCandle.instId] = false;
-
-    //   const { closePositionRes } = await closeFuturePosition({
-    //     instId: wsCandle.instId,
-    //     mgnMode: "isolated",
-    //     posSide: posSide,
-    //   });
-
-    //   if (closePositionRes.code === "0") {
-    //     if (ctx) {
-    //       await ctx.replyWithHTML(
-    //         `✅ Successfully closed position for <b>${wsCandle.instId}</b>`
-    //       );
-    //     }
-    //   } else {
-    //     if (ctx) {
-    //       await ctx.replyWithHTML(
-    //         `❌ Failed to close position for <b>${wsCandle.instId}</b>\n` +
-    //         `- Error Code: <code>${closePositionRes.code}</code>\n` +
-    //         `- Error Message: <code>${closePositionRes.msg}</code>`
-    //       );
-    //     }
-    //   }
-    // }
-
   } catch (err: any) {
     await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
   }
 };
-
 
 function forwardTradingWithWs({
   ctx,
@@ -265,7 +277,7 @@ function forwardTradingWithWs({
   config: CampaignConfig;
   tradeAbleCrypto: string[];
   lastestSignalTs: { [instId: string]: number };
-  flashPositions: {[instId: string]: boolean}
+  flashPositions: { [instId: string]: boolean };
   fundingArbitrage: { [instId: string]: IOKXFunding };
   campaigns: Map<string, CampaignConfig>;
 }) {
@@ -332,8 +344,127 @@ export const botAutoTrading = ({
 }) => {
   let lastestSignalTs: { [instId: string]: number } = {};
   let fundingArbitrage: { [instId: string]: IOKXFunding } = {};
-  let flashPositions : {[instId: string]: boolean} = {}
-  let positions:  {[instId: string]: IPositionOpen} = {}
+  let flashPositions: { [instId: string]: boolean } = {};
+  let positions: { [instId: string]: IPositionOpen } = {};
+  let fundingUpdateInterval: NodeJS.Timeout | null = null;
+
+  // Function to check if any pairs are close to funding time
+  const isCloseToFundingTime = (fundingData: {
+    [instId: string]: IOKXFunding;
+  }): boolean => {
+    const now = Date.now();
+    for (const instId in fundingData) {
+      const fundingTimeMs = Number(fundingData[instId].fundingTime);
+      const minutesLeft = (fundingTimeMs - now) / (60 * 1000);
+      if (minutesLeft < 30 && minutesLeft > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Function to restart funding arbitrage update
+  const startFundingUpdate = async (
+    ctx: any,
+    id: string,
+    config: any,
+    tradeAbleCrypto: string[],
+    campaigns: Map<string, CampaignConfig>
+  ) => {
+    // Clear any existing interval
+    if (fundingUpdateInterval) {
+      clearInterval(fundingUpdateInterval);
+    }
+
+    // Initial fetch
+    fundingArbitrage = await getOKXFundingObject({
+      fundingDownTo: FUNDING_DOWNTO,
+      fundingUpTo: FUNDING_UPTO,
+    });
+
+    // Start interval for updating funding arbitrage
+    fundingUpdateInterval = setInterval(async () => {
+      try {
+        // Update funding arbitrage data
+        fundingArbitrage = await getOKXFundingObject({
+          fundingDownTo: FUNDING_DOWNTO,
+          fundingUpTo: FUNDING_UPTO,
+        });
+        console.log(
+          "Load funding arbitrage",
+          Object.keys(fundingArbitrage).length
+        );
+        // Check if any pairs are close to funding time
+        if (isCloseToFundingTime(fundingArbitrage)) {
+          console.log("Close to funding time, executing trading strategy");
+          if (fundingUpdateInterval) clearInterval(fundingUpdateInterval);
+          fundingUpdateInterval = null;
+
+          // Execute trading strategy
+
+          console.log("Execute trading strategy");
+          forwardTradingWithWs({
+            ctx,
+            id,
+            config,
+            tradeAbleCrypto,
+            fundingArbitrage,
+            flashPositions,
+            lastestSignalTs,
+            campaigns,
+          });
+
+          botPositions({
+            ctx,
+            id,
+            config,
+            positions,
+            fundingArbitrage,
+            tradeAbleCrypto,
+            campaigns,
+          });
+
+          // Set timer to restart after funding time (60 minutes after funding)
+          const campaignConfig = campaigns.get(id);
+          if (campaignConfig) {
+            setTimeout(async () => {
+              // Stop all strategies
+              if (campaignConfig.WS) campaignConfig.WS.close();
+              if (campaignConfig.WSTicker) campaignConfig.WSTicker.close();
+              if (campaignConfig.WSPositions)
+              campaignConfig.WSPositions.close();
+              const _position = await getAccountPositions("SWAP")
+              console.log("Stop trading strategy | stop:", _position.length);
+              const closeRes: {[instId: string] : OKXResponse} =  {}
+              await Promise.all(_position.map(async (pos) => {
+                const { posSide, instId} = pos;
+                const { closePositionRes } = await closeFuturePosition({
+                  instId,
+                  mgnMode: "isolated",
+                  posSide: posSide as IPosSide,
+                })
+                flashPositions[instId] = false;
+                closeRes[instId] = closePositionRes
+              }));
+              if(ctx && Object.keys(closeRes).filter(cRes => closeRes[cRes].code === "0").length === _position.length) {
+                ctx.replyWithHTML("💀 Close all positions!")
+              } else {
+                ctx.replyWithHTML(`🐧 Close missing positions! <code>${JSON.stringify(closeRes)}</code>`)
+              }
+              // Restart funding update
+              startFundingUpdate(ctx, id, config, tradeAbleCrypto, campaigns);
+              ctx.replyWithHTML(
+                `Restarting funding arbitrage update for <code>${id}</code>`
+              );
+            }, RESTART_STRATEGY_AFTER_FUNDING * 1000); // 60 minutes
+          }
+        }
+      } catch (error) {
+        console.error("Error updating funding arbitrage:", error);
+      }
+    }, INTERVAL_TO_LOAD_FUNDING_ARBITRAGE * 1000);
+  };
+
   bot.command("start", async (ctx) => {
     const [id, ...configStrings] = ctx.message.text.split(" ").slice(1);
     const config = parseConfigInterval(configStrings.join(" "));
@@ -343,37 +474,27 @@ export const botAutoTrading = ({
       );
       return;
     }
+    campaigns.set(id, config);
+
+    // Initial fetch of funding arbitrage
     fundingArbitrage = await getOKXFundingObject({
       fundingDownTo: FUNDING_DOWNTO,
-      fundingUpTo: FUNDING_UPTO
+      fundingUpTo: FUNDING_UPTO,
     });
+
     let tradeAbleCrypto = Object.keys(fundingArbitrage);
-    // await getTradeAbleCrypto(config.tokenTradingMode);
+
     await ctx.reply(
       `Interval ${config.bar} | trade with ${tradeAbleCrypto.length} Ccy.`
     );
+
     if (tradeAbleCrypto.length === 0) {
       ctx.replyWithHTML("🛑 No currency to trade.");
       return;
     }
-    forwardTradingWithWs({
-      ctx,
-      id,
-      config,
-      tradeAbleCrypto,
-      fundingArbitrage,
-      flashPositions,
-      lastestSignalTs,
-      campaigns,
-    });
-    botPositions({
-      ctx,
-      id,
-      config,
-      fundingArbitrage,
-      tradeAbleCrypto,
-      campaigns,
-    });
+
+    // Start the funding update interval
+    startFundingUpdate(ctx, id, config, tradeAbleCrypto, campaigns);
 
     const startReport = formatReportInterval(
       id,
@@ -382,8 +503,6 @@ export const botAutoTrading = ({
       tradeAbleCrypto
     );
     ctx.replyWithHTML(startReport);
-    // await setTimeout(5000);
-    // WS?.close();
   });
 
   bot.command("stop", (ctx) => {
@@ -396,10 +515,18 @@ export const botAutoTrading = ({
       return;
     }
 
-    const CampaignConfig = campaigns.get(id);
-    CampaignConfig?.WS?.close();
-    CampaignConfig?.WSTicker?.close();
-    CampaignConfig?.WSTrailing?.close();
+    const campaignConfig = campaigns.get(id);
+
+    if (campaignConfig?.WS) campaignConfig.WS.close();
+    if (campaignConfig?.WSTicker) campaignConfig.WSTicker.close();
+    if (campaignConfig?.WSPositions) campaignConfig.WSPositions.close();
+
+    // Clear funding update interval if it exists
+    if (fundingUpdateInterval) {
+      clearInterval(fundingUpdateInterval);
+      fundingUpdateInterval = null;
+    }
+
     campaigns.delete(id);
   });
 
@@ -410,13 +537,13 @@ export const botAutoTrading = ({
     }
 
     let report = "<b>Current Trading campaigns:</b>\n";
-    campaigns.forEach((CampaignConfig, id) => {
+    campaigns.forEach((campaignConfig, id) => {
       report +=
         formatReportInterval(
           id,
-          CampaignConfig,
+          campaignConfig,
           false,
-          CampaignConfig?.tradeAbleCrypto
+          campaignConfig?.tradeAbleCrypto
         ) + "\n";
     });
 
@@ -424,15 +551,22 @@ export const botAutoTrading = ({
   });
 
   bot.command("stops", (ctx) => {
-    campaigns.forEach((CampaignConfig) => {
+    campaigns.forEach((campaignConfig) => {
       try {
-        CampaignConfig?.WS?.close();
-        CampaignConfig?.WSTicker?.close();
-        CampaignConfig?.WSTrailing?.close();
+        if (campaignConfig?.WS) campaignConfig.WS.close();
+        if (campaignConfig?.WSTicker) campaignConfig.WSTicker.close();
+        if (campaignConfig?.WSPositions) campaignConfig.WSPositions.close();
       } catch (error) {
         console.log(error);
       }
     });
+
+    // Clear funding update interval if it exists
+    if (fundingUpdateInterval) {
+      clearInterval(fundingUpdateInterval);
+      fundingUpdateInterval = null;
+    }
+
     campaigns.clear();
     ctx.replyWithHTML("🛑 All trading campaigns have been stopped.");
   });

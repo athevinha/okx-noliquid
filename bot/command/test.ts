@@ -147,7 +147,7 @@ export const test = async (ctx?: NarrowedContext<
       messageCallBack(mark) {
         const data = mark.data[0];
         const fundingData = fundingArbitrage[data.instId];
-        const fundingRate = Number(fundingData.fundingRate)
+        const fundingRate = Number(fundingData?.fundingRate)
         if (!fundingData) return;
 
         const fundingTimeLeftMs = Number(fundingData.fundingTime) - Number(data.ts);
@@ -279,7 +279,7 @@ export const botFunding = ({
     const CampaignConfig = campaigns.get(id);
     CampaignConfig?.WS?.close();
     CampaignConfig?.WSTicker?.close();
-    CampaignConfig?.WSTrailing?.close();
+    CampaignConfig?.WSPositions?.close();
     campaigns.delete(id);
   });
 };

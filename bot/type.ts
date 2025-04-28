@@ -372,7 +372,7 @@ export type IntervalState = {
 };
 export type CampaignConfig = CampaignData[keyof CampaignData] & {
   WS?: WebSocket;
-  WSTrailing?: WebSocket;
+  WSPositions?: WebSocket;
   WSTicker?: WebSocket;
 } & CampainState;
 

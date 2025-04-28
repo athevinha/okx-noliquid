@@ -41,8 +41,8 @@ export const botWSManagement = ({
           Status: wsStatus(campaignConfig.WS),
         },
         {
-          Service: `Trailing [${campaignId}]`,
-          Status: wsStatus(campaignConfig.WSTrailing),
+          Service: `Positions [${campaignId}]`,
+          Status: wsStatus(campaignConfig.WSPositions),
         },
         {
           Service: `Ticker [${campaignId}]`,

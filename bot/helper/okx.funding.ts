@@ -20,8 +20,8 @@ export const getOKXFunding = async ({
   const results = _results.filter(
     (r) =>
       //  r.buyInstType === "SWAP" &&
-      (!fundingUpTo || Number(r.fundingRate) * 100 <= fundingUpTo) &&
-      (!fundingDownTo || Number(r.fundingRate) * 100 >= fundingDownTo)
+      (!fundingUpTo || Number(r?.fundingRate) * 100 <= fundingUpTo) &&
+      (!fundingDownTo || Number(r?.fundingRate) * 100 >= fundingDownTo)
   );
   return results;
 };
