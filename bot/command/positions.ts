@@ -109,7 +109,7 @@ export const botReportPositions = ({
         totalRealizedPnl += realizedPnl;
         totalBet += Number(position.notionalUsd) / Number(position.lever);
         if (_ > 10) return;
-        const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
+        const tradeLink = `https://www.okx.com/download?deeplink=okx://trading/trade?instId=${position.instId.toLowerCase()}`;
         // Split the += into logical chunks for easier debugging
         let report = `[<code>${position.posSide.toUpperCase()}</code>] <b><a href="${tradeLink}">${position.instId.split("-")[0]} <code>${zerofy(position.lever)}x</code></a></b> (<code>${zerofy(position.notionalUsd)}${USDT}</code>)\n`;
         report += `• <b>Avg. E:</b> <code>${zerofy(position.avgPx)}${USDT}</code>\n`;

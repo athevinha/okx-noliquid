@@ -99,7 +99,9 @@ export const botReportPositionsHistory = ({
         if (index < showPositionHistory) {
           const realizedPnlIcon =
             parseFloat(zerofy(position.realizedPnl)) >= 0 ? "🟢" : "🔴";
-          const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
+          // const tradeLink = `https://www.okx.com/trade-swap/${position.instId.toLowerCase()}`;
+          const tradeLink = `https://www.okx.com/download?deeplink=okx://trading/trade?instId=${position.instId.toLowerCase()}`;
+
           let report = ``;
           report += `<code>[${position.posSide.toUpperCase()}]</code> <b><a href="${tradeLink}">${
             position.instId.split("-")[0]
