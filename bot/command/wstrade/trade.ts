@@ -158,14 +158,9 @@ const _fowardTrading = async ({
   campaigns: Map<string, CampaignConfig>;
 }) => {
   const {
-    bar,
     mgnMode,
     leve,
     sz,
-    slopeThresholdUp,
-    equityPercent,
-    tradeDirection,
-    slopeThresholdUnder,
   } = config;
   let variance = config.variance;
   try {
@@ -195,17 +190,17 @@ const _fowardTrading = async ({
       });
 
       flashPositions[wsCandle.instId] = true;
-      const openParams: any = {
+      const openParams = {
         instId: wsCandle.instId,
-        leverage: config.leve,
-        mgnMode: config.mgnMode,
-        size: config.sz,
-        posSide,
+        leverage: leve,
+        mgnMode: mgnMode,
+        size: sz,
+        posSide: posSide as IPosSide,
         tpTriggerPx,
         slTriggerPx,
       };
 
-      console.log(`Opening position with params:`, openParams);
+      console.log(`Opening position for:`, openParams.instId);
 
       const { openPositionRes, openAlgoOrderRes } =
         await openFuturePosition(openParams);
@@ -288,9 +283,9 @@ function forwardTradingWithWs({
     closeCallBack(code) {
       console.error(`[TRADING] WebSocket closed with code: ${code}`);
       if (code === 1005) {
-        ctx.replyWithHTML(
-          `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
-        );
+        // ctx.replyWithHTML(
+        //   `🔗 [TRADING] WebSocket connection terminated for <b><code>${id}</code>.</b>`
+        // );
         // campaigns.delete(id);
       } else {
         forwardTradingWithWs({
@@ -304,9 +299,9 @@ function forwardTradingWithWs({
           campaigns,
         });
 
-        ctx.replyWithHTML(
-          `⛓️ [TRADING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
-        );
+        // ctx.replyWithHTML(
+        //   `⛓️ [TRADING] [${code}] WebSocket disconnected for <b><code>${id}</code>.</b> Attempting reconnection.`
+        // );
       }
     },
     subcribedCallBack(param) {
