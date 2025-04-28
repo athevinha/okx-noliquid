@@ -29,7 +29,7 @@ const MIN_MAX_TP: [number, number] = [0.6, 0.8];
 const MIN_MAX_SL: [number, number] = [1.5, 2];
 const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 15;
 const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60 * 60;
-const TIM_CLOSE_TO_FUNDING_MINUTES = 15
+const TIM_CLOSE_TO_FUNDING_MINUTES = isDev ? 1 : 15
 export const DELAY_FOR_DCA_ORDER = isDev ? 20 : 45;
 export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5;
 // {
@@ -330,7 +330,7 @@ export const botAutoTrading = ({
     for (const instId in fundingData) {
       const fundingTimeMs = Number(fundingData[instId].fundingTime);
       const minutesLeft = (fundingTimeMs - now) / (60 * 1000);
-      if (minutesLeft < TIM_CLOSE_TO_FUNDING_MINUTES && minutesLeft > 0) {
+      if (minutesLeft < TIM_CLOSE_TO_FUNDING_MINUTES &&isDev ? 1 :  minutesLeft > 0) {
         closeToFundingList[instId] = Number(minutesLeft)
       }
     }
@@ -350,7 +350,7 @@ export const botAutoTrading = ({
     >,
     id: string,
     config: CampaignConfig,
-    tradeAbleCrypto: string[],
+    // tradeAbleCrypto: string[],
     campaigns: Map<string, CampaignConfig>
   ) => {
     // Clear any existing interval
@@ -387,7 +387,7 @@ export const botAutoTrading = ({
             `<code>${pairsCloseToFundingInstIds.join(', ')}</code>\n\n` +
             `🕐 <b>Left:</b> ${pairsCloseToFunding[pairsCloseToFundingInstIds[0]]} minutes`
           );
-          
+          // const _tradeAbleCrypto =pairsCloseToFundingInstIds
           if (fundingUpdateInterval) clearInterval(fundingUpdateInterval);
           fundingUpdateInterval = null;
 
@@ -397,7 +397,7 @@ export const botAutoTrading = ({
             ctx,
             id,
             config,
-            tradeAbleCrypto,
+            tradeAbleCrypto: pairsCloseToFundingInstIds,
             fundingArbitrage,
             flashPositions,
             lastestSignalTs,
@@ -410,7 +410,7 @@ export const botAutoTrading = ({
             config,
             positions,
             fundingArbitrage,
-            tradeAbleCrypto,
+            tradeAbleCrypto: pairsCloseToFundingInstIds,
             campaigns,
           });
 
@@ -458,14 +458,14 @@ export const botAutoTrading = ({
               }
               
               // Restart funding update
-              startFundingUpdate(ctx, id, config, tradeAbleCrypto, campaigns);
+              startFundingUpdate(ctx, id, config, campaigns);
               await ctx.replyWithHTML(
                 `🔄 <b>Restarting Funding Arbitrage Monitor</b> 🔄\n\n` +
                 `📊 <b>Campaign ID:</b> <code>${id}</code>\n` +
                 `🕐 <b>Time:</b> ${new Date().toLocaleString()}\n\n` +
                 `⏳ <b>Monitoring for next funding opportunity...</b>`
               );
-            }, TIM_CLOSE_TO_FUNDING_MINUTES * 60 * 1000 + RESTART_STRATEGY_AFTER_FUNDING * 1000);
+            }, TIM_CLOSE_TO_FUNDING_MINUTES * isDev ? 1 : 60 * 1000 + RESTART_STRATEGY_AFTER_FUNDING * 1000);
           }
         }
       } catch (error) {
@@ -496,37 +496,37 @@ export const botAutoTrading = ({
     campaigns.set(id, config);
 
     // Initial fetch of funding arbitrage
-    fundingArbitrage = await getOKXFundingObject({
-      fundingDownTo: FUNDING_DOWNTO,
-      fundingUpTo: FUNDING_UPTO,
-    });
+    // fundingArbitrage = await getOKXFundingObject({
+    //   fundingDownTo: FUNDING_DOWNTO,
+    //   fundingUpTo: FUNDING_UPTO,
+    // });
 
-    let tradeAbleCrypto = Object.keys(fundingArbitrage);
+    // let tradeAbleCrypto = Object.keys(fundingArbitrage);
 
     await ctx.replyWithHTML(
       `📊 <b>Campaign Initialized</b> 📊\n` +
       `⚙️ <b>Mode:</b> ${isDev ? "Development" : "Production"}`
     );
 
-    if (tradeAbleCrypto.length === 0) {
-      await ctx.replyWithHTML(
-        `🛑 <b>No Trading Pairs Available</b> 🛑\n\n` +
-        `Could not find any currency pairs matching the funding criteria:\n` +
-        `• Funding Down To: ${FUNDING_DOWNTO}%\n` +
-        `• Funding Up To: ${FUNDING_UPTO}%\n\n` +
-        `Please adjust parameters or try again later.`
-      );
-      return;
-    }
+    // if (tradeAbleCrypto.length === 0) {
+    //   await ctx.replyWithHTML(
+    //     `🛑 <b>No Trading Pairs Available</b> 🛑\n\n` +
+    //     `Could not find any currency pairs matching the funding criteria:\n` +
+    //     `• Funding Down To: ${FUNDING_DOWNTO}%\n` +
+    //     `• Funding Up To: ${FUNDING_UPTO}%\n\n` +
+    //     `Please adjust parameters or try again later.`
+    //   );
+    //   return;
+    // }
 
     // Start the funding update interval
-    startFundingUpdate(ctx, id, config, tradeAbleCrypto, campaigns);
+    startFundingUpdate(ctx, id, config, campaigns);
 
     const startReport = formatReportInterval(
       id,
       { ...config },
       true,
-      tradeAbleCrypto
+      // tradeAbleCrypto
     );
     
     await ctx.replyWithHTML(startReport);

@@ -331,18 +331,16 @@ export const openFuturePosition = async ({
   // }
   // attempts = 0;
 
-  // if (okxReponseChecker(openPositionRes)) {
-  //   while (attempts < maxRetries) {
-  //     attempts += 1;
-  //     openAlgoOrderRes = await openTPSLOrder();
-  //     if (okxReponseChecker(openAlgoOrderRes)) {
-  //       break;
-  //     }
-  //   }
-  // }
   openPositionRes = await openPosition();
-  if(okxReponseChecker(openPositionRes) && (!!tpTriggerPx || !!slTriggerPx) )
-    openAlgoOrderRes = await openTPSLOrder();
+  if(okxReponseChecker(openPositionRes) && (!!tpTriggerPx || !!slTriggerPx) ) {
+    while (attempts < maxRetries) {
+      attempts += 1;
+      openAlgoOrderRes = await openTPSLOrder();
+      if (okxReponseChecker(openAlgoOrderRes)) {
+        break;
+      }
+    }
+  }
   return {
     openPositionRes: {
       ...openPositionRes,
