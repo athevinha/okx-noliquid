@@ -465,7 +465,7 @@ export const botAutoTrading = ({
                 `🕐 <b>Time:</b> ${new Date().toLocaleString()}\n\n` +
                 `⏳ <b>Monitoring for next funding opportunity...</b>`
               );
-            }, RESTART_STRATEGY_AFTER_FUNDING * 1000);
+            }, TIM_CLOSE_TO_FUNDING_MINUTES * 60 * 1000 + RESTART_STRATEGY_AFTER_FUNDING * 1000);
           }
         }
       } catch (error) {
