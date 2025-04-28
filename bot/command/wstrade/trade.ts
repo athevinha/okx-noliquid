@@ -330,7 +330,7 @@ export const botAutoTrading = ({
     for (const instId in fundingData) {
       const fundingTimeMs = Number(fundingData[instId].fundingTime);
       const minutesLeft = (fundingTimeMs - now) / (60 * 1000);
-      if (minutesLeft < TIM_CLOSE_TO_FUNDING_MINUTES &&isDev ? 1 :  minutesLeft > 0) {
+      if (minutesLeft < TIM_CLOSE_TO_FUNDING_MINUTES && minutesLeft > 0) {
         closeToFundingList[instId] = Number(minutesLeft)
       }
     }
@@ -465,7 +465,7 @@ export const botAutoTrading = ({
                 `🕐 <b>Time:</b> ${new Date().toLocaleString()}\n\n` +
                 `⏳ <b>Monitoring for next funding opportunity...</b>`
               );
-            }, TIM_CLOSE_TO_FUNDING_MINUTES * isDev ? 1 : 60 * 1000 + RESTART_STRATEGY_AFTER_FUNDING * 1000);
+            }, TIM_CLOSE_TO_FUNDING_MINUTES * 60 * 1000 + RESTART_STRATEGY_AFTER_FUNDING * 1000);
           }
         }
       } catch (error) {
