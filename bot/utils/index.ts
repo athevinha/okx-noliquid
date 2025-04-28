@@ -200,7 +200,7 @@ export const decodeClOrdId = ({
   leverage: number;
   size: number;
 }) => {
-  return `${campaignId}`
+  return `${campaignId || "vvvv"}`
     .replaceAll("-", "o")
     .replaceAll("_", "o")
     .replaceAll("/", "o")
@@ -221,7 +221,7 @@ export const decodeTag = ({
   leverage: number;
   size: number;
 }) => {
-  return `${campaignId}o${size}o${leverage}`
+  return `${campaignId || "asd"}o${size}o${leverage}`
     .replaceAll("-", "o")
     .replaceAll("_", "o")
     .replaceAll("/", "o")
