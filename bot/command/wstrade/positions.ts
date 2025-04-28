@@ -1,56 +1,30 @@
 import dotenv from "dotenv";
-import { Context, NarrowedContext, Telegraf } from "telegraf";
-import { Message, Update } from "telegraf/typings/core/types/typegram";
-import { getSymbolCandles } from "../../helper/okx.candles";
+import {Context,NarrowedContext} from "telegraf";
+import {Message,Update} from "telegraf/typings/core/types/typegram";
 import {
-  closeFuturePosition,
-  openFuturePosition,
+  wsPositions
+} from "../../helper/okx.socket";
+import {
+  openFuturePosition
 } from "../../helper/okx.trade";
-import { findEMACrossovers } from "../../signals/ema-cross";
+import {editLimitAlgoOrders} from "../../helper/okx.trade.algo";
 import {
-  ICandles,
   CampaignConfig,
-  IPosSide,
-  IWsCandlesReponse,
-  IPositionOpen,
   CandleWithATR,
+  ICandles,
   IOKXFunding,
+  IPositionOpen,
+  IPosSide
 } from "../../type";
 import {
   axiosErrorDecode,
-  decodeSymbol,
-  decodeTimestamp,
-  decodeTimestampAgo,
-  estimatePnl,
-  getTradeAbleCrypto,
   okxReponseChecker,
-  zerofy,
+  zerofy
 } from "../../utils";
 import {
-  ATR_PERIOD,
-  parseConfigInterval,
-  USDT,
-  WHITE_LIST_TOKENS_TRADE,
+  USDT
 } from "../../utils/config";
-import { formatReportInterval } from "../../utils/message";
-import { calculateATR } from "../../signals/atr";
-import {
-  sendOKXWsMessage,
-  wsCandles,
-  wsPositions,
-  wsTicks,
-} from "../../helper/okx.socket";
-import { setTimeout } from "timers/promises";
-import {
-  getAccountOrder,
-  getAccountPendingAlgoOrders,
-  getAccountPendingOrders,
-  getAccountPositions,
-} from "../../helper/okx.account";
-import { fowardTickerATRWithWs } from "./ticker";
-import WebSocket from "ws";
-import { calcBreakEvenPx, calcTpSL, DELAY_FOR_DCA_ORDER, PX_CHANGE_TO_DCA } from "./trade";
-import {editLimitAlgoOrders} from "../../helper/okx.trade.algo";
+import {calcBreakEvenPx,calcTpSL,DELAY_FOR_DCA_ORDER,PX_CHANGE_TO_DCA} from "./trade";
 dotenv.config();
 const _fowardPositions = async ({
   ctx,

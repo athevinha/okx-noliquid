@@ -1,50 +1,31 @@
-import dotenv, { config } from "dotenv";
-import { Context, NarrowedContext, Telegraf } from "telegraf";
-import { Message, Update } from "telegraf/typings/core/types/typegram";
-import { getSymbolCandles } from "../../helper/okx.candles";
+import {Context,NarrowedContext,Telegraf} from "telegraf";
+import {Message,Update} from "telegraf/typings/core/types/typegram";
+import {
+  getAccountPositions
+} from "../../helper/okx.account";
+import {getOKXFundingObject} from "../../helper/okx.funding";
+import {wsCandles} from "../../helper/okx.socket";
 import {
   closeFuturePosition,
   openFuturePosition,
 } from "../../helper/okx.trade";
-import { findEMACrossovers } from "../../signals/ema-cross";
 import {
-  ICandles,
   CampaignConfig,
-  IPosSide,
-  IWsCandlesReponse,
-  IWsTickerReponse,
   IOKXFunding,
   IPositionOpen,
-  OKXResponse,
+  IPosSide,
+  IWsCandlesReponse,
+  OKXResponse
 } from "../../type";
 import {
   axiosErrorDecode,
-  decodeSymbol,
-  decodeTimestamp,
-  decodeTimestampAgo,
-  estimatePnl,
-  getTradeAbleCrypto,
-  okxReponseChecker,
-  zerofy,
+  zerofy
 } from "../../utils";
 import {
-  parseConfigInterval,
-  USDT,
-  WHITE_LIST_TOKENS_TRADE,
+  parseConfigInterval
 } from "../../utils/config";
-import { formatReportInterval } from "../../utils/message";
-import { calculateATR } from "../../signals/atr";
-import { wsCandles, wsTicks } from "../../helper/okx.socket";
-import { setTimeout as STO } from "timers/promises";
-import { botPositions } from "./positions";
-import WebSocket from "ws";
-import {
-  getAccountPositions,
-  getUSDTBalance,
-  getUSDTEquity,
-} from "../../helper/okx.account";
-import { getOKXFunding, getOKXFundingObject } from "../../helper/okx.funding";
-import { existsSync } from "fs";
+import {formatReportInterval} from "../../utils/message";
+import {botPositions} from "./positions";
 const MODE = process.env.ENV;
 const isDev = MODE === "dev";
 const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60;
