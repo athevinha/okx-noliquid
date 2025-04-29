@@ -22,12 +22,12 @@ const MODE = process.env.ENV;
 const isDev = MODE === "dev";
 
 // Constants for trading parameters
-const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60;
+const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 5 * 60;
 const FUNDING_DOWNTO = isDev ? -0.1 : -2;
 const FUNDING_UPTO = isDev ? 0.1 : -0.05;
 const MIN_MAX_TP: [number, number] = [0.6, 0.8];
 const MIN_MAX_SL: [number, number] = [1.5, 2];
-const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 15;
+const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 30;
 const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60 * 60;
 const TIM_CLOSE_TO_FUNDING_MINUTES = isDev ? 1 : 15
 export const DELAY_FOR_DCA_ORDER = isDev ? 20 : 45;
