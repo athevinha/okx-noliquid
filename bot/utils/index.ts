@@ -186,7 +186,6 @@ export const generateTelegramTableReport = (
 
   return `<pre>${headerRow}\n${separator}\n${rows}</pre>`;
 };
-
 export const decodeClOrdId = ({
   campaignId,
   instId,
@@ -201,9 +200,9 @@ export const decodeClOrdId = ({
   size: number;
 }) => {
   return `${campaignId || "vvvv"}`
-    .replaceAll("-", "o")
-    .replaceAll("_", "o")
-    .replaceAll("/", "o")
+    .replace(/-/g, "o")
+    .replace(/_/g, "o")
+    .replace(/\//g, "o")
     .slice(0, 32)
     .toLowerCase();
 };
@@ -222,13 +221,12 @@ export const decodeTag = ({
   size: number;
 }) => {
   return `${campaignId || "asd"}o${size}o${leverage}`
-    .replaceAll("-", "o")
-    .replaceAll("_", "o")
-    .replaceAll("/", "o")
+    .replace(/-/g, "o")
+    .replace(/_/g, "o")
+    .replace(/\//g, "o")
     .slice(0, 16)
     .toLowerCase();
 };
-
 export const getTradeAbleCrypto = async (tokenTradingMode: string) => {
   const supportFutureCryptos = await getSupportCrypto({});
   const supportFutureCryptosByInstId = supportFutureCryptos.map(

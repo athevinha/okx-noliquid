@@ -22,7 +22,7 @@ const MODE = process.env.ENV;
 const isDev = MODE === "dev";
 
 // Constants for trading parameters
-const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 8 * 60;
+const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 10 * 60;
 const FUNDING_DOWNTO = isDev ? -0.1 : -2;
 const FUNDING_UPTO = isDev ? 0.1 : -0.05;
 const MIN_MAX_TP: [number, number] = [0.6, 0.8];
@@ -662,7 +662,7 @@ export const botAutoTrading = ({
         fundingReport += `⏰ <b>Pairs Close to Funding Time:</b> ${pairsCloseToFundingInstIds.length}\n`;
         pairsCloseToFundingInstIds.forEach(instId => {
           const minutesLeft = pairsCloseToFunding[instId];
-          fundingReport += `  • ${minutesLeft < 10 ? '🔴' : '🟡'} <code>${instId}</code>: ${zerofy(minutesLeft)} minutes left\n`;
+          fundingReport += `  • ${minutesLeft < 10 ? '🟣' : '🟡'} <code>${instId}</code>: ${zerofy(minutesLeft)} minutes left\n`;
         });
         fundingReport += `\n`;
       }
