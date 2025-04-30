@@ -13,7 +13,7 @@ import {
   OKXResponse
 } from "../../type";
 import { axiosErrorDecode, zerofy } from "../../utils";
-import { parseConfigInterval } from "../../utils/config";
+import { parseConfigInterval, USDT } from "../../utils/config";
 import { formatReportInterval } from "../../utils/message";
 import { botPositions } from "./positions";
 
@@ -668,7 +668,7 @@ export const botAutoTrading = ({
       
       // Sort pairs by funding rate (highest to lowest)
       const sortedPairs = Object.entries(fundingArbitrage)
-        .sort((a, b) => parseFloat(b[1].fundingRate) - parseFloat(a[1].fundingRate));
+        .sort((a, b) => Math.abs(Number(b[1].fundingRate)) - Math.abs(Number(a[1].fundingRate)));
       
       // Take top 10 pairs for display
       const topPairs = sortedPairs.slice(0, 10);
@@ -691,7 +691,7 @@ export const botAutoTrading = ({
       topPairs.forEach(([instId, data], index) => {
         const fundingTime = new Date(Number(data.fundingTime)).toLocaleString();
         const fundingRate = zerofy((parseFloat(data.fundingRate) * 100));
-        const nextRate = zerofy((parseFloat(data.nextFundingRate) * 100));
+        const vol24h = Number(data.tickerInfor?.last || 0) * Number(data.tickerInfor?.volCcy24h || 0 );
         const rateIcon = parseFloat(data.fundingRate) > 0 ? '📈' : '📉';
         
         // Medal emojis for top 3
@@ -702,7 +702,7 @@ export const botAutoTrading = ({
         
         fundingReport += `${rankEmoji}<code>${instId}</code> ${rateIcon} <b>${fundingRate}%</b>\n`;
         fundingReport += `   ┣ 📊 <i>APY:</i> ${zerofy(parseFloat(data.apy))}%\n`;
-        fundingReport += `   ┣ 🔮 <i>Next Rate:</i> ${nextRate}%\n`;
+        fundingReport += `   ┣ 🔮 <i>Volume 24H:</i> <b>${zerofy(vol24h || "0")}${USDT}</b>\n`;
         fundingReport += `   ┗ 🕒 <i>Funding:</i> ${fundingTime}\n`;
       });
       

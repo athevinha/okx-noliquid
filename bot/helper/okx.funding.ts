@@ -27,13 +27,13 @@ export const getOKXFunding = async ({
   const _results: IOKXFunding[] = res?.data?.data;
   const results = _results.filter(
     (r) =>
-      Number(tickersInforWithObject[`${r.ccy}-USDT-SWAP`].vol24h) >= (minVolume24H || MIN_TICKER_VOLUME_24H) &&
+      (Number(tickersInforWithObject[`${r.ccy}-USDT-SWAP`].volCcy24h) * Number(tickersInforWithObject[`${r.ccy}-USDT-SWAP`].last))  >= (minVolume24H || MIN_TICKER_VOLUME_24H) &&
       (
         (!fundingNegativeUpTo || Number(r?.fundingRate) * 100 <= fundingNegativeUpTo) && (!fundingNegativeDownTo || Number(r?.fundingRate) * 100 >= fundingNegativeDownTo) 
         || 
         (!fundingPositiveUpTo || Number(r?.fundingRate) * 100 <= fundingPositiveUpTo) && (!fundingPositiveDownTo || Number(r?.fundingRate) * 100 >= fundingPositiveDownTo) 
       )
-  );
+  ).map(r => {return {...r, tickerInfor: tickersInforWithObject[`${r.ccy}-USDT-SWAP`]}});
   return results;
 };
 
