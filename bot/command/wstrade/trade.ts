@@ -24,9 +24,9 @@ const isDev = MODE === "dev";
 // Constants for trading parameters
 const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 5 * 60;
 const FUNDING_NEGATIVE_DOWNTO = isDev ? -0.1 : -2;
-const FUNDING_NEGATIVE_UPTO = isDev ? 0 : -0.04;
+const FUNDING_NEGATIVE_UPTO = isDev ? 0 : -0.05;
 
-const FUNDING_POSITIVE_DOWNTO = isDev ? 0 : 0.04;
+const FUNDING_POSITIVE_DOWNTO = isDev ? 0 : 0.05;
 const FUNDING_POSITIVE_UPTO = isDev ? 0.1 : 2;
 
 const MIN_MAX_TP: [number, number] = [0.6, 0.8];
