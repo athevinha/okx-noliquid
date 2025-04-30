@@ -723,3 +723,7 @@ export const botAutoTrading = ({
     }
   });
 };
+
+// happen when stop and run campain agains
+// issuse when multi campain
+// need to clear state for (when reset, when update, when...), and more about state infors (can be reply in CTX)
