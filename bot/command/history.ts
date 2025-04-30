@@ -113,10 +113,10 @@ export const botReportPositionsHistory = ({
           if (trailingLossSlippage !== undefined) {
             report += `└ <b>Slippage:</b> ${slippageIcon} <code>${zerofy(trailingLossSlippage * 100)}%</code>\n`;
           } else {
-            report += `└──────────────────\n`;
+            report += `└───────────────\n`;
           }
           
-          positionReports += `${report}\n`;
+          positionReports += `${report}`;
         }
         
         // Accumulate totals

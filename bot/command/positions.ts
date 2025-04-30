@@ -26,26 +26,26 @@ export const botReportPositions = ({
       // Fetch open positions
       const id = ctx.message.text.split(" ")[1];
       let tokensFilter: string[] = [];
-      const CampaignConfig = campaigns.get(id);
+      const campaignConfig = campaigns.get(id);
 
       if (
         campaigns.has(id) &&
-        CampaignConfig &&
-        CampaignConfig?.tokenTradingMode
+        campaignConfig &&
+        campaignConfig?.tokenTradingMode
       ) {
         tokensFilter = await getTradeAbleCrypto(
-          CampaignConfig?.tokenTradingMode,
+          campaignConfig?.tokenTradingMode,
         );
       }
       const positions = await getAccountPositions("SWAP", tokensFilter);
       let tradeAbleCryptoCandles: { [instId: string]: ICandles } = {};
-      if (CampaignConfig) {
+      if (campaignConfig) {
         await Promise.all(
           tokensFilter.map(async (instId) => {
             tradeAbleCryptoCandles[instId] = await getSymbolCandles({
               instID: instId,
               before: 0,
-              bar: CampaignConfig?.bar,
+              bar: campaignConfig?.bar,
               limit: 300,
             });
           }),
@@ -60,28 +60,29 @@ export const botReportPositions = ({
               tokensFilter.includes(order.instId),
             );
       if (positions.length === 0) {
-        await ctx.replyWithHTML("<code>No positions found.</code>");
+        await ctx.replyWithHTML("ℹ️ <code>No positions found.</code>");
         return;
       }
 
       // Create the report for open positions
       let positionReports =
         tokensFilter.length > 0
-          ? `<b>Report for interval: </b> <code>${id}</code>\n`
-          : "";
+          ? `🔍 <b>Active Positions Report</b>\n<b>Campaign:</b> <code>${id}</code>\n\n`
+          : `🔍 <b>Active Positions Report</b>\n\n`;
       let totalPnl = 0;
       let totalRealizedPnl = 0;
       let totalTrailingLossPnl = 0;
       let totalBet = 0;
+      
       // Create the report for open positions
-      positions.forEach((position, _) => {
-        const pnlIcon = parseFloat(zerofy(position.upl)) >= 0 ? "🟢" : "🔴";
-        const realizedPnl =
-          parseFloat(position.realizedPnl) + parseFloat(position.upl);
-        const realizedPnlIcon = realizedPnl >= 0 ? "🟢" : "🔴";
+      positions.forEach((position, index) => {
+        if (index > 10) return;
+        
+        const realizedPnl = parseFloat(position.realizedPnl) + parseFloat(position.upl);
         const trailingLossOrder = trailingLossOrders.filter(
           (order) => order.instId === position.instId,
         )?.[0];
+        
         const { estPnlStopLoss, estPnlStopLossPercent, estPnlStopLossIcon } =
           estimatePnl({
             posSide: position.posSide as IPosSide,
@@ -89,15 +90,16 @@ export const botReportPositions = ({
             e: position.avgPx,
             c: trailingLossOrder?.moveTriggerPx,
           });
+          
         totalTrailingLossPnl += estPnlStopLoss;
-        let markPrice = 0,
-          estTriggerPrice = 0;
-        if (!trailingLossOrder && CampaignConfig) {
-          const multiple = CampaignConfig.variance
+        let markPrice = 0, estTriggerPrice = 0;
+        
+        if (!trailingLossOrder && campaignConfig) {
+          const multiple = campaignConfig.variance
             ? Number(
-                CampaignConfig.variance === "auto"
+                campaignConfig.variance === "auto"
                   ? [1, "auto"]
-                  : CampaignConfig.variance.split(",")[0],
+                  : campaignConfig.variance.split(",")[0],
               )
             : 0.05;
           const instCandle = tradeAbleCryptoCandles[position.instId];
@@ -105,37 +107,49 @@ export const botReportPositions = ({
           const currentAtr = calculateATR(instCandle, ATR_PERIOD).slice(-1)[0];
           estTriggerPrice = Number(position.avgPx) + currentAtr?.atr * multiple;
         }
+        
         totalPnl += parseFloat(position.upl);
         totalRealizedPnl += realizedPnl;
         totalBet += Number(position.notionalUsd) / Number(position.lever);
-        if (_ > 10) return;
+        
         const tradeLink = `https://www.okx.com/download?deeplink=okx://trading/trade?instId=${position.instId.toLowerCase()}`;
-        // Split the += into logical chunks for easier debugging
-        let report = `[<code>${position.posSide.toUpperCase()}</code>] <b><a href="${tradeLink}">${position.instId.split("-")[0]} <code>${zerofy(position.lever)}x</code></a></b> (<code>${zerofy(position.notionalUsd)}${USDT}</code>)\n`;
-        report += `• <b>Avg. E:</b> <code>${zerofy(position.avgPx)}${USDT}</code>\n`;
-        report += `• <b>PnL:</b> <code>${zerofy(position.upl)}${USDT}</code> (<code>${zerofy(Number(position.uplRatio) * 100)}</code>%) • ${pnlIcon}\n`;
-        report += `• <b>Real. Pnl:</b> <code>${zerofy(realizedPnl)}${USDT}</code> • ${realizedPnlIcon}\n`;
-        report += trailingLossOrder
-          ? `• <b>Trail:</b> <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}</code>%) • ${estPnlStopLossIcon}\n`
-          : CampaignConfig
-            ? `• <b>Trig | mark:</b> <code>${zerofy(estTriggerPrice)}</code> | <code>${zerofy(markPrice)}</code> • ${markPrice > estTriggerPrice ? "🟢" : "🔴"}\n`
-            : "";
-        positionReports += report;
+        const symbol = position.instId.split("-")[0];
+        const posSideIcon = position.posSide.toUpperCase() === "LONG" ? "📈" : "📉";
+        const pnlIcon = parseFloat(zerofy(position.upl)) >= 0 ? "🟢" : "🔴";
+        const realizedPnlIcon = realizedPnl >= 0 ? "🟢" : "🔴";
+        
+        // Format position with consistent styling similar to history report
+        let report = `${posSideIcon} <b><a href="${tradeLink}">${symbol} x${zerofy(position.lever)}</a></b> | <code>${zerofy(position.notionalUsd)}${USDT}</code>\n`;
+        report += `├ <b>Entry:</b> <code>${zerofy(position.avgPx)}${USDT}</code>\n`;
+        report += `├ <b>PnL:</b> ${pnlIcon} <code>${zerofy(position.upl)}${USDT}</code> (<code>${zerofy(Number(position.uplRatio) * 100)}%</code>)\n`;
+        report += `├ <b>Realized PnL:</b> ${realizedPnlIcon} <code>${zerofy(realizedPnl)}${USDT}</code>\n`;
+        
+        if (trailingLossOrder) {
+          report += `└ <b>Trail.:</b> ${estPnlStopLossIcon} <code>${zerofy(estPnlStopLoss)}${USDT}</code> (<code>${zerofy(estPnlStopLossPercent * 100)}%</code>)\n`;
+        } else if (campaignConfig) {
+          const triggerIcon = markPrice > estTriggerPrice ? "🟢" : "🔴";
+          report += `└ <b>Trig/Mark:</b> ${triggerIcon} <code>${zerofy(estTriggerPrice)}</code> | <code>${zerofy(markPrice)}</code>\n`;
+        } else {
+          report += `└───────────────\n`;
+        }
+        
+        positionReports += `${report}`;
       });
-      let summaryReport = ``;
-      summaryReport += `<code>----------POSITIONS------------</code>\n`;
-      summaryReport += `<b>E. PnL:</b> <code>${zerofy(totalPnl)}${USDT}</code> • ${totalPnl >= 0 ? "🟢" : "🔴"}\n`;
-      summaryReport += `<b>E. Realized PnL:</b> <code>${zerofy(totalRealizedPnl)}${USDT}</code> • ${totalRealizedPnl >= 0 ? "🟢" : "🔴"}\n`;
-      summaryReport += `<b>E. Trigs. loss:</b> <code>${zerofy(totalTrailingLossPnl)}${USDT}</code> • ${totalTrailingLossPnl >= 0 ? "🟣" : "🟠"}\n`;
-      summaryReport += `<b>Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}</code>%)\n`;
+      
+      // Format summary with consistent styling
+      let summaryReport = `📊 <b>SUMMARY</b>\n`;
+      summaryReport += `├ <b>PnL:</b> ${totalPnl >= 0 ? "🟢" : "🔴"} <code>${zerofy(totalPnl)}${USDT}</code>\n`;
+      summaryReport += `├ <b>Realized PnL:</b> ${totalRealizedPnl >= 0 ? "🟢" : "🔴"} <code>${zerofy(totalRealizedPnl)}${USDT}</code>\n`;
+      summaryReport += `├ <b>Est. Trail Loss:</b> ${totalTrailingLossPnl >= 0 ? "🟣" : "🟠"} <code>${zerofy(totalTrailingLossPnl)}${USDT}</code>\n`;
+      summaryReport += `└ <b>Total Bet:</b> <code>${zerofy(totalBet)}${USDT}</code> (<code>${zerofy((totalRealizedPnl / totalBet) * 100)}%</code>)\n`;
 
       // Send the report to the user
-      await ctx.reply(positionReports + summaryReport, {
+      await ctx.replyWithHTML(positionReports + summaryReport, {
         parse_mode: "HTML",
         link_preview_options: { is_disabled: true },
       });
     } catch (err: any) {
-      await ctx.replyWithHTML(`Error: <code>${axiosErrorDecode(err)}</code>`);
+      await ctx.replyWithHTML(`❌ <b>Error:</b> <code>${axiosErrorDecode(err)}</code>`);
     }
   });
 };
