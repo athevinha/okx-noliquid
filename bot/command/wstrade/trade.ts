@@ -555,6 +555,11 @@ export const botAutoTrading = ({
       clearInterval(fundingUpdateInterval);
       fundingUpdateInterval = null;
     }
+    
+    lastestSignalTs = {};
+    fundingArbitrage = {};
+    flashPositions = {};
+    positions = {};
 
     campaigns.delete(id);
     
@@ -620,7 +625,11 @@ export const botAutoTrading = ({
     }
 
     campaigns.clear();
-    
+    fundingUpdateInterval = null;
+    lastestSignalTs = {};
+    fundingArbitrage = {};
+    flashPositions = {};
+    positions = {};
     await ctx.replyWithHTML(
       `🛑 <b>All Campaigns Stopped</b> 🛑\n\n` +
       `✅ <b>Terminated:</b> ${campaignCount} campaigns\n` +
