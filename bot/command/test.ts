@@ -48,8 +48,8 @@ export const test = async (ctx?: NarrowedContext<
       const _fundingArbitrage: { [instId: string]: IOKXFunding } = {};
       (
         await getOKXFunding({
-          fundingDownTo: -2,
-          fundingUpTo: -0.05,
+          fundingNegativeDownTo: -2,
+          fundingNegativeUpTo: -0.05,
         })
       ).slice(0, 10).forEach((e) => {
         if(MODE === "dev")

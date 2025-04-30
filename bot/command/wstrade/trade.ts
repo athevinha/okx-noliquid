@@ -23,8 +23,12 @@ const isDev = MODE === "dev";
 
 // Constants for trading parameters
 const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 5 * 60;
-const FUNDING_DOWNTO = isDev ? -0.1 : -2;
-const FUNDING_UPTO = isDev ? 0.1 : -0.04;
+const FUNDING_NEGATIVE_DOWNTO = isDev ? -0.1 : -2;
+const FUNDING_NEGATIVE_UPTO = isDev ? 0 : -0.04;
+
+const FUNDING_POSITIVE_DOWNTO = isDev ? 0 : 0.04;
+const FUNDING_POSITIVE_UPTO = isDev ? 0.1 : 2;
+
 const MIN_MAX_TP: [number, number] = [0.6, 0.8];
 const MIN_MAX_SL: [number, number] = [1.5, 2];
 const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 30;
@@ -32,6 +36,7 @@ const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60 * 60;
 const TIM_CLOSE_TO_FUNDING_MINUTES = isDev ? 1 : 15
 export const DELAY_FOR_DCA_ORDER = isDev ? 20 : 45;
 export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5;
+export const MIN_TICKER_VOLUME_24H = 5_000_000
 // {
   // code: '1',
   // data: [
@@ -360,8 +365,11 @@ export const botAutoTrading = ({
 
     // Initial fetch
     fundingArbitrage = await getOKXFundingObject({
-      fundingDownTo: FUNDING_DOWNTO,
-      fundingUpTo: FUNDING_UPTO,
+      fundingNegativeDownTo: FUNDING_NEGATIVE_DOWNTO,
+      fundingNegativeUpTo: FUNDING_NEGATIVE_UPTO,
+      fundingPositiveDownTo: FUNDING_POSITIVE_DOWNTO,
+      fundingPositiveUpTo: FUNDING_POSITIVE_UPTO,
+      
     });
 
     // Start interval for updating funding arbitrage
@@ -369,8 +377,10 @@ export const botAutoTrading = ({
       try {
         // Update funding arbitrage data
         fundingArbitrage = await getOKXFundingObject({
-          fundingDownTo: FUNDING_DOWNTO,
-          fundingUpTo: FUNDING_UPTO,
+          fundingNegativeDownTo: FUNDING_NEGATIVE_DOWNTO,
+          fundingNegativeUpTo: FUNDING_NEGATIVE_UPTO,
+          fundingPositiveDownTo: FUNDING_POSITIVE_DOWNTO,
+          fundingPositiveUpTo: FUNDING_POSITIVE_UPTO,
         });
         console.log(
           "Load funding arbitrage",
@@ -497,8 +507,8 @@ export const botAutoTrading = ({
 
     // Initial fetch of funding arbitrage
     // fundingArbitrage = await getOKXFundingObject({
-    //   fundingDownTo: FUNDING_DOWNTO,
-    //   fundingUpTo: FUNDING_UPTO,
+    //   fundingNegativeDownTo: FUNDING_NEGATIVE_DOWNTO,
+    //   fundingNegativeUpTo: FUNDING_NEGATIVE_UPTO,
     // });
 
     // let tradeAbleCrypto = Object.keys(fundingArbitrage);
@@ -512,8 +522,8 @@ export const botAutoTrading = ({
     //   await ctx.replyWithHTML(
     //     `🛑 <b>No Trading Pairs Available</b> 🛑\n\n` +
     //     `Could not find any currency pairs matching the funding criteria:\n` +
-    //     `• Funding Down To: ${FUNDING_DOWNTO}%\n` +
-    //     `• Funding Up To: ${FUNDING_UPTO}%\n\n` +
+    //     `• Funding Down To: ${FUNDING_NEGATIVE_DOWNTO}%\n` +
+    //     `• Funding Up To: ${FUNDING_NEGATIVE_UPTO}%\n\n` +
     //     `Please adjust parameters or try again later.`
     //   );
     //   return;
@@ -645,8 +655,8 @@ export const botAutoTrading = ({
         await ctx.replyWithHTML(
           `🔍 <b>No Funding Data Available</b> 🔍\n\n` +
           `⚠️ Funding data hasn't been loaded yet or no pairs match the criteria.\n` +
-          `• 📉 Funding Down To: ${FUNDING_DOWNTO}%\n` +
-          `• 📈 Funding Up To: ${FUNDING_UPTO}%\n\n` +
+          `• 📉 Funding Down To: ${FUNDING_NEGATIVE_DOWNTO}%\n` +
+          `• 📈 Funding Up To: ${FUNDING_NEGATIVE_UPTO}%\n\n` +
           `💡 Start a campaign first or try again later.`
         );
         return;
