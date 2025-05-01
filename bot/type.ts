@@ -552,23 +552,38 @@ export interface IOKXTikerInfo {
   sodUtc8: string
 }
 
-export type IOKXFunding =  {
-  acc3dFundingRate: string
-  apy: string
-  apyNoneAbsolute: string
-  arbitrageId: string
-  buyInstId: string
-  buyInstType: string
-  ccy: string
-  fundingRate: string
-  fundingTime: string
+// export type IOKXFunding =  {
+//   acc3dFundingRate: string
+//   apy: string
+//   apyNoneAbsolute: string
+//   arbitrageId: string
+//   buyInstId: string
+//   buyInstType: string
+//   ccy: string
+//   fundingRate: string
+//   fundingTime: string
+//   nextFundingRate: string
+//   notionalUsd: string
+//   sellInstId: string
+//   sellInstType: string
+//   spread: string
+//   state: string
+//   ts: string
+//   yield3dPer10K: string
+//   tickerInfor?: IOKXTikerInfo
+// }
+
+export interface IOKXFunding {
+  interestRate: string
+  instId: string
+  impactValue: string
+  formulaType: string
+  method: string
   nextFundingRate: string
-  notionalUsd: string
-  sellInstId: string
-  sellInstType: string
-  spread: string
-  state: string
-  ts: string
-  yield3dPer10K: string
+  minFundingRate: string
+  fundingTime: string
+  frequency: string
+  fundingRate: string
+  maxFundingRate: string
   tickerInfor?: IOKXTikerInfo
 }

@@ -701,7 +701,7 @@ export const botAutoTrading = ({
         else if (index === 2) rankEmoji = '🥉 ';
         
         fundingReport += `${rankEmoji}<code>${instId}</code> ${rateIcon} <b>${fundingRate}%</b>\n`;
-        fundingReport += `   ┣ 📊 <i>APY:</i> ${zerofy(parseFloat(data.apy))}%\n`;
+        fundingReport += `   ┣ 📊 <i>Min/Max Funding:</i> <code>${zerofy(parseFloat(data.minFundingRate) * 100)}%</code> -> <code>${zerofy(parseFloat(data.maxFundingRate) * 100)}%</code>\n`;
         fundingReport += `   ┣ 🔮 <i>Volume 24H:</i> <b>${zerofy(vol24h || "0")}${USDT}</b>\n`;
         fundingReport += `   ┗ 🕒 <i>Funding:</i> ${fundingTime}\n`;
       });

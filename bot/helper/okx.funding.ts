@@ -20,20 +20,20 @@ export const getOKXFunding = async ({
   minVolume24H?: number ;
 }): Promise<IOKXFunding[]> => {
   const {tickerInfo, tickersInforWithObject} = await getOKXTickerInfo()
-  const path = `/rubik/web/public/funding-rate-arbitrage?ctType=linear&ccyType=USDT`;
+  const path = `/public/funding-rate-all?ccyType=USDT&instId=`;
   const res = await axios.get(`${OKX_BASE_FETCH_API_URL}${path}`, {
     headers: makeHeaderAuthenticationOKX("GET", path, ""),
   });
-  const _results: IOKXFunding[] = res?.data?.data;
+  const _results: IOKXFunding[] = res?.data?.data?.[0]?.fundingList;
   const results = _results.filter(
     (r) =>
-      (Number(tickersInforWithObject[`${r.ccy}-USDT-SWAP`].volCcy24h) * Number(tickersInforWithObject[`${r.ccy}-USDT-SWAP`].last))  >= (minVolume24H || MIN_TICKER_VOLUME_24H) &&
+      (Number(tickersInforWithObject[r.instId]?.volCcy24h) * Number(tickersInforWithObject[r.instId]?.last))  >= (minVolume24H || MIN_TICKER_VOLUME_24H) &&
       (
         (!fundingNegativeUpTo || Number(r?.fundingRate) * 100 <= fundingNegativeUpTo) && (!fundingNegativeDownTo || Number(r?.fundingRate) * 100 >= fundingNegativeDownTo) 
         || 
         (!fundingPositiveUpTo || Number(r?.fundingRate) * 100 <= fundingPositiveUpTo) && (!fundingPositiveDownTo || Number(r?.fundingRate) * 100 >= fundingPositiveDownTo) 
       )
-  ).map(r => {return {...r, tickerInfor: tickersInforWithObject[`${r.ccy}-USDT-SWAP`]}});
+  ).map(r => {return {...r, tickerInfor: tickersInforWithObject[r.instId]}});
   return results;
 };
 
@@ -61,7 +61,7 @@ export const getOKXFundingObject = async ({
     .forEach((e) => {
       if(MODE === "dev")
           e.fundingTime = String(Date.now() + 10000)
-      _fundingArbitrage[`${e.ccy}-USDT-SWAP`] = e;
+      _fundingArbitrage[e.instId] = e;
     });
   return _fundingArbitrage;
 };
