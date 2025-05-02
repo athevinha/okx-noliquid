@@ -397,10 +397,10 @@ export const botAutoTrading = ({
             `<code>${pairsCloseToFundingInstIds.join(', ')}</code>\n\n` +
             `🕐 <b>Left:</b> ${pairsCloseToFunding[pairsCloseToFundingInstIds[0]]} minutes`
           );
-          // const _tradeAbleCrypto =pairsCloseToFundingInstIds
+          // const _tradeAbleCrypto =pairsCloseToFuxndingInstIds
           if (fundingUpdateInterval) clearInterval(fundingUpdateInterval);
           fundingUpdateInterval = null;
-
+          flashPositions = {};
           // Execute trading strategy
           console.log("Execute trading strategy");
           forwardTradingWithWs({
@@ -432,7 +432,7 @@ export const botAutoTrading = ({
               if (campaignConfig.WS) campaignConfig.WS.close();
               if (campaignConfig.WSTicker) campaignConfig.WSTicker.close();
               if (campaignConfig.WSPositions) campaignConfig.WSPositions.close();
-              
+              flashPositions = {}
               const _position = await getAccountPositions("SWAP");
               console.log("Stop trading strategy | positions to close:", _position.length);
               
@@ -466,7 +466,6 @@ export const botAutoTrading = ({
                   `📝 <b>Details:</b>\n<code>${JSON.stringify(closeRes, null, 2)}</code>`
                 );
               }
-              
               // Restart funding update
               startFundingUpdate(ctx, id, config, campaigns);
               await ctx.replyWithHTML(
