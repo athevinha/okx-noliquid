@@ -27,7 +27,8 @@ export const getOKXFunding = async ({
   const _results: IOKXFunding[] = res?.data?.data?.[0]?.fundingList;
   const results = _results.filter(
     (r) =>
-      (Number(tickersInforWithObject[r.instId]?.volCcy24h) * Number(tickersInforWithObject[r.instId]?.last))  >= (minVolume24H || MIN_TICKER_VOLUME_24H) &&
+      (Number(tickersInforWithObject[r.instId]?.volCcy24h) * Number(tickersInforWithObject[r.instId]?.last)) >= (minVolume24H || MIN_TICKER_VOLUME_24H) &&
+      (Number(tickersInforWithObject[r.instId]?.volCcy24h) * Number(tickersInforWithObject[r.instId]?.last)) >= (Math.abs(Number(r.fundingRate)) * 10_000_000_000) &&
       (
         (!fundingNegativeUpTo || Number(r?.fundingRate) * 100 <= fundingNegativeUpTo) && (!fundingNegativeDownTo || Number(r?.fundingRate) * 100 >= fundingNegativeDownTo) 
         || 
