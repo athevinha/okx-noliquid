@@ -149,12 +149,11 @@ const _fowardTrading = async ({
 }) => {
   const { mgnMode, leve, sz } = config;
   let variance = config.variance;
-  
+  console.log(flashPositions)
   try {
     const wsCandle = wsCandles?.data?.[0];
     const fundingData = fundingArbitrage[wsCandle.instId];
     const fundingRate = Number(fundingData?.fundingRate);
-    
     if (!fundingRate) return;
     
     const now = Date.now();
@@ -163,13 +162,12 @@ const _fowardTrading = async ({
     const timeToOpen = BEFORE_FUNDING_TO_ORDER;
     const posSide = fundingRate < 0 ? "long" : "short";
 
-    console.log(
-      `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
-    );
+    // console.log(
+    //   `${wsCandle.instId} | ${fundingTimeLeftSec}s | ${wsCandle.c} | ${zerofy(fundingRate * 100)}%`
+    // );
 
     if (
       fundingTimeLeftSec <= timeToOpen &&
-      fundingTimeLeftSec > timeToOpen - 1 &&
       !flashPositions[wsCandle.instId]
     ) {
       const { tpTriggerPx, slTriggerPx } = calcTpSL({
@@ -391,6 +389,7 @@ export const botAutoTrading = ({
         const pairsCloseToFunding = isCloseToFundingTime(fundingArbitrage)
         const pairsCloseToFundingInstIds = Object.keys(pairsCloseToFunding)
         if (pairsCloseToFundingInstIds.length > 0) {
+          flashPositions = {};
           await ctx.replyWithHTML(
             `🏹 <b>Funding Time Approaching</b> 🏹\n\n` +
             `⚡ <b>Executing trading strategy with ${pairsCloseToFundingInstIds.length} pairs:</b>\n` +
@@ -400,7 +399,6 @@ export const botAutoTrading = ({
           // const _tradeAbleCrypto =pairsCloseToFuxndingInstIds
           if (fundingUpdateInterval) clearInterval(fundingUpdateInterval);
           fundingUpdateInterval = null;
-          flashPositions = {};
           // Execute trading strategy
           console.log("Execute trading strategy");
           forwardTradingWithWs({
