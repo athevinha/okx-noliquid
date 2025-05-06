@@ -203,66 +203,93 @@ const _fowardPositions = async ({
           (!lastTimeAmendLimit || Date.now() - lastTimeAmendLimit > DELAY_FOR_DCA_ORDER * 1000)
         ) {
           lastTimeAmendLimitPositions[instId] = Date.now();
-          
-          // Update limit orders
-          const editAlgoRes = await editLimitAlgoOrders({
-            instId: instId,
-            algoId: closeOrderAlgo[0]?.algoId,
-            newSlTriggerPx,
-            newTpTriggerPx
-          });
-          
-          // Notify user about limit order updates
-          if (okxReponseChecker(editAlgoRes)) {
-            const txt = `📊 <b>Exit Order Updated</b> 📊\n\n` +
-              `🪙 <b>Instrument:</b> ${pos.instId}\n` +
+          const {closePositionRes, closeAlgoOrderRes} = await closeFuturePosition({
+            instId,
+            mgnMode: mgnMode as ImgnMode,
+            posSide: posSide as IPosSide,
+          })
+          if(closePositionRes.code === "0" && closeAlgoOrderRes.code === "0") {
+            await ctx.replyWithHTML(
+              `🚨 <b>Position Closed Automatically</b> 🚨\n\n` +
+              `🪙 <b>Instrument:</b> ${instId}\n` +
               `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
-              `💸 <b>Funding Fee:</b> <code>${zerofy(fundingFee)} ${USDT}</code>\n\n` +
-              `🎯 <b>New Exit Levels:</b>\n` +
-              `   ⬥ Take Profit: <code>${zerofy(newTpTriggerPx)} ${USDT}</code>\n` +
-              `   ⬥ Stop Loss:   <code>${zerofy(newSlTriggerPx)} ${USDT}</code>\n\n` +
-              `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`;
-              
-            await ctx.replyWithHTML(txt);
+              `⚠️ <b>Reason:</b> TP trigger price incompatible with market conditions\n\n` +
+              `✅ <b>Position Status:</b> Successfully closed\n` +
+              `✅ <b>Algo Orders:</b> Successfully canceled\n\n` +
+              `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`
+            );
           } else {
-            if(editAlgoRes.data?.[0]?.sCode === "51279") { // TP trigger price cannot be lower than the last price
-              const {closePositionRes, closeAlgoOrderRes} = await closeFuturePosition({
-                instId,
-                mgnMode: mgnMode as ImgnMode,
-                posSide: posSide as IPosSide,
-              })
-              if(closePositionRes.code === "0" && closeAlgoOrderRes.code === "0") {
-                await ctx.replyWithHTML(
-                  `🚨 <b>Position Closed Automatically</b> 🚨\n\n` +
-                  `🪙 <b>Instrument:</b> ${instId}\n` +
-                  `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
-                  `⚠️ <b>Reason:</b> TP trigger price incompatible with market conditions\n\n` +
-                  `✅ <b>Position Status:</b> Successfully closed\n` +
-                  `✅ <b>Algo Orders:</b> Successfully canceled\n\n` +
-                  `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`
-                );
-              } else {
-                await ctx.replyWithHTML(
-                  `⚠️ <b>Position Close Operation Failed</b> ⚠️\n\n` +
-                  `🪙 <b>Instrument:</b> ${instId}\n` +
-                  `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
-                  `🚨 <b>Position Close:</b> ${closePositionRes.code === "0" ? "✅ Success" : "❌ Failed"}\n` +
-                  `🚨 <b>Algo Cancel:</b> ${closeAlgoOrderRes.code === "0" ? "✅ Success" : "❌ Failed"}\n\n` +
-                  `📄 <b>Details:</b>\n` +
-                  `<code>Position: ${closePositionRes.msg}</code>\n` +
-                  `<code>Algo: ${closeAlgoOrderRes.msg}</code>\n\n` +
-                  `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`
-                );
-              }
-            } else
-              await ctx.replyWithHTML(
-                `⚠️ <b>Limit Order Update Failed</b> ⚠️\n\n` +
-                `🪙 <b>Instrument:</b> ${instId}\n` +
-                `🚨 <b>Error Code:</b> <code>${editAlgoRes.code}</code>\n` +
-                `📄 <b>Message:</b> <code>${editAlgoRes.msg}</code>\n\n` +
-                `Please check your API connection and parameters.`
-              );
+            await ctx.replyWithHTML(
+              `⚠️ <b>Position Close Operation Failed</b> ⚠️\n\n` +
+              `🪙 <b>Instrument:</b> ${instId}\n` +
+              `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
+              `🚨 <b>Position Close:</b> ${closePositionRes.code === "0" ? "✅ Success" : "❌ Failed"}\n` +
+              `🚨 <b>Algo Cancel:</b> ${closeAlgoOrderRes.code === "0" ? "✅ Success" : "❌ Failed"}\n\n` +
+              `📄 <b>Details:</b>\n` +
+              `<code>Position: ${closePositionRes.msg}</code>\n` +
+              `<code>Algo: ${closeAlgoOrderRes.msg}</code>\n\n` +
+              `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`
+            );
           }
+          // // Update limit orders
+          // const editAlgoRes = await editLimitAlgoOrders({
+          //   instId: instId,
+          //   algoId: closeOrderAlgo[0]?.algoId,
+          //   newSlTriggerPx,
+          //   newTpTriggerPx
+          // });
+          
+          // // Notify user about limit order updates
+          // if (okxReponseChecker(editAlgoRes)) {
+          //   const txt = `📊 <b>Exit Order Updated</b> 📊\n\n` +
+          //     `🪙 <b>Instrument:</b> ${pos.instId}\n` +
+          //     `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
+          //     `💸 <b>Funding Fee:</b> <code>${zerofy(fundingFee)} ${USDT}</code>\n\n` +
+          //     `🎯 <b>New Exit Levels:</b>\n` +
+          //     `   ⬥ Take Profit: <code>${zerofy(newTpTriggerPx)} ${USDT}</code>\n` +
+          //     `   ⬥ Stop Loss:   <code>${zerofy(newSlTriggerPx)} ${USDT}</code>\n\n` +
+          //     `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`;
+              
+          //   await ctx.replyWithHTML(txt);
+          // } else {
+          //   if(editAlgoRes.data?.[0]?.sCode === "51279") { // TP trigger price cannot be lower than the last price
+          //     const {closePositionRes, closeAlgoOrderRes} = await closeFuturePosition({
+          //       instId,
+          //       mgnMode: mgnMode as ImgnMode,
+          //       posSide: posSide as IPosSide,
+          //     })
+          //     if(closePositionRes.code === "0" && closeAlgoOrderRes.code === "0") {
+          //       await ctx.replyWithHTML(
+          //         `🚨 <b>Position Closed Automatically</b> 🚨\n\n` +
+          //         `🪙 <b>Instrument:</b> ${instId}\n` +
+          //         `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
+          //         `⚠️ <b>Reason:</b> TP trigger price incompatible with market conditions\n\n` +
+          //         `✅ <b>Position Status:</b> Successfully closed\n` +
+          //         `✅ <b>Algo Orders:</b> Successfully canceled\n\n` +
+          //         `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`
+          //       );
+          //     } else {
+          //       await ctx.replyWithHTML(
+          //         `⚠️ <b>Position Close Operation Failed</b> ⚠️\n\n` +
+          //         `🪙 <b>Instrument:</b> ${instId}\n` +
+          //         `📈 <b>Direction:</b> ${posSide === "long" ? "🟢 Long" : "🔴 Short"}\n` +
+          //         `🚨 <b>Position Close:</b> ${closePositionRes.code === "0" ? "✅ Success" : "❌ Failed"}\n` +
+          //         `🚨 <b>Algo Cancel:</b> ${closeAlgoOrderRes.code === "0" ? "✅ Success" : "❌ Failed"}\n\n` +
+          //         `📄 <b>Details:</b>\n` +
+          //         `<code>Position: ${closePositionRes.msg}</code>\n` +
+          //         `<code>Algo: ${closeAlgoOrderRes.msg}</code>\n\n` +
+          //         `⏱️ <b>Time:</b> ${new Date().toLocaleString()}`
+          //       );
+          //     }
+          //   } else
+          //     await ctx.replyWithHTML(
+          //       `⚠️ <b>Limit Order Update Failed</b> ⚠️\n\n` +
+          //       `🪙 <b>Instrument:</b> ${instId}\n` +
+          //       `🚨 <b>Error Code:</b> <code>${editAlgoRes.code}</code>\n` +
+          //       `📄 <b>Message:</b> <code>${editAlgoRes.msg}</code>\n\n` +
+          //       `Please check your API connection and parameters.`
+          //     );
+          // }
         }
       })
     );

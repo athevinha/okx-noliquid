@@ -22,21 +22,21 @@ const MODE = process.env.ENV;
 const isDev = MODE === "dev";
 
 // Constants for trading parameters
-const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 5 * 60;
+const BEFORE_FUNDING_TO_ORDER = isDev ? 2 : 5;
 const FUNDING_NEGATIVE_DOWNTO = isDev ? -0.1 : -2;
-const FUNDING_NEGATIVE_UPTO = isDev ? 0 : -0.05;
+const FUNDING_NEGATIVE_UPTO = isDev ? 0 : -0.12;
 
-const FUNDING_POSITIVE_DOWNTO = isDev ? 0 : 0.05;
+const FUNDING_POSITIVE_DOWNTO = isDev ? 0 : 0.15;
 const FUNDING_POSITIVE_UPTO = isDev ? 0.1 : 2;
 
 const MIN_MAX_TP: [number, number] = [0.6, 0.8];
 const MIN_MAX_SL: [number, number] = [1.5, 2];
-const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 30;
-const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60 * 60;
-const TIM_CLOSE_TO_FUNDING_MINUTES = isDev ? 1 : 15
+const INTERVAL_TO_LOAD_FUNDING_ARBITRAGE = 20;
+const RESTART_STRATEGY_AFTER_FUNDING = isDev ? 40 : 60;
+const TIM_CLOSE_TO_FUNDING_MINUTES = isDev ? 1 : 1
 export const DELAY_FOR_DCA_ORDER = isDev ? 20 : 45;
 export const PX_CHANGE_TO_DCA = isDev ? 0.2 : 0.5;
-export const MIN_TICKER_VOLUME_24H = 5_000_000
+export const MIN_TICKER_VOLUME_24H = 1_000_000
 // {
   // code: '1',
   // data: [
@@ -149,7 +149,6 @@ const _fowardTrading = async ({
 }) => {
   const { mgnMode, leve, sz } = config;
   let variance = config.variance;
-  console.log(flashPositions)
   try {
     const wsCandle = wsCandles?.data?.[0];
     const fundingData = fundingArbitrage[wsCandle.instId];
