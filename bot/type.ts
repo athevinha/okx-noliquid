@@ -11,6 +11,7 @@ export type ICandle = {
   volCcyQuote: number;
   confirm: number;
 };
+
 export type ICandles = Array<ICandle>;
 export type ICandlesEMACrossovers = Array<{
   ts: number;
